@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMR Master Pro V7.6 - الإصدار المستقر</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#0f766e', secondary: '#115e59', accent: '#f59e0b', surface: '#f8fafc', success: '#22c55e', error: '#ef4444', warning: '#eab308' },
+                    fontFamily: { sans: ['Tajawal', 'sans-serif'], display: ['Cairo', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+
+    <style>
+        /* PDF Fixes */
+        .paper-sheet {
+            width: 210mm; min-height: 297mm; background: white; margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1); display: flex; flex-direction: row;
+            overflow: hidden; position: relative;
+        }
+
+        /* Vertical Text Solution using Transform */
+        .vertical-sidebar {
+            width: 15mm; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-left: 1px dashed #cbd5e1; border-right: 1px dashed #cbd5e1;
+            padding: 20px 0; overflow: hidden;
+        }
+        .rotated-text {
+            transform: rotate(-90deg); white-space: nowrap; font-family: 'Cairo', sans-serif;
+            font-weight: 700; font-size: 14px; margin: 10px 0; letter-spacing: 0.5px;
+        }
+        
+        /* Bubble Alignment Fix */
+        .bubble-container { display: flex; justify-content: center; gap: 4px; }
+        .bubble {
+            width: 24px; height: 24px; border: 1.5px solid #000; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 11px; font-weight: 800; font-family: 'Arial', sans-serif;
+            line-height: 1; padding-top: 1px;
+            background: white; z-index: 10;
+        }
+
+        /* Result Colors */
+        .bubble.correct { background-color: #22c55e !important; border-color: #22c55e; color: white; }
+        .bubble.wrong { background-color: #ef4444 !important; border-color: #ef4444; color: white; }
+        .bubble.missed { background-color: #fbbf24 !important; border-color: #d97706; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-surface text-slate-800 font-sans min-h-screen pb-20">
+
+<!-- Modal: Student Paper View -->
+<div id="paperModal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex justify-center items-start overflow-y-auto p-4 animate-fade-in">
+    <div class="bg-white rounded-lg w-full max-w-4xl my-8 relative">
+        <button onclick="closePaperModal()" class="absolute top-4 left-4 bg-red-500 text-white w-8 h-8 rounded-full z-50 hover:bg-red-600"><i class="fa-solid fa-times"></i></button>
+        <div id="modalContent" class="p-8 flex justify-center bg-gray-100"></div>
+    </div>
+</div>
+
+<!-- Modal: Camera Permission Help -->
+<div id="camHelpModal" class="fixed inset-0 bg-black/90 z-[6000] hidden flex justify-center items-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 text-center">
+        <div class="text-red-500 text-5xl mb-4"><i class="fa-solid fa-video-slash"></i></div>
+        <h3 class="text-xl font-bold mb-2">تعذر الوصول للكاميرا</h3>
+        <p class="text-gray-600 text-sm mb-4" id="camErrorMsg">يرجى السماح للمتصفح باستخدام الكاميرا.</p>
+        
+        <div class="bg-yellow-50 text-yellow-800 text-xs p-3 rounded text-right mb-4 border border-yellow-200">
+            <strong><i class="fa-solid fa-lightbulb"></i> نصيحة هامة:</strong><br>
+            إذا كنت تفتح هذا الملف مباشرة من الهاتف، قد يحظره النظام. يفضل رفعه على استضافة مجانية أو تشغيله عبر سيرفر محلي.
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <button onclick="document.getElementById('fileInputCam').click()" class="bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">
+                استخدم رفع ملف (بديل)
+            </button>
+            <button onclick="closeCamHelp()" class="text-gray-500 py-2 text-sm hover:underline">إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 py-6 max-w-[1400px]">
+    
+    <!-- Header -->
+    <header class="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-col lg:flex-row justify-between items-center border-b-4 border-primary">
+        <div class="flex items-center gap-3 mb-4 lg:mb-0">
+            <div class="bg-primary/10 p-3 rounded-lg text-primary"><i class="fa-solid fa-graduation-cap fa-xl"></i></div>
+            <div>
+                <h1 class="text-2xl font-display font-bold text-gray-800">OMR Master <span class="text-primary">V7.6</span></h1>
+                <p class="text-xs text-gray-500">نظام التصحيح المتكامل والاحترافي</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2 justify-center">
+            <button onclick="exportData()" class="px-3 py-2 bg-slate-700 text-white rounded hover:bg-slate-800 text-sm font-bold"><i class="fa-solid fa-download"></i> نسخ احتياطي</button>
+            <label class="px-3 py-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm font-bold cursor-pointer border border-slate-300">
+                <i class="fa-solid fa-upload"></i> استرجاع
+                <input type="file" hidden accept=".json" onchange="importData(event)">
+            </label>
+            <div class="w-px h-8 bg-gray-300 mx-1"></div>
+            <button onclick="resetApp()" class="px-3 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 text-sm font-bold"><i class="fa-solid fa-trash"></i> تهيئة</button>
+        </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden sticky top-0 z-40 border-b border-gray-200">
+        <div class="flex overflow-x-auto no-scrollbar">
+            <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-primary text-primary bg-primary/5">
+                <i class="fa-solid fa-sliders block mb-1"></i> الإعدادات
+            </button>
+            <button onclick="switchTab('design')" id="tab-design" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50">
+                <i class="fa-solid fa-pencil-ruler block mb-1"></i> التصميم
+            </button>
+            <button onclick="switchTab('scan')" id="tab-scan" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50">
+                <i class="fa-solid fa-camera block mb-1"></i> التصحيح
+            </button>
+            <button onclick="switchTab('results')" id="tab-results" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50">
+                <i class="fa-solid fa-chart-bar block mb-1"></i> النتائج
+            </button>
+            <button onclick="switchTab('bank')" id="tab-bank" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50 bg-yellow-50/50">
+                <i class="fa-solid fa-box-archive block mb-1"></i> البنك
+            </button>
+        </div>
+    </div>
+
+    <!-- 1. SETTINGS -->
+    <div id="settings" class="section-panel block animate-fade-in space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- School Info -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-primary mb-4 border-b pb-2"><i class="fa-solid fa-school"></i> البيانات التنظيمية</h3>
+                <div class="space-y-3">
+                    <div><label class="text-sm font-bold">المؤسسة</label><input type="text" id="conf-school" class="input-field w-full mt-1 p-2 border rounded" placeholder="مثال: ثانوية المتنبي"></div>
+                    <div><label class="text-sm font-bold">الأستاذ(ة)</label><input type="text" id="conf-teacher" class="input-field w-full mt-1 p-2 border rounded" placeholder="اسم الأستاذ"></div>
+                    <div><label class="text-sm font-bold text-blue-600">القسم / الشعبة</label><input type="text" id="conf-class" class="input-field w-full mt-1 p-2 border rounded border-blue-200 bg-blue-50" placeholder="مثال: 2 باك علوم 1"></div>
+                </div>
+            </div>
+
+            <!-- Exam Info -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-primary mb-4 border-b pb-2"><i class="fa-solid fa-file-contract"></i> تفاصيل الفرض</h3>
+                <div class="space-y-3">
+                    <div><label class="text-sm font-bold">المادة</label><input type="text" id="conf-subject" class="input-field w-full mt-1 p-2 border rounded"></div>
+                    <div><label class="text-sm font-bold">عنوان الفرض</label><input type="text" id="conf-title" class="input-field w-full mt-1 p-2 border rounded"></div>
+                    <div>
+                        <label class="text-sm font-bold">معرف الامتحان (ID)</label>
+                        <div class="flex gap-2 mt-1">
+                            <input type="text" id="conf-id" class="w-full p-2 border rounded bg-gray-100 text-center font-mono font-bold tracking-widest" readonly>
+                            <button onclick="generateID()" class="bg-primary text-white px-3 rounded"><i class="fa-solid fa-refresh"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Structure -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-primary mb-4 border-b pb-2"><i class="fa-solid fa-list-ol"></i> الهيكلة</h3>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div><label class="text-sm font-bold">الأسئلة</label><input type="number" id="conf-q" value="10" min="1" max="50" class="input-field w-full p-2 border rounded" onchange="updateKeyGrid()"></div>
+                    <div><label class="text-sm font-bold">الخيارات</label><input type="number" id="conf-o" value="4" min="2" max="6" class="input-field w-full p-2 border rounded" onchange="updateKeyGrid()"></div>
+                </div>
+                <div>
+                    <label class="text-sm font-bold mb-1 block">ألوان الورقة</label>
+                    <div class="flex gap-2">
+                        <input type="color" id="conf-col-head" value="#e0f2fe" class="h-8 w-1/2 cursor-pointer">
+                        <input type="color" id="conf-col-side" value="#ffffff" class="h-8 w-1/2 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Answer Key -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-primary"><i class="fa-solid fa-key"></i> مفتاح الإجابة المتقدم والتنقيط</h3>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="conf-partial" class="w-4 h-4">
+                    <label for="conf-partial" class="text-sm font-bold cursor-pointer select-none">احتساب النقطة الجزئية (للإجابات المتعددة)</label>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-center border-collapse">
+                    <thead class="bg-gray-50 text-gray-600">
+                        <tr>
+                            <th class="p-2 border">سؤال</th>
+                            <th class="p-2 border">الإجابة الصحيحة (يمكن اختيار أكثر من واحدة)</th>
+                            <th class="p-2 border w-24">النقاط</th>
+                        </tr>
+                    </thead>
+                    <tbody id="key-grid-body">
+                        <!-- JS generated rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-center pt-4">
+            <button onclick="saveSettingsAndDesign()" class="bg-primary text-white text-lg px-8 py-3 rounded-lg font-bold hover:bg-secondary shadow-lg hover:-translate-y-1 transition transform">
+                حفظ الإعدادات وتصميم الورقة <i class="fa-solid fa-arrow-left mr-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. DESIGN -->
+    <div id="design" class="section-panel hidden space-y-4">
+        <div class="flex justify-between bg-white p-4 rounded-xl shadow-sm">
+            <h3 class="font-bold text-lg"><i class="fa-regular fa-eye"></i> معاينة قبل الطباعة</h3>
+            <div class="flex gap-2">
+                <button onclick="toggleEdit()" class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 font-bold text-sm"><i class="fa-solid fa-pen"></i> تحرير النصوص</button>
+                <button onclick="downloadPDF()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-bold text-sm shadow"><i class="fa-solid fa-print"></i> تحميل PDF</button>
+            </div>
+        </div>
+        
+        <div class="bg-gray-600/10 p-4 md:p-8 rounded-xl overflow-auto flex justify-center">
+            <div id="printableArea" class="paper-sheet">
+                <!-- Right Sidebar -->
+                <div id="side-right" class="vertical-sidebar" style="background:var(--side-bg)">
+                    <div class="h-full flex flex-col justify-center items-center gap-16">
+                        <div class="flex flex-col items-center">
+                            <span class="rotated-text text-gray-400">|</span>
+                            <span id="p-school" class="rotated-text text-lg">المؤسسة</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="rotated-text text-gray-400">|</span>
+                            <span id="p-teacher" class="rotated-text">الأستاذ</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="rotated-text text-gray-400">|</span>
+                            <span id="p-class" class="rotated-text font-bold text-blue-800">القسم</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="flex-1 flex flex-col p-8 relative">
+                    <!-- Scan Markers -->
+                    <div class="absolute top-5 left-5 w-3 h-3 bg-black rounded-full"></div>
+                    <div class="absolute top-5 right-5 w-3 h-3 bg-black rounded-full"></div>
+                    <div class="absolute bottom-5 left-5 w-3 h-3 bg-black rounded-full"></div>
+                    <div class="absolute bottom-5 right-5 w-3 h-3 bg-black rounded-full"></div>
+
+                    <!-- Header Student Info -->
+                    <div class="border-2 border-black rounded-lg p-4 mb-6" style="background:var(--head-bg)">
+                        <div class="flex justify-between items-end gap-4 h-full font-bold">
+                            <div class="flex-1">الاسم الكامل: <span class="border-b-2 border-dotted border-gray-500 w-full inline-block"></span></div>
+                            <div class="w-24">الرقم: <span class="border-b-2 border-dotted border-gray-500 w-full inline-block"></span></div>
+                        </div>
+                    </div>
+
+                    <!-- Questions Grid -->
+                    <div id="q-container" class="flex-1 border border-black">
+                        <!-- Table injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Left Sidebar -->
+                <div id="side-left" class="vertical-sidebar" style="background:var(--side-bg)">
+                    <div class="h-full flex flex-col justify-center items-center gap-16">
+                        <div class="flex flex-col items-center">
+                            <span class="rotated-text text-gray-400">|</span>
+                            <span id="p-subject" class="rotated-text text-lg">المادة</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="rotated-text text-gray-400">|</span>
+                            <span id="p-title" class="rotated-text">العنوان</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="rotated-text text-gray-400">|</span>
+                            <span id="p-id" class="rotated-text font-mono tracking-widest">ID</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. SCAN -->
+    <div id="scan" class="section-panel hidden">
+        <div class="bg-white p-6 rounded-xl shadow-sm text-center max-w-lg mx-auto">
+            <h3 class="font-bold text-xl mb-4">المسح الضوئي</h3>
+            <div class="aspect-[3/4] bg-gray-900 rounded-lg mb-4 relative overflow-hidden flex items-center justify-center shadow-inner">
+                <video id="camFeed" class="w-full h-full object-cover hidden" autoplay playsinline muted></video>
+                <div id="camPlaceholder" class="text-gray-500 flex flex-col items-center">
+                    <i class="fa-solid fa-camera fa-3x mb-2"></i>
+                    <p>الكاميرا مغلقة</p>
+                </div>
+                <div class="absolute inset-8 border-2 border-dashed border-white/50 rounded pointer-events-none z-10"></div>
+                
+                <!-- Loading Overlay -->
+                <div id="scan-overlay" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center hidden z-20">
+                    <i class="fa-solid fa-spinner fa-spin text-white text-4xl mb-2"></i>
+                    <p class="text-white">جارٍ معالجة الورقة...</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-2 justify-center mb-4">
+                <button onclick="startCamSafe()" class="bg-blue-600 text-white px-6 py-3 rounded-lg shadow font-bold hover:bg-blue-700 flex items-center gap-2">
+                    <i class="fa-solid fa-video"></i> تشغيل الكاميرا
+                </button>
+                <label class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg shadow font-bold hover:bg-gray-200 cursor-pointer flex items-center gap-2 border border-gray-300">
+                    <i class="fa-solid fa-file-image"></i> رفع صورة
+                    <input type="file" id="fileInputCam" hidden accept="image/*" onchange="handleImg(event)">
+                </label>
+            </div>
+            
+            <div class="bg-yellow-50 p-3 rounded border border-yellow-200 text-left text-sm mb-4">
+                <label class="font-bold text-yellow-800">اسم التلميذ (للمحاكاة فقط):</label>
+                <input type="text" id="sim-student" class="w-full border p-2 rounded mt-1 bg-white" placeholder="اتركه فارغاً للتوليد التلقائي">
+            </div>
+            <button onclick="simulateScan()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 shadow-lg text-lg">
+                التقاط وتصحيح <i class="fa-solid fa-check ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. RESULTS & STATS -->
+    <div id="results" class="section-panel hidden space-y-6">
+        <!-- Stats Summary -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-blue-500">
+                <p class="text-xs text-gray-500">عدد الأوراق</p>
+                <p class="text-2xl font-bold" id="st-count">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-green-500">
+                <p class="text-xs text-gray-500">معدل القسم</p>
+                <p class="text-2xl font-bold" id="st-avg">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-purple-500">
+                <p class="text-xs text-gray-500">أعلى نقطة</p>
+                <p class="text-2xl font-bold" id="st-max">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-red-500">
+                <p class="text-xs text-gray-500">أدنى نقطة</p>
+                <p class="text-2xl font-bold" id="st-min">0</p>
+            </div>
+        </div>
+        
+        <!-- Detailed Question Analysis -->
+        <div class="bg-white p-5 rounded-xl shadow-sm">
+            <h4 class="font-bold mb-3 text-sm text-gray-600">تحليل الأسئلة (نسبة الإجابات الصحيحة)</h4>
+            <div class="h-40 overflow-x-auto">
+                <canvas id="qChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Table Toolbar -->
+        <div class="bg-white p-4 rounded-t-xl border-b flex flex-wrap gap-4 justify-between items-center">
+            <div class="flex gap-2 items-center">
+                <span class="text-sm font-bold">تصفية حسب القسم:</span>
+                <select id="filter-class" onchange="renderResults()" class="border p-1 rounded text-sm w-40">
+                    <option value="all">الكل</option>
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="sortResults('score', 'desc')" class="text-xs bg-gray-100 px-2 py-1 rounded hover:bg-gray-200"><i class="fa-solid fa-arrow-down-9-1"></i> النقطة</button>
+                <button onclick="sortResults('name', 'asc')" class="text-xs bg-gray-100 px-2 py-1 rounded hover:bg-gray-200"><i class="fa-solid fa-arrow-down-a-z"></i> الاسم</button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-b-xl shadow-sm overflow-x-auto">
+            <table class="w-full text-right">
+                <thead class="bg-gray-50 text-gray-600 text-xs uppercase font-bold">
+                    <tr>
+                        <th class="p-4">الاسم</th>
+                        <th class="p-4">القسم</th>
+                        <th class="p-4">النقطة</th>
+                        <th class="p-4">النسبة %</th>
+                        <th class="p-4 text-center">ورقة الإجابة</th>
+                    </tr>
+                </thead>
+                <tbody id="res-body" class="text-sm divide-y"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 5. BANK -->
+    <div id="bank" class="section-panel hidden">
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h3 class="font-bold text-lg mb-4 text-primary">بنك الفروض</h3>
+            <div id="bank-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- STATE ---
+    const app = {
+        settings: {
+            school: '', teacher: '', classRoom: '', subject: '', title: '', id: '',
+            q: 10, o: 4, headerCol: '#e0f2fe', sideCol: '#ffffff',
+            partial: false,
+            keys: []
+        },
+        results: [],
+        savedExams: [],
+        labels: ['أ', 'ب', 'ج', 'د', 'هـ', 'و']
+    };
+
+    // --- INIT ---
+    window.onload = () => {
+        generateID();
+        updateKeyGrid();
+        loadLocal();
+        initStatsChart();
+    };
+
+    function generateID() { document.getElementById('conf-id').value = Math.floor(1000 + Math.random()*9000); }
+
+    function switchTab(id) {
+        document.querySelectorAll('.section-panel').forEach(d => d.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('border-primary', 'text-primary', 'bg-primary/5');
+            b.classList.add('border-transparent', 'text-gray-500');
+        });
+        document.getElementById('tab-'+id).classList.remove('border-transparent', 'text-gray-500');
+        document.getElementById('tab-'+id).classList.add('border-primary', 'text-primary', 'bg-primary/5');
+        
+        if(id === 'results') renderResults();
+        if(id === 'bank') renderBank();
+        if(id !== 'scan') stopCam();
+    }
+
+    // --- SETTINGS & KEY LOGIC ---
+    function updateKeyGrid() {
+        const q = parseInt(document.getElementById('conf-q').value);
+        const o = parseInt(document.getElementById('conf-o').value);
+        const tbody = document.getElementById('key-grid-body');
+        tbody.innerHTML = '';
+        
+        for(let i=0; i<q; i++) {
+            let opts = '';
+            for(let j=0; j<o; j++) {
+                opts += `
+                <label class="inline-flex items-center mx-1 cursor-pointer bg-gray-100 px-2 py-1 rounded hover:bg-gray-200">
+                    <input type="checkbox" name="q${i}" value="${j}" class="w-4 h-4 text-primary rounded focus:ring-0">
+                    <span class="mr-1 text-sm font-bold">${app.labels[j]}</span>
+                </label>`;
+            }
+            tbody.innerHTML += `
+            <tr class="hover:bg-gray-50 border-b">
+                <td class="p-2 font-bold">${i+1}</td>
+                <td class="p-2">${opts}</td>
+                <td class="p-2"><input type="number" step="0.5" id="pts-${i}" value="1" class="w-16 p-1 border rounded text-center"></td>
+            </tr>`;
+        }
+    }
+
+    function saveSettingsAndDesign() {
+        const s = app.settings;
+        s.school = document.getElementById('conf-school').value;
+        s.teacher = document.getElementById('conf-teacher').value;
+        s.classRoom = document.getElementById('conf-class').value;
+        s.subject = document.getElementById('conf-subject').value;
+        s.title = document.getElementById('conf-title').value;
+        s.id = document.getElementById('conf-id').value;
+        s.q = parseInt(document.getElementById('conf-q').value);
+        s.o = parseInt(document.getElementById('conf-o').value);
+        s.headerCol = document.getElementById('conf-col-head').value;
+        s.sideCol = document.getElementById('conf-col-side').value;
+        s.partial = document.getElementById('conf-partial').checked;
+
+        s.keys = [];
+        for(let i=0; i<s.q; i++) {
+            const checks = document.querySelectorAll(`input[name="q${i}"]:checked`);
+            const ans = Array.from(checks).map(c => parseInt(c.value));
+            const pts = parseFloat(document.getElementById(`pts-${i}`).value) || 1;
+            s.keys.push({ id: i, answers: ans, points: pts });
+        }
+
+        renderPaper();
+        switchTab('design');
+        saveLocal();
+    }
+
+    // --- RENDER PAPER ---
+    function renderPaper(viewMode = false, studentData = null) {
+        const area = viewMode ? document.getElementById('modalContent') : document.getElementById('printableArea');
+        const s = app.settings;
+        
+        let container = viewMode ? document.createElement('div') : document.getElementById('printableArea');
+        if(viewMode) {
+            container.className = 'paper-sheet scale-90 origin-top';
+            container.innerHTML = document.getElementById('printableArea').innerHTML;
+            area.innerHTML = '';
+            area.appendChild(container);
+        }
+
+        const setText = (id, val) => { const el = container.querySelector('#'+id); if(el) el.innerText = val; }
+        setText('p-school', s.school);
+        setText('p-teacher', s.teacher);
+        setText('p-class', s.classRoom);
+        setText('p-subject', s.subject);
+        setText('p-title', s.title);
+        setText('p-id', s.id);
+
+        const rightSide = container.querySelector('#side-right');
+        const leftSide = container.querySelector('#side-left');
+        const headBox = container.querySelector('.border-2.rounded-lg');
+        
+        if(rightSide) rightSide.style.background = s.sideCol;
+        if(leftSide) leftSide.style.background = s.sideCol;
+        if(headBox) headBox.style.background = s.headerCol;
+
+        let html = `<table class="w-full border-collapse" style="table-layout: fixed;">
+            <thead class="bg-gray-100"><tr>
+                <th class="border border-black p-2 w-10 text-center">ر.ت</th>
+                <th class="border border-black p-2 text-right">السؤال</th>
+                <th class="border border-black p-2 w-[35%] text-center">الإجابة</th>
+            </tr></thead><tbody>`;
+
+        for(let i=0; i<s.q; i++) {
+            let bubbles = '';
+            for(let j=0; j<s.o; j++) {
+                let extraClass = '';
+                if(viewMode && studentData) {
+                    const keyAns = s.keys[i].answers;
+                    const studAns = studentData.answers[i] || [];
+                    const isSelected = studAns.includes(j);
+                    const isCorrect = keyAns.includes(j);
+                    if (isCorrect && isSelected) extraClass = 'correct';
+                    else if (isSelected && !isCorrect) extraClass = 'wrong';
+                    else if (isCorrect && !isSelected) extraClass = 'missed';
+                }
+                bubbles += `<div class="bubble ${extraClass}">${app.labels[j]}</div>`;
+            }
+            html += `
+            <tr>
+                <td class="border border-black p-2 text-center font-bold">${i+1}</td>
+                <td class="border border-black p-2 bg-white relative">
+                    ${viewMode ? `<div class="p-1">سؤال رقم ${i+1}</div>` : `<div class="tiny-edit" id="qtext-${i}">نص السؤال رقم ${i+1}...</div>`}
+                </td>
+                <td class="border border-black p-1">
+                    <div class="bubble-container">${bubbles}</div>
+                </td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+
+        const qContainer = container.querySelector('#q-container');
+        if(qContainer) qContainer.innerHTML = html;
+
+        if(!viewMode) initTiny();
+    }
+
+    let editMode = false;
+    function toggleEdit() { editMode = !editMode; if(editMode) initTiny(); else tinymce.remove(); }
+    function initTiny() {
+        if(tinymce.get().length>0) tinymce.remove();
+        tinymce.init({ selector: '.tiny-edit', inline: true, menubar: false, directionality: 'rtl', toolbar: 'bold italic | forecolor fontsize' });
+    }
+    async function downloadPDF() {
+        if(editMode) toggleEdit();
+        const el = document.getElementById('printableArea');
+        const canvas = await html2canvas(el, { scale: 2, useCORS: true });
+        const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
+        pdf.save(`${app.settings.title || 'Exam'}.pdf`);
+        addToBank();
+    }
+
+    // --- ROBUST CAMERA HANDLING (THE FIX) ---
+    let stream;
+    async function startCamSafe() {
+        const vid = document.getElementById('camFeed');
+        const placeholder = document.getElementById('camPlaceholder');
+        
+        // 1. Check if browser supports mediaDevices
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showCamError('متصفحك لا يدعم الكاميرا. جرب Chrome أو Safari.');
+            return;
+        }
+
+        try {
+            // 2. Request Camera with ideal constraints for mobile
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    facingMode: 'environment', // Back camera preference
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            });
+
+            // 3. Success: Show video
+            vid.srcObject = stream;
+            vid.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+
+        } catch (err) {
+            console.error(err);
+            // 4. Handle Specific Errors
+            let msg = 'حدث خطأ غير معروف.';
+            
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                msg = 'تم رفض إذن الكاميرا. يرجى الضغط على القفل بجانب الرابط في المتصفح والسماح بالكاميرا.';
+            } else if (err.name === 'NotFoundError') {
+                msg = 'لم يتم العثور على كاميرا في الجهاز.';
+            } else if (err.name === 'NotReadableError') {
+                msg = 'الكاميرا مستخدمة من قبل تطبيق آخر.';
+            } else if (window.location.protocol === 'file:') {
+                msg = 'الأمان يمنع الكاميرا عند فتح الملف مباشرة. يرجى استخدام سيرفر محلي.';
+            }
+
+            showCamError(msg);
+        }
+    }
+
+    function showCamError(msg) {
+        document.getElementById('camErrorMsg').innerText = msg;
+        document.getElementById('camHelpModal').classList.remove('hidden');
+    }
+
+    function closeCamHelp() {
+        document.getElementById('camHelpModal').classList.add('hidden');
+    }
+
+    function stopCam() { 
+        if(stream) stream.getTracks().forEach(t=>t.stop()); 
+        document.getElementById('camFeed').classList.add('hidden');
+        document.getElementById('camPlaceholder').classList.remove('hidden');
+    }
+
+    function handleImg(e) { 
+        const f = e.target.files[0];
+        if(f) {
+            stopCam(); // Ensure cam is off
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(f);
+            document.getElementById('camFeed').classList.add('hidden');
+            // Remove old image if exists
+            const oldImg = document.getElementById('uploadedImg');
+            if(oldImg) oldImg.remove();
+            
+            img.id = 'uploadedImg';
+            img.className = "w-full h-full object-cover";
+            document.getElementById('camPlaceholder').classList.add('hidden');
+            document.getElementById('camPlaceholder').parentNode.appendChild(img);
+        }
+    }
+    
+    function simulateScan() {
+        // Logic similar to V7.5 but checks for uploaded image too
+        const hasVideo = !document.getElementById('camFeed').classList.contains('hidden');
+        const hasImage = !!document.getElementById('uploadedImg');
+
+        if(!hasVideo && !hasImage) {
+            alert('يرجى تشغيل الكاميرا أو رفع صورة أولاً!');
+            return;
+        }
+
+        document.getElementById('scan-overlay').classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('scan-overlay').classList.add('hidden');
+            
+            const s = app.settings;
+            const studentAnswers = [];
+            let totalScore = 0;
+            let totalPossible = 0;
+
+            for(let i=0; i<s.q; i++) {
+                const randCount = Math.floor(Math.random() * 2) + 1;
+                const selected = [];
+                while(selected.length < randCount) {
+                    const r = Math.floor(Math.random() * s.o);
+                    if(!selected.includes(r)) selected.push(r);
+                }
+                studentAnswers.push(selected);
+
+                const key = s.keys[i];
+                const keyAns = key.answers;
+                const pts = key.points;
+                totalPossible += pts;
+
+                const isExact = JSON.stringify(selected.sort()) === JSON.stringify(keyAns.sort());
+                
+                if (isExact) {
+                    totalScore += pts;
+                } else if (s.partial) {
+                    const hasWrong = selected.some(sel => !keyAns.includes(sel));
+                    if(!hasWrong) {
+                        const correctCount = selected.filter(sel => keyAns.includes(sel)).length;
+                        totalScore += (correctCount / keyAns.length) * pts;
+                    }
+                }
+            }
+
+            const name = document.getElementById('sim-student').value || 'طالب ' + (app.results.length+1);
+            
+            app.results.push({
+                id: Date.now(),
+                name: name,
+                classRoom: s.classRoom,
+                score: parseFloat(totalScore.toFixed(2)),
+                total: totalPossible,
+                answers: studentAnswers,
+                date: new Date().toLocaleDateString()
+            });
+
+            alert(`تم التصحيح! النتيجة: ${totalScore.toFixed(2)}/${totalPossible}`);
+            saveLocal();
+        }, 1500);
+    }
+
+    // --- RESULTS & STATS ---
+    function renderResults() {
+        const classes = [...new Set(app.results.map(r => r.classRoom))].filter(Boolean);
+        const sel = document.getElementById('filter-class');
+        const currFilter = sel.value;
+        sel.innerHTML = '<option value="all">الكل</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+        sel.value = currFilter;
+
+        let data = app.results;
+        if(sel.value !== 'all') data = data.filter(r => r.classRoom === sel.value);
+
+        if(data.length > 0) {
+            const scores = data.map(r => r.score);
+            document.getElementById('st-count').innerText = data.length;
+            document.getElementById('st-avg').innerText = (scores.reduce((a,b)=>a+b,0)/data.length).toFixed(2);
+            document.getElementById('st-max').innerText = Math.max(...scores);
+            document.getElementById('st-min').innerText = Math.min(...scores);
+            updateChart(data);
+        } else {
+             ['count','avg','max','min'].forEach(id => document.getElementById('st-'+id).innerText = '0');
+        }
+
+        const body = document.getElementById('res-body');
+        body.innerHTML = '';
+        data.forEach(r => {
+            const pct = Math.round((r.score / r.total) * 100);
+            const color = pct >= 50 ? 'text-green-600' : 'text-red-600';
+            body.innerHTML += `
+            <tr class="hover:bg-gray-50 transition">
+                <td class="p-4 font-bold text-gray-800">${r.name}</td>
+                <td class="p-4 text-gray-500">${r.classRoom}</td>
+                <td class="p-4 font-bold text-lg">${r.score} <span class="text-xs text-gray-400">/${r.total}</span></td>
+                <td class="p-4 font-bold ${color}">${pct}%</td>
+                <td class="p-4 text-center">
+                    <button onclick='viewStudentPaper(${JSON.stringify(r)})' class="bg-blue-50 text-blue-600 px-3 py-1 rounded hover:bg-blue-100 text-sm font-bold">
+                        <i class="fa-solid fa-eye"></i> معاينة
+                    </button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function sortResults(key, order) {
+        app.results.sort((a,b) => {
+            if(key === 'name') return order==='asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+            return order==='asc' ? a.score - b.score : b.score - a.score;
+        });
+        renderResults();
+    }
+
+    // --- CHART ---
+    let chartInst = null;
+    function initStatsChart() {
+        const ctx = document.getElementById('qChart').getContext('2d');
+        chartInst = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'نسبة الصحيح %', data: [], backgroundColor: '#0f766e' }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+    }
+    function updateChart(data) {
+        const qCount = app.settings.q;
+        const stats = new Array(qCount).fill(0);
+        
+        data.forEach(student => {
+            student.answers.forEach((ans, qIdx) => {
+                if(qIdx >= qCount) return;
+                const keyAns = app.settings.keys[qIdx].answers;
+                if(JSON.stringify(ans.sort()) === JSON.stringify(keyAns.sort())) {
+                    stats[qIdx]++;
+                }
+            });
+        });
+
+        const pctData = stats.map(count => Math.round((count / data.length) * 100));
+        chartInst.data.labels = Array.from({length: qCount}, (_, i) => `س${i+1}`);
+        chartInst.data.datasets[0].data = pctData;
+        chartInst.update();
+    }
+
+    // --- MODAL VIEW ---
+    function viewStudentPaper(studentData) {
+        document.getElementById('paperModal').classList.remove('hidden');
+        renderPaper(true, studentData);
+    }
+    function closePaperModal() { document.getElementById('paperModal').classList.add('hidden'); }
+
+    // --- BANK ---
+    function addToBank() {
+        const exam = { meta: {...app.settings}, date: new Date().toLocaleDateString() };
+        if(!app.savedExams.find(e => e.meta.id === exam.meta.id)) {
+            app.savedExams.push(exam);
+            saveLocal();
+        }
+    }
+    function renderBank() {
+        const grid = document.getElementById('bank-grid');
+        grid.innerHTML = app.savedExams.map((ex, i) => `
+        <div class="bg-white border p-4 rounded-lg hover:shadow-md relative group">
+            <div class="flex justify-between mb-2">
+                <span class="font-bold text-primary">${ex.meta.subject}</span>
+                <span class="text-xs bg-gray-200 px-2 py-1 rounded">${ex.meta.id}</span>
+            </div>
+            <h4 class="font-bold text-lg mb-1">${ex.meta.title}</h4>
+            <div class="text-sm text-gray-500 mb-4 flex gap-3">
+                <span><i class="fa-solid fa-users"></i> ${ex.meta.classRoom || 'بدون قسم'}</span>
+                <span><i class="fa-regular fa-calendar"></i> ${ex.date}</span>
+            </div>
+            <button onclick="loadExam(${i})" class="text-blue-600 font-bold text-sm hover:underline">تحميل هذا الفرض</button>
+            <button onclick="deleteExam(${i})" class="absolute top-4 left-4 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash"></i></button>
+        </div>`).join('');
+    }
+    function loadExam(idx) {
+        app.settings = {...app.savedExams[idx].meta};
+        document.getElementById('conf-school').value = app.settings.school;
+        document.getElementById('conf-teacher').value = app.settings.teacher;
+        document.getElementById('conf-class').value = app.settings.classRoom;
+        document.getElementById('conf-subject').value = app.settings.subject;
+        document.getElementById('conf-title').value = app.settings.title;
+        document.getElementById('conf-id').value = app.settings.id;
+        document.getElementById('conf-q').value = app.settings.q;
+        document.getElementById('conf-o').value = app.settings.o;
+        document.getElementById('conf-partial').checked = app.settings.partial;
+        updateKeyGrid();
+        app.settings.keys.forEach((k, i) => {
+            if(i < app.settings.q) {
+                document.getElementById(`pts-${i}`).value = k.points;
+                k.answers.forEach(a => {
+                    const chk = document.querySelector(`input[name="q${i}"][value="${a}"]`);
+                    if(chk) chk.checked = true;
+                });
+            }
+        });
+        alert('تم تحميل إعدادات الفرض!');
+        switchTab('settings');
+    }
+    function deleteExam(i) {
+        if(confirm('حذف؟')) { app.savedExams.splice(i,1); saveLocal(); renderBank(); }
+    }
+
+    // --- DATA & BACKUP ---
+    function saveLocal() {
+        localStorage.setItem('omr_data_v76', JSON.stringify({s: app.settings, r: app.results, b: app.savedExams}));
+    }
+    function loadLocal() {
+        const d = JSON.parse(localStorage.getItem('omr_data_v76'));
+        if(d) { app.settings = d.s; app.results = d.r || []; app.savedExams = d.b || []; }
+    }
+    function exportData() {
+        const blob = new Blob([localStorage.getItem('omr_data_v76')], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `OMR_Backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+    }
+    function importData(e) {
+        const fr = new FileReader();
+        fr.onload = () => {
+            localStorage.setItem('omr_data_v76', fr.result);
+            location.reload();
+        };
+        fr.readAsText(e.target.files[0]);
+    }
+    function resetApp() {
+        if(confirm('هل أنت متأكد من حذف جميع البيانات؟')) { localStorage.removeItem('omr_data_v76'); location.reload(); }
+    }
+</script>
+</body>
+</html>
