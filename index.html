@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OMR Master Pro V8.0 - المحرك الحقيقي</title>
+    <title>OMR Master Pro V9.0 - النسخة الكاملة</title>
     
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,7 +16,7 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { primary: '#0f766e', secondary: '#115e59', accent: '#f59e0b', surface: '#f8fafc', success: '#22c55e', error: '#ef4444', warning: '#eab308' },
+                    colors: { primary: '#0f766e', secondary: '#115e59', surface: '#f8fafc', success: '#22c55e', error: '#ef4444', warning: '#eab308' },
                     fontFamily: { sans: ['Tajawal', 'sans-serif'], display: ['Cairo', 'sans-serif'] }
                 }
             }
@@ -24,7 +24,7 @@
     </script>
 
     <!-- Libraries -->
-    <!-- OpenCV.js (Essential for Real Processing) -->
+    <!-- OpenCV (The Brain) -->
     <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -32,10 +32,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
 
     <style>
-        /* PDF Styles */
+        /* PDF & Print Styles */
         .paper-sheet {
             width: 210mm; min-height: 297mm; background: white; margin: 0 auto;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1); display: flex; flex-direction: row;
+            box-shadow: 0 0 25px rgba(0,0,0,0.1); display: flex; flex-direction: row;
             overflow: hidden; position: relative;
         }
         .vertical-sidebar {
@@ -45,127 +45,184 @@
         }
         .rotated-text {
             transform: rotate(-90deg); white-space: nowrap; font-family: 'Cairo', sans-serif;
-            font-weight: 700; font-size: 14px; margin: 10px 0; letter-spacing: 0.5px;
+            font-weight: 700; font-size: 14px; margin: 15px 0; letter-spacing: 0.5px;
         }
-        /* Bubble Styles */
+        
+        /* Bubbles & Feedback */
         .bubble-container { display: flex; justify-content: center; gap: 4px; }
         .bubble {
             width: 24px; height: 24px; border: 1.5px solid #000; border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             font-size: 11px; font-weight: 800; font-family: 'Arial', sans-serif;
-            line-height: 1; padding-top: 1px; background: white; z-index: 10;
+            background: white; z-index: 10;
         }
+        /* Result Coloring */
         .bubble.correct { background-color: #22c55e !important; border-color: #22c55e; color: white; }
         .bubble.wrong { background-color: #ef4444 !important; border-color: #ef4444; color: white; }
         .bubble.missed { background-color: #fbbf24 !important; border-color: #d97706; }
         
-        /* Markers for Detection - CRITICAL */
-        .scan-marker {
-            width: 20px; height: 20px; background: black; position: absolute; z-index: 50;
-        }
-
-        /* Debug Canvas */
-        #debugCanvas { width: 100%; border: 2px solid red; display: none; }
+        /* Markers (Critical for OpenCV) */
+        .scan-marker { width: 20px; height: 20px; background: black; position: absolute; z-index: 50; }
         
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     </style>
 </head>
 <body class="bg-surface text-slate-800 font-sans min-h-screen pb-20">
 
-<!-- Processing Overlay -->
+<!-- Overlay: Processing -->
 <div id="processingOverlay" class="fixed inset-0 bg-black/90 z-[9999] hidden flex-col items-center justify-center text-white">
     <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-    <h2 class="text-xl font-bold">جارٍ معالجة الصورة...</h2>
-    <p class="text-sm text-gray-400 mt-2">يتم تحليل الفقاعات وتصحيح الانحراف</p>
-    <canvas id="debugCanvas" class="mt-4 max-w-[300px]"></canvas> <!-- For debug visualization -->
+    <h2 class="text-xl font-bold">جارٍ تحليل الورقة...</h2>
+    <p class="text-sm text-gray-400 mt-2">يتم استخدام OpenCV لمعالجة الصورة</p>
+    <!-- Debug Canvas (Optional: to see what the computer sees) -->
+    <canvas id="debugCanvas" class="mt-4 border border-gray-700 max-w-[200px] hidden"></canvas>
 </div>
 
 <!-- Modal: Student Paper View -->
 <div id="paperModal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex justify-center items-start overflow-y-auto p-4 animate-fade-in">
-    <div class="bg-white rounded-lg w-full max-w-4xl my-8 relative">
-        <button onclick="closePaperModal()" class="absolute top-4 left-4 bg-red-500 text-white w-8 h-8 rounded-full z-50 hover:bg-red-600"><i class="fa-solid fa-times"></i></button>
-        <div id="modalContent" class="p-8 flex justify-center bg-gray-100"></div>
+    <div class="bg-white rounded-lg w-full max-w-4xl my-8 relative shadow-2xl">
+        <button onclick="closePaperModal()" class="absolute top-4 left-4 bg-red-500 text-white w-8 h-8 rounded-full z-50 hover:bg-red-600 shadow-lg"><i class="fa-solid fa-times"></i></button>
+        <div id="modalContent" class="p-8 flex justify-center bg-gray-100 rounded-b-lg"></div>
     </div>
 </div>
 
 <div class="container mx-auto px-4 py-6 max-w-[1400px]">
     
-    <!-- Header -->
+    <!-- Header (Restored from V7.6) -->
     <header class="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-col lg:flex-row justify-between items-center border-b-4 border-primary">
         <div class="flex items-center gap-3 mb-4 lg:mb-0">
-            <div class="bg-primary/10 p-3 rounded-lg text-primary"><i class="fa-solid fa-microchip fa-xl"></i></div>
+            <div class="bg-primary/10 p-3 rounded-lg text-primary"><i class="fa-solid fa-graduation-cap fa-xl"></i></div>
             <div>
-                <h1 class="text-2xl font-display font-bold text-gray-800">OMR Master <span class="text-primary">V8.0</span></h1>
-                <p class="text-xs text-green-600 font-bold" id="cvStatus">جاري تحميل محرك المعالجة...</p>
+                <h1 class="text-2xl font-display font-bold text-gray-800">OMR Master <span class="text-primary">V9.0</span></h1>
+                <p class="text-xs text-gray-500 font-bold flex items-center gap-1">
+                    <span id="cvStatus" class="text-yellow-600"><i class="fa-solid fa-circle-notch fa-spin"></i> تحميل المحرك...</span>
+                </p>
             </div>
         </div>
         <div class="flex flex-wrap gap-2 justify-center">
-            <button onclick="resetApp()" class="px-3 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 text-sm font-bold"><i class="fa-solid fa-trash"></i> تهيئة</button>
+            <button onclick="exportData()" class="px-3 py-2 bg-slate-700 text-white rounded hover:bg-slate-800 text-sm font-bold shadow"><i class="fa-solid fa-download"></i> نسخ احتياطي</button>
+            <label class="px-3 py-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 text-sm font-bold cursor-pointer border border-slate-300 shadow">
+                <i class="fa-solid fa-upload"></i> استرجاع
+                <input type="file" hidden accept=".json" onchange="importData(event)">
+            </label>
+            <div class="w-px h-8 bg-gray-300 mx-1"></div>
+            <button onclick="resetApp()" class="px-3 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 text-sm font-bold shadow"><i class="fa-solid fa-trash"></i> تهيئة</button>
         </div>
     </header>
 
-    <!-- Tabs -->
+    <!-- Tabs (Restored V7.6) -->
     <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden sticky top-0 z-40 border-b border-gray-200">
         <div class="flex overflow-x-auto no-scrollbar">
-            <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn flex-1 min-w-[100px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-primary text-primary bg-primary/5">الإعدادات</button>
-            <button onclick="switchTab('design')" id="tab-design" class="tab-btn flex-1 min-w-[100px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50">التصميم</button>
-            <button onclick="switchTab('scan')" id="tab-scan" class="tab-btn flex-1 min-w-[100px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50">التصحيح</button>
-            <button onclick="switchTab('results')" id="tab-results" class="tab-btn flex-1 min-w-[100px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50">النتائج</button>
+            <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-primary text-primary bg-primary/5">
+                <i class="fa-solid fa-sliders block mb-1"></i> الإعدادات
+            </button>
+            <button onclick="switchTab('design')" id="tab-design" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50">
+                <i class="fa-solid fa-pencil-ruler block mb-1"></i> التصميم
+            </button>
+            <button onclick="switchTab('scan')" id="tab-scan" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50">
+                <i class="fa-solid fa-camera block mb-1"></i> التصحيح
+            </button>
+            <button onclick="switchTab('results')" id="tab-results" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50">
+                <i class="fa-solid fa-chart-bar block mb-1"></i> النتائج
+            </button>
+            <button onclick="switchTab('bank')" id="tab-bank" class="tab-btn flex-1 min-w-[120px] px-4 py-4 font-bold border-b-4 text-center transition-colors border-transparent text-gray-500 hover:bg-gray-50 bg-yellow-50/50">
+                <i class="fa-solid fa-box-archive block mb-1"></i> البنك
+            </button>
         </div>
     </div>
 
-    <!-- 1. SETTINGS -->
-    <div id="settings" class="section-panel block space-y-6">
-        <div class="bg-white p-5 rounded-xl shadow-sm">
-            <h3 class="font-bold text-primary mb-4 border-b pb-2">إعدادات الفرض</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" id="conf-school" class="input-field w-full p-2 border rounded" placeholder="المؤسسة">
-                <input type="text" id="conf-teacher" class="input-field w-full p-2 border rounded" placeholder="الأستاذ">
-                <input type="text" id="conf-class" class="input-field w-full p-2 border rounded" placeholder="القسم">
-                <input type="text" id="conf-subject" class="input-field w-full p-2 border rounded" placeholder="المادة">
-                <input type="text" id="conf-title" class="input-field w-full p-2 border rounded" placeholder="العنوان">
-                <div class="flex gap-2">
-                    <input type="number" id="conf-q" value="5" min="1" max="50" class="w-1/2 p-2 border rounded" onchange="updateKeyGrid()">
-                    <input type="number" id="conf-o" value="4" min="2" max="5" class="w-1/2 p-2 border rounded" onchange="updateKeyGrid()">
+    <!-- 1. SETTINGS (Restored Full Features) -->
+    <div id="settings" class="section-panel block space-y-6 animate-fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-primary mb-4 border-b pb-2"><i class="fa-solid fa-school"></i> البيانات العامة</h3>
+                <div class="space-y-3">
+                    <input type="text" id="conf-school" class="input-field w-full p-2 border rounded" placeholder="المؤسسة">
+                    <input type="text" id="conf-teacher" class="input-field w-full p-2 border rounded" placeholder="الأستاذ">
+                    <input type="text" id="conf-class" class="input-field w-full p-2 border rounded bg-blue-50" placeholder="القسم (مثال: 2 باك)">
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-primary mb-4 border-b pb-2"><i class="fa-solid fa-file-contract"></i> تفاصيل الفرض</h3>
+                <div class="space-y-3">
+                    <input type="text" id="conf-subject" class="input-field w-full p-2 border rounded" placeholder="المادة">
+                    <input type="text" id="conf-title" class="input-field w-full p-2 border rounded" placeholder="العنوان">
+                    <div class="flex gap-2">
+                        <input type="text" id="conf-id" class="w-full p-2 border rounded bg-gray-100 text-center font-mono font-bold" readonly>
+                        <button onclick="generateID()" class="bg-primary text-white px-3 rounded"><i class="fa-solid fa-refresh"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-primary mb-4 border-b pb-2"><i class="fa-solid fa-list-check"></i> الهيكلة</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-xs font-bold">الأسئلة</label><input type="number" id="conf-q" value="10" min="1" max="50" class="w-full p-2 border rounded" onchange="updateKeyGrid()"></div>
+                    <div><label class="text-xs font-bold">الخيارات</label><input type="number" id="conf-o" value="4" min="2" max="5" class="w-full p-2 border rounded" onchange="updateKeyGrid()"></div>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <input type="color" id="conf-col-head" value="#e0f2fe" class="h-8 w-1/2 cursor-pointer rounded">
+                    <input type="color" id="conf-col-side" value="#ffffff" class="h-8 w-1/2 cursor-pointer rounded">
                 </div>
             </div>
         </div>
-        
-        <div class="bg-white p-5 rounded-xl shadow-sm">
-            <h3 class="font-bold text-primary mb-4 border-b pb-2">مفتاح الإجابة</h3>
-            <div class="overflow-x-auto max-h-64">
+
+        <!-- Advanced Key Grid -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-primary"><i class="fa-solid fa-key"></i> مفتاح الإجابة والتنقيط</h3>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="conf-partial" class="w-4 h-4">
+                    <label for="conf-partial" class="text-sm font-bold cursor-pointer">احتساب النقطة الجزئية</label>
+                </div>
+            </div>
+            <div class="overflow-x-auto max-h-80">
                 <table class="w-full text-sm text-center border-collapse">
+                    <thead class="bg-gray-50 text-gray-600 sticky top-0">
+                        <tr><th class="p-2 border">س</th><th class="p-2 border">الإجابة الصحيحة</th><th class="p-2 border w-24">النقاط</th></tr>
+                    </thead>
                     <tbody id="key-grid-body"></tbody>
                 </table>
             </div>
-            <button onclick="saveSettingsAndDesign()" class="w-full mt-4 bg-primary text-white py-3 rounded-lg font-bold">حفظ وتحديث التصميم</button>
+            <div class="mt-4 text-center">
+                <button onclick="saveSettingsAndDesign()" class="bg-primary text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:bg-secondary transition transform hover:-translate-y-1">
+                    حفظ الإعدادات وتصميم الورقة <i class="fa-solid fa-arrow-left mr-2"></i>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- 2. DESIGN -->
-    <div id="design" class="section-panel hidden">
-        <div class="flex justify-between bg-white p-4 rounded-xl shadow-sm mb-4">
-            <h3 class="font-bold">معاينة الورقة</h3>
-            <button onclick="downloadPDF()" class="px-4 py-2 bg-green-600 text-white rounded font-bold">تحميل PDF</button>
+    <!-- 2. DESIGN (Restored Layout) -->
+    <div id="design" class="section-panel hidden space-y-4">
+        <div class="flex justify-between bg-white p-4 rounded-xl shadow-sm">
+            <h3 class="font-bold text-lg"><i class="fa-regular fa-eye"></i> معاينة الورقة</h3>
+            <div class="flex gap-2">
+                <button onclick="toggleEdit()" class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 font-bold text-sm"><i class="fa-solid fa-pen"></i> تحرير</button>
+                <button onclick="downloadPDF()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-bold text-sm shadow"><i class="fa-solid fa-print"></i> PDF</button>
+            </div>
         </div>
-        <div class="bg-gray-600/10 p-4 rounded-xl overflow-auto flex justify-center">
+        
+        <div class="bg-gray-600/10 p-4 md:p-8 rounded-xl overflow-auto flex justify-center">
             <div id="printableArea" class="paper-sheet">
-                <!-- Markers are critical for OMR -->
-                <div class="scan-marker" style="top:15mm; left:15mm;"></div> <!-- TL -->
-                <div class="scan-marker" style="top:15mm; right:15mm;"></div> <!-- TR -->
-                <div class="scan-marker" style="bottom:15mm; left:15mm;"></div> <!-- BL -->
-                <div class="scan-marker" style="bottom:15mm; right:15mm;"></div> <!-- BR -->
+                <!-- OpenCV Markers (Essential) -->
+                <div class="scan-marker" style="top:15mm; left:15mm;"></div>
+                <div class="scan-marker" style="top:15mm; right:15mm;"></div>
+                <div class="scan-marker" style="bottom:15mm; left:15mm;"></div>
+                <div class="scan-marker" style="bottom:15mm; right:15mm;"></div>
 
-                <div id="side-right" class="vertical-sidebar" style="background:#fff">
-                    <span id="p-school" class="rotated-text">المؤسسة</span>
-                    <span class="rotated-text text-gray-300">|</span>
-                    <span id="p-teacher" class="rotated-text">الأستاذ</span>
+                <!-- Right Sidebar -->
+                <div id="side-right" class="vertical-sidebar" style="background:var(--side-bg)">
+                    <div class="h-full flex flex-col justify-center items-center gap-10">
+                        <span id="p-school" class="rotated-text">المؤسسة</span>
+                        <span class="rotated-text text-gray-300">|</span>
+                        <span id="p-teacher" class="rotated-text">الأستاذ</span>
+                    </div>
                 </div>
 
-                <div class="flex-1 flex flex-col p-8 pt-16 pb-16 relative"> <!-- Padding for markers -->
-                    <div class="border-2 border-black rounded-lg p-4 mb-6 bg-gray-50">
+                <!-- Main Body -->
+                <div class="flex-1 flex flex-col p-8 pt-16 pb-16 relative">
+                    <div class="border-2 border-black rounded-lg p-4 mb-6" style="background:var(--head-bg)">
                         <div class="flex justify-between items-end gap-4 h-full font-bold">
                             <div class="flex-1">الاسم: <span class="border-b-2 border-dotted border-gray-500 w-full inline-block"></span></div>
                             <div class="w-24">الرقم: <span class="border-b-2 border-dotted border-gray-500 w-full inline-block"></span></div>
@@ -174,106 +231,165 @@
                     <div id="q-container" class="flex-1 border border-black"></div>
                 </div>
 
-                <div id="side-left" class="vertical-sidebar" style="background:#fff">
-                    <span id="p-subject" class="rotated-text">المادة</span>
-                    <span class="rotated-text text-gray-300">|</span>
-                    <span id="p-class" class="rotated-text font-bold">القسم</span>
+                <!-- Left Sidebar -->
+                <div id="side-left" class="vertical-sidebar" style="background:var(--side-bg)">
+                    <div class="h-full flex flex-col justify-center items-center gap-10">
+                        <span id="p-subject" class="rotated-text">المادة</span>
+                        <span class="rotated-text text-gray-300">|</span>
+                        <span id="p-class" class="rotated-text font-bold text-blue-800">القسم</span>
+                        <span class="rotated-text text-gray-300">|</span>
+                        <span id="p-id" class="rotated-text font-mono tracking-widest">ID</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 3. SCAN (REAL ENGINE) -->
+    <!-- 3. SCAN (V7.6 UI + V8.0 Logic) -->
     <div id="scan" class="section-panel hidden">
-        <div class="bg-white p-4 rounded-xl shadow-sm text-center max-w-lg mx-auto">
+        <div class="bg-white p-6 rounded-xl shadow-sm text-center max-w-lg mx-auto">
             <h3 class="font-bold text-xl mb-4">المسح الضوئي (محرك OpenCV)</h3>
             
-            <div class="relative bg-black rounded-lg overflow-hidden aspect-[3/4] mb-4 shadow-xl">
-                <video id="videoFeed" class="w-full h-full object-cover hidden" playsinline autoplay></video>
+            <div class="aspect-[3/4] bg-gray-900 rounded-lg mb-4 relative overflow-hidden flex items-center justify-center shadow-inner">
+                <video id="videoFeed" class="w-full h-full object-cover hidden" playsinline autoplay muted></video>
                 <img id="capturedImage" class="w-full h-full object-contain hidden">
                 <div id="camPlaceholder" class="absolute inset-0 flex items-center justify-center text-gray-500 flex-col">
                     <i class="fa-solid fa-camera fa-3x mb-2"></i>
-                    <p>الكاميرا جاهزة</p>
+                    <p class="mt-2">الكاميرا مغلقة</p>
                 </div>
-                <!-- Alignment Grid Overlay -->
-                <div class="absolute inset-0 border-2 border-green-500/50 pointer-events-none" style="margin: 15%;"></div>
-                <p class="absolute bottom-2 inset-x-0 text-white/80 text-xs pointer-events-none z-10">ضع العلامات السوداء الأربعة داخل الإطار</p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <button onclick="startCamera()" class="bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 flex justify-center items-center gap-2">
-                    <i class="fa-solid fa-video"></i> تشغيل الكاميرا
-                </button>
-                <button onclick="captureAndProcess()" id="btn-capture" class="bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                    <i class="fa-solid fa-camera-retro"></i> تصحيح فوري
-                </button>
+                <!-- Guide Overlay -->
+                <div class="absolute inset-8 border-2 border-dashed border-white/50 rounded pointer-events-none z-10"></div>
+                <p class="absolute bottom-2 text-white/80 text-xs z-10">تأكد من ظهور المربعات السوداء الأربعة</p>
             </div>
             
-            <label class="block w-full bg-gray-100 text-gray-700 py-3 rounded-lg border border-dashed border-gray-400 cursor-pointer hover:bg-gray-200 font-bold">
-                <i class="fa-solid fa-upload"></i> رفع صورة من المعرض
-                <input type="file" hidden accept="image/*" onchange="handleFileUpload(event)">
-            </label>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button onclick="startCamera()" class="bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 shadow flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-video"></i> الكاميرا
+                </button>
+                <label class="bg-gray-100 text-gray-700 py-3 rounded-lg border border-gray-300 cursor-pointer hover:bg-gray-200 font-bold shadow flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-image"></i> ملف
+                    <input type="file" hidden accept="image/*" onchange="handleFileUpload(event)">
+                </label>
+            </div>
+
+            <!-- Manual Name Input (Optional) -->
+            <div class="bg-yellow-50 p-2 rounded border border-yellow-200 mb-4 text-sm text-right">
+                <label class="font-bold text-yellow-800">اسم التلميذ:</label>
+                <input type="text" id="scan-name" class="w-full border p-1 rounded mt-1 bg-white" placeholder="اتركه فارغاً للتوليد التلقائي">
+            </div>
+
+            <button onclick="captureAndProcess()" id="btn-capture" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <i class="fa-solid fa-bolt"></i> تصحيح فوري
+            </button>
         </div>
     </div>
 
-    <!-- 4. RESULTS -->
-    <div id="results" class="section-panel hidden">
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h3 class="font-bold text-lg mb-4 text-primary">النتائج المسجلة</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-right">
-                    <thead class="bg-gray-50 text-xs uppercase font-bold text-gray-600">
-                        <tr><th class="p-3">الاسم</th><th class="p-3">النتيجة</th><th class="p-3">التفاصيل</th></tr>
-                    </thead>
-                    <tbody id="res-body" class="text-sm divide-y"></tbody>
-                </table>
+    <!-- 4. RESULTS (Restored V7.6 Stats & Charts) -->
+    <div id="results" class="section-panel hidden space-y-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-blue-500">
+                <p class="text-xs text-gray-500">الأوراق</p><p class="text-2xl font-bold" id="st-count">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-green-500">
+                <p class="text-xs text-gray-500">المعدل</p><p class="text-2xl font-bold" id="st-avg">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-purple-500">
+                <p class="text-xs text-gray-500">الأعلى</p><p class="text-2xl font-bold" id="st-max">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-red-500">
+                <p class="text-xs text-gray-500">الأدنى</p><p class="text-2xl font-bold" id="st-min">0</p>
             </div>
         </div>
+        
+        <div class="bg-white p-5 rounded-xl shadow-sm">
+            <h4 class="font-bold mb-3 text-sm text-gray-600">تحليل الأداء (نسبة النجاح لكل سؤال)</h4>
+            <div class="h-40 overflow-x-auto"><canvas id="qChart"></canvas></div>
+        </div>
+
+        <div class="bg-white p-4 rounded-t-xl border-b flex justify-between items-center">
+            <div class="flex gap-2 items-center">
+                <span class="text-sm font-bold">القسم:</span>
+                <select id="filter-class" onchange="renderResults()" class="border p-1 rounded text-sm w-40"><option value="all">الكل</option></select>
+            </div>
+            <button onclick="sortResults()" class="text-xs bg-gray-100 px-2 py-1 rounded hover:bg-gray-200"><i class="fa-solid fa-sort"></i> ترتيب</button>
+        </div>
+
+        <div class="bg-white rounded-b-xl shadow-sm overflow-x-auto">
+            <table class="w-full text-right">
+                <thead class="bg-gray-50 text-gray-600 text-xs uppercase font-bold">
+                    <tr><th class="p-4">الاسم</th><th class="p-4">القسم</th><th class="p-4">النتيجة</th><th class="p-4">الورقة</th></tr>
+                </thead>
+                <tbody id="res-body" class="text-sm divide-y"></tbody>
+            </table>
+        </div>
     </div>
 
+    <!-- 5. BANK (Restored) -->
+    <div id="bank" class="section-panel hidden">
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h3 class="font-bold text-lg mb-4 text-primary">بنك الفروض المحفوظة</h3>
+            <div id="bank-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
 </div>
 
-<!-- Hidden Canvas for OpenCV Processing -->
+<!-- Hidden Canvas for OpenCV -->
 <canvas id="processCanvas" style="display:none;"></canvas>
 
 <script>
-    /** --- CORE STATE --- **/
+    /** --- STATE & INIT --- **/
     const app = {
-        settings: { school: '', teacher: '', classRoom: '', subject: '', title: '', q: 5, o: 4, keys: [] },
+        settings: { school: '', teacher: '', classRoom: '', subject: '', title: '', id:'', q: 10, o: 4, headerCol: '#e0f2fe', sideCol: '#ffffff', partial: false, keys: [] },
         results: [],
-        labels: ['أ', 'ب', 'ج', 'د', 'هـ'],
+        savedExams: [],
+        labels: ['أ', 'ب', 'ج', 'د', 'هـ', 'و'],
         cvReady: false,
         stream: null
     };
 
-    /** --- INITIALIZATION --- **/
     function onOpenCvReady() {
         app.cvReady = true;
-        document.getElementById('cvStatus').innerText = "✅ المحرك جاهز";
-        document.getElementById('cvStatus').className = "text-xs text-green-600 font-bold";
+        const status = document.getElementById('cvStatus');
+        status.innerHTML = '<i class="fa-solid fa-check-circle"></i> النظام جاهز';
+        status.className = 'text-green-600 font-bold flex items-center gap-1';
+        console.log("OpenCV Loaded");
     }
 
-    window.onload = () => { updateKeyGrid(); };
+    window.onload = () => {
+        generateID();
+        updateKeyGrid();
+        loadLocal();
+        initStatsChart();
+    };
+
+    function generateID() { document.getElementById('conf-id').value = Math.floor(1000 + Math.random()*9000); }
 
     function switchTab(id) {
         document.querySelectorAll('.section-panel').forEach(d => d.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.replace('border-primary', 'border-transparent'));
-        document.getElementById('tab-'+id).classList.replace('border-transparent', 'border-primary');
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('border-primary', 'text-primary', 'bg-primary/5');
+            b.classList.add('border-transparent', 'text-gray-500');
+        });
+        const active = document.getElementById('tab-'+id);
+        active.classList.remove('border-transparent', 'text-gray-500');
+        active.classList.add('border-primary', 'text-primary', 'bg-primary/5');
+        
         if(id !== 'scan') stopCamera();
         if(id === 'results') renderResults();
+        if(id === 'bank') renderBank();
     }
 
-    /** --- SETTINGS & DESIGN --- **/
+    /** --- SETTINGS & LOGIC --- **/
     function updateKeyGrid() {
-        const q = document.getElementById('conf-q').value;
-        const o = document.getElementById('conf-o').value;
-        const body = document.getElementById('key-grid-body');
-        body.innerHTML = '';
+        const q = parseInt(document.getElementById('conf-q').value);
+        const o = parseInt(document.getElementById('conf-o').value);
+        const tbody = document.getElementById('key-grid-body');
+        tbody.innerHTML = '';
         for(let i=0; i<q; i++) {
             let opts = '';
-            for(let j=0; j<o; j++) opts += `<label class="mx-1"><input type="checkbox" name="q${i}" value="${j}" class="mr-1">${app.labels[j]}</label>`;
-            body.innerHTML += `<tr class="border-b"><td class="p-2 font-bold">${i+1}</td><td class="p-2">${opts}</td></tr>`;
+            for(let j=0; j<o; j++) opts += `<label class="inline-flex items-center mx-1 bg-gray-50 px-2 py-1 rounded cursor-pointer"><input type="checkbox" name="q${i}" value="${j}" class="ml-1">${app.labels[j]}</label>`;
+            tbody.innerHTML += `<tr class="border-b"><td class="p-2 font-bold">${i+1}</td><td class="p-2">${opts}</td><td class="p-2"><input type="number" step="0.5" id="pts-${i}" value="1" class="w-16 p-1 border rounded text-center"></td></tr>`;
         }
     }
 
@@ -284,24 +400,30 @@
         s.classRoom = document.getElementById('conf-class').value;
         s.subject = document.getElementById('conf-subject').value;
         s.title = document.getElementById('conf-title').value;
+        s.id = document.getElementById('conf-id').value;
         s.q = parseInt(document.getElementById('conf-q').value);
         s.o = parseInt(document.getElementById('conf-o').value);
-        
+        s.headerCol = document.getElementById('conf-col-head').value;
+        s.sideCol = document.getElementById('conf-col-side').value;
+        s.partial = document.getElementById('conf-partial').checked;
+
         s.keys = [];
         for(let i=0; i<s.q; i++) {
             const checks = document.querySelectorAll(`input[name="q${i}"]:checked`);
-            s.keys.push(Array.from(checks).map(c => parseInt(c.value)));
+            const pts = parseFloat(document.getElementById(`pts-${i}`).value) || 1;
+            s.keys.push({ id: i, answers: Array.from(checks).map(c => parseInt(c.value)), points: pts });
         }
 
         renderPaper();
         switchTab('design');
+        saveLocal();
     }
 
+    /** --- DESIGN RENDERER --- **/
     function renderPaper(viewMode = false, studentData = null) {
         const area = viewMode ? document.getElementById('modalContent') : document.getElementById('printableArea');
         const s = app.settings;
         
-        // Clone for view mode
         let container = viewMode ? document.createElement('div') : document.getElementById('printableArea');
         if(viewMode) {
             container.className = 'paper-sheet scale-90 origin-top';
@@ -309,45 +431,61 @@
             area.innerHTML = ''; area.appendChild(container);
         }
 
-        // Set Texts
-        const setT = (id, v) => { const e = container.querySelector('#'+id); if(e) e.innerText = v; }
-        setT('p-school', s.school); setT('p-teacher', s.teacher);
-        setT('p-class', s.classRoom); setT('p-subject', s.subject);
+        const setText = (id, v) => { const el = container.querySelector('#'+id); if(el) el.innerText = v; }
+        setText('p-school', s.school); setText('p-teacher', s.teacher);
+        setText('p-class', s.classRoom); setText('p-subject', s.subject);
+        setText('p-id', s.id);
 
-        // Build Grid
-        let html = `<table class="w-full border-collapse" style="table-layout: fixed;">
-            <thead class="bg-gray-100"><tr><th class="border border-black p-2 w-10">ر.ت</th><th class="border border-black p-2">الإجابة</th></tr></thead><tbody>`;
-        
+        const right = container.querySelector('#side-right'); if(right) right.style.background = s.sideCol;
+        const left = container.querySelector('#side-left'); if(left) left.style.background = s.sideCol;
+        const head = container.querySelector('.border-2.rounded-lg'); if(head) head.style.background = s.headerCol;
+
+        let html = `<table class="w-full border-collapse" style="table-layout: fixed;"><thead class="bg-gray-100"><tr><th class="border border-black p-2 w-10">ر.ت</th><th class="border border-black p-2 text-right">السؤال</th><th class="border border-black p-2 w-[40%] text-center">الإجابة</th></tr></thead><tbody>`;
+
         for(let i=0; i<s.q; i++) {
             let bubbles = '';
             for(let j=0; j<s.o; j++) {
                 let cls = '';
                 if(viewMode && studentData) {
-                    const k = s.keys[i]; const ans = studentData.answers[i] || [];
-                    const sel = ans.includes(j); const cor = k.includes(j);
+                    const keyAns = s.keys[i].answers;
+                    const studAns = studentData.answers[i] || [];
+                    const sel = studAns.includes(j);
+                    const cor = keyAns.includes(j);
                     if(cor && sel) cls='correct'; else if(sel && !cor) cls='wrong'; else if(cor && !sel) cls='missed';
                 }
                 bubbles += `<div class="bubble ${cls}">${app.labels[j]}</div>`;
             }
-            html += `<tr><td class="border border-black p-2 font-bold text-center">${i+1}</td><td class="border border-black p-1"><div class="bubble-container">${bubbles}</div></td></tr>`;
+            html += `<tr><td class="border border-black p-2 font-bold text-center">${i+1}</td><td class="border border-black p-2 bg-white relative">${viewMode?`سؤال ${i+1}`:`<div class="tiny-edit">نص السؤال...</div>`}</td><td class="border border-black p-1"><div class="bubble-container">${bubbles}</div></td></tr>`;
         }
         html += '</tbody></table>';
-        container.querySelector('#q-container').innerHTML = html;
+        const qc = container.querySelector('#q-container'); if(qc) qc.innerHTML = html;
+        if(!viewMode) initTiny();
     }
 
-    /** --- CAMERA & REAL PROCESSING --- **/
+    let editMode = false;
+    function toggleEdit() { editMode = !editMode; if(editMode) initTiny(); else tinymce.remove(); }
+    function initTiny() { if(tinymce.get().length>0) tinymce.remove(); tinymce.init({ selector: '.tiny-edit', inline: true, menubar: false, toolbar: 'bold italic | forecolor' }); }
+    async function downloadPDF() {
+        if(editMode) toggleEdit();
+        const el = document.getElementById('printableArea');
+        const canvas = await html2canvas(el, { scale: 2 });
+        const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+        pdf.addImage(canvas.toDataURL('image/jpeg'), 'JPEG', 0, 0, 210, 297);
+        pdf.save('exam.pdf');
+    }
+
+    /** --- CAMERA & OPENCV ENGINE --- **/
     async function startCamera() {
-        const vid = document.getElementById('videoFeed');
+        if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return alert("الكاميرا غير مدعومة");
         try {
-            app.stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment', width: {ideal: 1920}, height: {ideal: 1080} } 
-            });
+            app.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: {ideal: 1280} } });
+            const vid = document.getElementById('videoFeed');
             vid.srcObject = app.stream;
             vid.classList.remove('hidden');
             document.getElementById('camPlaceholder').classList.add('hidden');
             document.getElementById('capturedImage').classList.add('hidden');
             document.getElementById('btn-capture').disabled = false;
-        } catch(e) { alert("تعذر فتح الكاميرا: " + e.message); }
+        } catch(e) { alert("تعذر الوصول للكاميرا: " + e.message); }
     }
 
     function stopCamera() {
@@ -367,218 +505,205 @@
     }
 
     function captureAndProcess() {
-        if(!app.cvReady) return alert("محرك المعالجة لم يحمل بعد");
+        if(!app.cvReady) return alert("انتظر تحميل المحرك...");
         
         const vid = document.getElementById('videoFeed');
         const imgEl = document.getElementById('capturedImage');
         const canvas = document.getElementById('processCanvas');
         const ctx = canvas.getContext('2d');
-        
-        // 1. Get Image Data
-        let width, height;
+
         if(!vid.classList.contains('hidden')) {
-            width = vid.videoWidth; height = vid.videoHeight;
-            canvas.width = width; canvas.height = height;
-            ctx.drawImage(vid, 0, 0, width, height);
+            canvas.width = vid.videoWidth; canvas.height = vid.videoHeight;
+            ctx.drawImage(vid, 0, 0);
         } else {
             const img = new Image();
             img.src = imgEl.src;
-            img.onload = () => {
-                canvas.width = img.width; canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                performOMR(canvas);
-            };
+            img.onload = () => { canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0); performOMR(canvas); };
             return;
         }
         performOMR(canvas);
     }
 
-    /** --- THE OPENCV OMR LOGIC --- **/
     function performOMR(canvas) {
-        document.getElementById('processingOverlay').classList.remove('hidden'); // Show spinner
+        document.getElementById('processingOverlay').classList.remove('hidden');
         
         setTimeout(() => {
             try {
                 let src = cv.imread(canvas);
-                let gray = new cv.Mat();
-                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                let gray = new cv.Mat(); cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                let thresh = new cv.Mat(); cv.adaptiveThreshold(gray, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 10);
                 
-                // 1. Thresholding
-                let thresh = new cv.Mat();
-                cv.adaptiveThreshold(gray, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 10);
-                
-                // 2. Find Contours (Look for the 4 markers)
-                let contours = new cv.MatVector();
-                let hierarchy = new cv.Mat();
-                cv.findContours(thresh, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                // Find Markers
+                let contours = new cv.MatVector(); let hier = new cv.Mat();
+                cv.findContours(thresh, contours, hier, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
                 
                 let markers = [];
                 for(let i=0; i<contours.size(); i++) {
-                    let c = contours.get(i);
-                    let area = cv.contourArea(c);
-                    let rect = cv.boundingRect(c);
-                    let ar = rect.width / rect.height;
-                    
-                    // Filter for square-ish shapes of reasonable size (Markers)
-                    // Note: These values depend on resolution, using proportional logic is better but sticking to safe ranges
-                    if (area > 500 && area < 10000 && ar > 0.8 && ar < 1.2) {
-                        markers.push(rect);
-                    }
+                    let rect = cv.boundingRect(contours.get(i));
+                    let ar = rect.width/rect.height;
+                    if(cv.contourArea(contours.get(i)) > 400 && ar > 0.8 && ar < 1.2) markers.push(rect);
                 }
 
-                // If we can't find 4 markers, assume full image is the paper (fallback)
-                // In a robust app, we'd warn user. Here we proceed with "Best Effort".
-                let warped = thresh; 
-                
-                if (markers.length === 4) {
-                    // Sort markers: TL, TR, BL, BR
-                    markers.sort((a,b) => a.y - b.y); // Top 2 vs Bottom 2
-                    let top = markers.slice(0,2).sort((a,b) => a.x - b.x);
-                    let bottom = markers.slice(2,4).sort((a,b) => a.x - b.x);
-                    
-                    // Perspective Transform Logic could go here.
-                    // For Simplicity/Stability in this demo: We assume alignment is "Okay" 
-                    // and just crop to the bounding box of the 4 markers.
-                    let x = top[0].x;
-                    let y = top[0].y;
-                    let w = top[1].x - x + top[1].width;
-                    let h = bottom[0].y - y + bottom[0].height;
-                    
-                    let rectROI = new cv.Rect(x, y, w, h);
-                    warped = thresh.roi(rectROI);
-                } else {
-                    // console.warn("Markers not found perfectly, attempting full scan");
+                // Perspective Warp (Simplified crop based on markers if found, else full)
+                let warped = thresh;
+                if(markers.length >= 4) {
+                    markers.sort((a,b)=>a.y-b.y); // Top/Bottom
+                    let top = markers.slice(0,2).sort((a,b)=>a.x-b.x);
+                    let bot = markers.slice(2,4).sort((a,b)=>a.x-b.x);
+                    let roi = new cv.Rect(top[0].x, top[0].y, top[1].x - top[0].x + top[1].width, bot[0].y - top[0].y + bot[0].height);
+                    warped = thresh.roi(roi);
                 }
-                
-                // 3. Analyze Grid
-                // We assume the Question Area is roughly the middle 80% vertically and central horizontally
-                // We slice the image into Q rows
-                const qCount = app.settings.q;
-                const oCount = app.settings.o;
-                
-                let detectedAnswers = [];
-                let rowHeight = warped.rows / (qCount + 2); // +2 for header/footer margins approximation
-                
-                // Debug Visualization
-                let debugCtx = document.getElementById('debugCanvas').getContext('2d');
-                document.getElementById('debugCanvas').width = warped.cols;
-                document.getElementById('debugCanvas').height = warped.rows;
-                cv.imshow('debugCanvas', warped);
 
-                for(let i=0; i<qCount; i++) {
-                    // Estimate Row Y position (skipping header roughly)
-                    // This is "Hardcoded Logic" based on the Design Template structure
-                    // In Design: Header takes ~15%, Q-Table takes rest.
-                    let startY = Math.floor((warped.rows * 0.25) + (i * (warped.rows * 0.65 / qCount)));
-                    let rowH = Math.floor(warped.rows * 0.65 / qCount);
-                    
-                    // Slice Row
-                    if(startY + rowH > warped.rows) break;
-                    let rowRect = new cv.Rect(0, startY, warped.cols, rowH);
-                    let rowMat = warped.roi(rowRect);
-                    
-                    // Scan Columns (Bubbles) inside this row
-                    // Bubbles are usually on the LEFT side in RTL table (Answer col)
-                    // The Design table has 2 cols: ID (Right), Answer (Left).
-                    // Answer col is roughly 50% width on left.
-                    
+                // Grid Analysis
+                const q = app.settings.q;
+                const o = app.settings.o;
+                let detected = [];
+                
+                // Assuming Question Table is in the middle-bottom area (ignoring header)
+                // Roughly split rows. This assumes good alignment.
+                let rowH = (warped.rows * 0.7) / q; 
+                let startY = warped.rows * 0.25; // Skip header
+
+                for(let i=0; i<q; i++) {
+                    let y = startY + (i*rowH);
                     let rowAns = [];
-                    let colWidth = (rowMat.cols * 0.5) / oCount; // distributing left half among options
-                    
-                    for(let j=0; j<oCount; j++) {
-                        // In RTL, bubbles might be laid out Right-to-Left or Left-to-Right inside the cell.
-                        // Based on HTML `flex-direction: row` (default LTR even in RTL dir usually unless specified),
-                        // but let's assume visual order: Option 0 is left-most or right-most?
-                        // Let's assume standard visual: bubble 1, bubble 2...
+                    // Bubbles area is roughly 40% width, centered or slightly left in the row
+                    // We iterate options
+                    for(let j=0; j<o; j++) {
+                        let w = (warped.cols * 0.4) / o;
+                        let x = (warped.cols * 0.1) + (j*w); // Offset from left
                         
-                        // We extract a small box (ROI) for the bubble
-                        // Centering the ROI is key.
-                        let bx = Math.floor((rowMat.cols * 0.1) + (j * colWidth)); // Offset from left
-                        let by = Math.floor(rowMat.rows * 0.2);
-                        let bw = Math.floor(colWidth * 0.6);
-                        let bh = Math.floor(rowMat.rows * 0.6);
-                        
-                        if(bx+bw < rowMat.cols) {
-                            let bubbleROI = rowMat.roi(new cv.Rect(bx, by, bw, bh));
-                            let count = cv.countNonZero(bubbleROI);
-                            let totalPixels = bw * bh;
-                            
-                            // Threshold: if > 30% pixels are white (inverted black), it's filled
-                            if(count > totalPixels * 0.35) {
-                                rowAns.push(j);
-                            }
-                            bubbleROI.delete();
+                        // Safety check
+                        if(y+rowH < warped.rows && x+w < warped.cols) {
+                            let roi = warped.roi(new cv.Rect(x, y + (rowH*0.2), w*0.6, rowH*0.6));
+                            let count = cv.countNonZero(roi);
+                            if(count > (w*0.6 * rowH*0.6) * 0.4) rowAns.push(j); // Threshold
+                            roi.delete();
                         }
                     }
-                    detectedAnswers.push(rowAns);
-                    rowMat.delete();
+                    detected.push(rowAns);
                 }
 
-                // 4. Cleanup & Calculate Score
-                src.delete(); gray.delete(); thresh.delete(); contours.delete(); hierarchy.delete();
+                src.delete(); gray.delete(); thresh.delete(); contours.delete(); hier.delete();
                 if(warped !== thresh) warped.delete();
                 
-                calculateScore(detectedAnswers);
+                finalizeScore(detected);
 
             } catch(e) {
-                alert("خطأ أثناء المعالجة: " + e.message);
+                alert("خطأ: " + e.message);
                 document.getElementById('processingOverlay').classList.add('hidden');
             }
-        }, 500); // Small delay to allow UI to render spinner
+        }, 500);
     }
 
-    function calculateScore(answers) {
-        let score = 0;
-        const keys = app.settings.keys;
-        
-        answers.forEach((ans, idx) => {
-            if(idx >= keys.length) return;
-            const key = keys[idx];
-            // Exact match logic
-            if(JSON.stringify(ans.sort()) === JSON.stringify(key.sort())) score++;
+    function finalizeScore(answers) {
+        let score = 0; let totalP = 0;
+        app.settings.keys.forEach((key, i) => {
+            if(i >= answers.length) return;
+            totalP += key.points;
+            const stud = answers[i];
+            const corr = key.answers;
+            
+            // Exact
+            if(JSON.stringify(stud.sort()) === JSON.stringify(corr.sort())) {
+                score += key.points;
+            } else if(app.settings.partial) {
+                // Partial
+                const correctPicks = stud.filter(x => corr.includes(x)).length;
+                const wrongPicks = stud.filter(x => !corr.includes(x)).length;
+                if(wrongPicks === 0) score += (correctPicks / corr.length) * key.points;
+            }
         });
 
-        // Save Result
-        const res = {
-            id: Date.now(),
-            name: "ورقة مصححة " + (app.results.length + 1),
-            score: score,
-            total: app.settings.q,
-            answers: answers
-        };
+        const name = document.getElementById('scan-name').value || `ورقة ${app.results.length+1}`;
+        const res = { id: Date.now(), name, classRoom: app.settings.classRoom, score: parseFloat(score.toFixed(2)), total: totalP, answers };
         app.results.push(res);
+        saveLocal();
         
         document.getElementById('processingOverlay').classList.add('hidden');
-        alert(`تم التصحيح! النتيجة: ${score} / ${app.settings.q}`);
-        
-        // Show result paper immediately
-        document.getElementById('paperModal').classList.remove('hidden');
-        renderPaper(true, res);
+        viewStudentPaper(res);
     }
 
-    /** --- HELPERS --- **/
-    async function downloadPDF() {
-        const el = document.getElementById('printableArea');
-        const canvas = await html2canvas(el, { scale: 2 });
-        const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-        pdf.addImage(canvas.toDataURL('image/jpeg'), 'JPEG', 0, 0, 210, 297);
-        pdf.save('exam.pdf');
-    }
-
+    /** --- RESULTS & STATS --- **/
     function renderResults() {
+        const sel = document.getElementById('filter-class');
+        const cls = [...new Set(app.results.map(r=>r.classRoom))].filter(Boolean);
+        if(sel.options.length===1) cls.forEach(c => sel.innerHTML+=`<option value="${c}">${c}</option>`);
+        
+        let data = app.results;
+        if(sel.value !== 'all') data = data.filter(r=>r.classRoom===sel.value);
+        
+        if(data.length) {
+            const sc = data.map(r=>r.score);
+            document.getElementById('st-count').innerText = data.length;
+            document.getElementById('st-avg').innerText = (sc.reduce((a,b)=>a+b,0)/data.length).toFixed(2);
+            document.getElementById('st-max').innerText = Math.max(...sc);
+            document.getElementById('st-min').innerText = Math.min(...sc);
+            updateChart(data);
+        }
+
         const b = document.getElementById('res-body'); b.innerHTML='';
-        app.results.forEach(r => {
-            b.innerHTML += `<tr class="border-b"><td class="p-3 font-bold">${r.name}</td><td class="p-3 font-bold text-primary">${r.score}/${r.total}</td><td class="p-3"><button onclick='viewRes(${JSON.stringify(r)})' class="text-blue-600">عرض</button></td></tr>`;
+        data.forEach(r => {
+            const pct = Math.round((r.score/r.total)*100);
+            b.innerHTML += `<tr class="hover:bg-gray-50"><td class="p-4 font-bold">${r.name}</td><td class="p-4">${r.classRoom}</td><td class="p-4 font-bold ${pct>=50?'text-green-600':'text-red-600'}">${r.score}/${r.total}</td><td class="p-4"><button onclick='viewStudentPaper(${JSON.stringify(r)})' class="bg-blue-50 text-blue-600 px-3 py-1 rounded font-bold text-xs">معاينة</button></td></tr>`;
         });
     }
 
-    function viewRes(r) {
-        document.getElementById('paperModal').classList.remove('hidden');
-        renderPaper(true, r);
+    let chartInst;
+    function initStatsChart() {
+        chartInst = new Chart(document.getElementById('qChart'), { type: 'bar', data: {labels:[], datasets:[{label:'% صحيح', data:[], backgroundColor:'#0f766e'}]}, options:{responsive:true, maintainAspectRatio:false} });
     }
-    
+    function updateChart(data) {
+        const q = app.settings.q;
+        const stats = new Array(q).fill(0);
+        data.forEach(r => r.answers.forEach((a, i) => {
+            if(i<q && JSON.stringify(a.sort())===JSON.stringify(app.settings.keys[i].answers.sort())) stats[i]++;
+        }));
+        chartInst.data.labels = Array.from({length:q}, (_,i)=>`س${i+1}`);
+        chartInst.data.datasets[0].data = stats.map(s => Math.round((s/data.length)*100));
+        chartInst.update();
+    }
+
+    function viewStudentPaper(r) { document.getElementById('paperModal').classList.remove('hidden'); renderPaper(true, r); }
     function closePaperModal() { document.getElementById('paperModal').classList.add('hidden'); }
-    function resetApp() { location.reload(); }
+
+    /** --- BANK & DATA --- **/
+    function renderBank() {
+        document.getElementById('bank-grid').innerHTML = app.savedExams.map((e,i) => `
+        <div class="bg-white border p-4 rounded-lg hover:shadow-md relative group">
+            <h4 class="font-bold text-lg">${e.meta.subject}</h4>
+            <p class="text-sm text-gray-500">${e.meta.classRoom} | ${e.date}</p>
+            <button onclick="loadExam(${i})" class="text-blue-600 font-bold text-sm mt-2">تحميل</button>
+            <button onclick="deleteExam(${i})" class="absolute top-4 left-4 text-red-400 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash"></i></button>
+        </div>`).join('');
+    }
+    function loadExam(i) {
+        const e = app.savedExams[i]; app.settings = {...e.meta};
+        document.getElementById('conf-school').value = app.settings.school;
+        document.getElementById('conf-teacher').value = app.settings.teacher;
+        document.getElementById('conf-class').value = app.settings.classRoom;
+        document.getElementById('conf-subject').value = app.settings.subject;
+        document.getElementById('conf-title').value = app.settings.title;
+        document.getElementById('conf-id').value = app.settings.id;
+        document.getElementById('conf-q').value = app.settings.q;
+        document.getElementById('conf-o').value = app.settings.o;
+        updateKeyGrid();
+        app.settings.keys.forEach((k, idx) => {
+            if(idx < app.settings.q) {
+                document.getElementById(`pts-${idx}`).value = k.points;
+                k.answers.forEach(a => { const c=document.querySelector(`input[name="q${idx}"][value="${a}"]`); if(c) c.checked=true; });
+            }
+        });
+        switchTab('settings');
+    }
+    function deleteExam(i) { app.savedExams.splice(i,1); saveLocal(); renderBank(); }
+
+    function saveLocal() { localStorage.setItem('omr_pro_v9', JSON.stringify({s:app.settings, r:app.results, b:app.savedExams})); }
+    function loadLocal() { const d=JSON.parse(localStorage.getItem('omr_pro_v9')); if(d) { app.settings=d.s; app.results=d.r||[]; app.savedExams=d.b||[]; } }
+    function exportData() { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([localStorage.getItem('omr_pro_v9')])); a.download='backup.json'; a.click(); }
+    function importData(e) { const fr=new FileReader(); fr.onload=()=>{ localStorage.setItem('omr_pro_v9', fr.result); location.reload(); }; fr.readAsText(e.target.files[0]); }
+    function resetApp() { if(confirm('حذف الكل؟')) { localStorage.removeItem('omr_pro_v9'); location.reload(); } }
+
 </script>
 </body>
 </html>
