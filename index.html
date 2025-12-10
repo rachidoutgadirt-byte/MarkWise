@@ -31,56 +31,65 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
 
     <style>
-        /* PDF Paper Layout - Fixed A4 Dimensions */
+        /* --- Mobile & Layout Containers --- */
         .paper-wrapper {
             width: 100%;
-            overflow-x: auto; /* Enable horizontal scroll on mobile */
+            overflow-x: auto; /* Scroll horizontally on mobile */
             padding-bottom: 20px;
+            display: flex;
+            justify-content: center;
             -webkit-overflow-scrolling: touch;
         }
 
-        .paper-sheet {
-            width: 210mm; 
-            min-width: 210mm; /* Force desktop width on mobile */
-            height: 297mm; 
-            min-height: 297mm;
-            background: white; 
-            margin: 0 auto;
-            box-shadow: 0 0 25px rgba(0,0,0,0.1); 
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* Grid System for Multi-Page Layouts */
-        .print-grid {
-            width: 100%; height: 100%;
-            display: grid;
-        }
-        .print-grid.layout-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
-        .print-grid.layout-2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } /* Top/Bottom */
-        .print-grid.layout-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; } /* 2x2 */
-
-        .exam-instance {
-            position: relative;
-            overflow: hidden;
-            border: 1px dashed #e2e8f0; /* Helper line for preview, invisible in print if needed */
-        }
-
-        /* Scaled Content Wrapper */
-        .exam-scaler {
-            transform-origin: top right; /* Align RTL */
-            width: 210mm; /* Always render as full A4 internally */
+        /* --- Main Print Container (A4 Fixed) --- */
+        #printableArea {
+            width: 210mm;
             height: 297mm;
+            min-width: 210mm; /* Force desktop width even on mobile */
+            min-height: 297mm;
+            background: white;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
-        /* Compact Mode */
-        .paper-sheet.compact-mode .q-row {
-            display: inline-flex; width: 48%; margin: 4px 1%; border-bottom: 1px solid #eee;
-            align-items: center; justify-content: space-between; padding: 5px;
+        /* --- Grid System for Multi-Page --- */
+        .print-grid {
+            display: grid;
+            width: 100%; height: 100%;
+            padding: 0; margin: 0;
+        }
+        .layout-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+        .layout-2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } /* Top/Bottom */
+        .layout-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; } /* 2x2 */
+
+        /* --- Cells & Scalers (The Fix for Alignment) --- */
+        .exam-cell {
+            display: flex;
+            justify-content: center; /* Horizontally Center */
+            align-items: center;     /* Vertically Center */
+            overflow: hidden;
+            border: 1px dashed #e5e7eb; /* Preview guide line */
+            position: relative;
         }
 
-        /* Bubbles Centering Fix */
-        .bubble-container { display: flex; justify-content: center; gap: 6px; }
+        .exam-scaler {
+            width: 210mm;   /* Always internal A4 */
+            height: 297mm;
+            background: white;
+            flex-shrink: 0;
+            transform-origin: center center; /* Crucial for not shifting in RTL */
+            display: flex;
+            flex-direction: column;
+            direction: rtl; 
+        }
+
+        /* --- Bubbles & Markers --- */
+        .scan-marker { width: 20px; height: 20px; background: black; position: absolute; z-index: 50; }
+        
+        .bubble-container { display: flex; justify-content: center; gap: 5px; }
+        
         .bubble {
             width: 26px; height: 26px; 
             border: 2px solid #334155; border-radius: 50%;
@@ -88,18 +97,13 @@
             font-size: 13px; font-weight: 800; font-family: 'Arial', sans-serif;
             background: white; z-index: 10; transition: all 0.2s;
             line-height: 1; /* Fix vertical alignment */
-            padding-bottom: 2px; /* Slight nudge for Arabic characters */
+            padding-bottom: 3px; /* Arabic letter centering tweak */
         }
         .bubble.correct { background-color: #22c55e !important; border-color: #22c55e; color: white; }
         .bubble.wrong { background-color: #ef4444 !important; border-color: #ef4444; color: white; }
         .bubble.missed { background-color: #fbbf24 !important; border-color: #d97706; }
 
-        /* Markers */
-        .scan-marker { 
-            width: 25px; height: 25px; background: black; position: absolute; z-index: 50; 
-        }
-        
-        /* Scanner UI */
+        /* --- Scanner UI --- */
         .scan-overlay-box {
             position: absolute; border: 4px solid #4f46e5; 
             box-shadow: 0 0 20px rgba(79, 70, 229, 0.5);
@@ -110,7 +114,6 @@
         ::-webkit-scrollbar { height: 8px; width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
     </style>
 </head>
 <body class="bg-gray-100 text-slate-800 font-sans min-h-screen pb-20">
@@ -133,9 +136,9 @@
         <div class="flex-1 overflow-auto p-6 bg-gray-200 flex flex-col lg:flex-row gap-6 justify-center">
             <div class="flex-1 bg-white p-4 rounded shadow flex flex-col items-center overflow-auto">
                 <h4 class="font-bold mb-2 text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded">النسخة الرقمية</h4>
-                <!-- Wrapper for horizontal scroll on mobile modal -->
                 <div class="paper-wrapper">
-                    <div id="modalContent" class="paper-sheet origin-top transform-gpu scale-90"></div>
+                    <!-- Modal always shows single sheet view -->
+                    <div id="modalContent" class="paper-sheet origin-top transform-gpu scale-75 shadow-none"></div>
                 </div>
             </div>
             <div class="flex-1 bg-white p-4 rounded shadow flex flex-col items-center">
@@ -261,9 +264,7 @@
                                     <th class="p-3 w-24">النقاط</th>
                                 </tr>
                             </thead>
-                            <tbody id="key-grid-body" class="divide-y divide-gray-200 bg-white">
-                                <!-- Generated by JS -->
-                            </tbody>
+                            <tbody id="key-grid-body" class="divide-y divide-gray-200 bg-white"></tbody>
                         </table>
                     </div>
 
@@ -295,12 +296,10 @@
             </div>
         </div>
         
-        <!-- Viewer Container with Scroll -->
+        <!-- Viewer Container -->
         <div class="bg-slate-200/50 p-4 rounded-xl border border-slate-300 min-h-[600px] flex justify-center">
             <div class="paper-wrapper">
-                <div id="printableArea" class="paper-sheet">
-                    <!-- Content Injected via JS -->
-                </div>
+                <div id="printableArea" class="paper-sheet"></div>
             </div>
         </div>
     </div>
@@ -308,7 +307,6 @@
     <!-- 3. SCANNER -->
     <div id="scan" class="section-panel hidden">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Camera View -->
             <div class="lg:col-span-2">
                 <!-- IMPORTANT ID ALERT -->
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-r-lg flex items-start justify-between shadow-sm animate-pulse-once">
@@ -324,8 +322,6 @@
                 <div class="card p-2 relative bg-gray-900 rounded-xl overflow-hidden shadow-2xl">
                     <div class="relative w-full aspect-[3/4] lg:aspect-[4/3] bg-black rounded-lg overflow-hidden">
                         <video id="videoFeed" class="w-full h-full object-cover" playsinline muted></video>
-                        
-                        <!-- UI Overlays -->
                         <div id="scanner-ui" class="absolute inset-0 z-10 pointer-events-none hidden">
                             <!-- Guide Box -->
                             <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[85%] h-[85%] border-2 border-white/30 rounded-lg">
@@ -336,12 +332,9 @@
                             </div>
                             <!-- Status -->
                             <div class="absolute bottom-4 left-0 right-0 text-center">
-                                <span id="scan-status" class="bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md transition-all">
-                                    ابحث عن العلامات الأربعة...
-                                </span>
+                                <span id="scan-status" class="bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md transition-all">ابحث عن العلامات الأربعة...</span>
                             </div>
                         </div>
-
                         <!-- Start Overlay -->
                         <div id="cam-start-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90 z-20 text-white">
                             <i class="fa-solid fa-camera fa-4x mb-4 text-gray-500"></i>
@@ -369,7 +362,6 @@
                     </div>
                     <button onclick="stopCamera()" class="w-full bg-red-100 text-red-600 py-2 rounded font-bold hover:bg-red-200 text-sm mb-2">إيقاف الكاميرا</button>
                 </div>
-
                 <div class="card p-4 flex-1 h-[400px] flex flex-col">
                     <h3 class="font-bold border-b pb-2 mb-2 text-sm text-gray-500">النتائج الحديثة</h3>
                     <div id="recent-scans" class="flex-1 overflow-y-auto space-y-2 text-sm pr-1">
@@ -526,56 +518,56 @@
         switchTab('design');
     }
 
-    /** --- DESIGN & PREVIEW LOGIC (Updated for Requirement 4 & 5) --- */
+    /** --- FIXED DESIGN & PREVIEW LOGIC --- */
     function generateExamHTML(viewMode, studentData) {
-        // Creates the single exam instance HTML string
         const s = app.settings;
-        const right = s.layoutType === 'sheet' ? '48%' : '35%';
         let content = `
-        <div class="relative w-full h-full p-[20mm]">
+        <div class="relative w-full h-full p-[15mm] flex flex-col justify-between">
             <!-- Markers -->
-            <div class="scan-marker" style="top:20mm; left:20mm;"></div>
-            <div class="scan-marker" style="top:20mm; right:20mm;"></div>
-            <div class="scan-marker" style="bottom:20mm; left:20mm;"></div>
-            <div class="scan-marker" style="bottom:20mm; right:20mm;"></div>
+            <div class="scan-marker" style="top:15mm; left:15mm;"></div>
+            <div class="scan-marker" style="top:15mm; right:15mm;"></div>
+            <div class="scan-marker" style="bottom:15mm; left:15mm;"></div>
+            <div class="scan-marker" style="bottom:15mm; right:15mm;"></div>
             
             <!-- Header -->
-            <div class="border-b-2 border-black pb-2 mb-4 flex justify-between items-end">
-                <div class="text-right"><h2 class="font-bold text-lg">${s.school}</h2><p class="text-xs text-gray-600">${s.teacher}</p></div>
-                <div class="text-center"><h1 class="font-black text-xl">${s.subject}</h1><p class="text-xs font-bold bg-black text-white px-2 rounded inline-block">${s.title}</p></div>
-                <div class="text-left"><div class="border-2 border-black px-2 py-0.5 mb-1 rounded"><span class="text-[10px] font-bold block">ID</span><span class="font-mono font-bold text-lg">${s.id}</span></div><p class="text-[10px] font-bold">${s.classRoom}</p></div>
-            </div>
-            
-            <!-- Student Box -->
-            <div class="border border-black rounded p-2 mb-4 bg-gray-50 flex gap-4">
-                <div class="flex-1"><span class="text-xs font-bold">الاسم:</span><div class="border-b border-dotted border-black mt-3"></div></div>
-                <div class="w-24"><span class="text-xs font-bold">رقم:</span><div class="border-b border-dotted border-black mt-3"></div></div>
+            <div class="flex-none">
+                <div class="border-b-2 border-black pb-2 mb-2 flex justify-between items-end">
+                    <div class="text-right"><h2 class="font-bold text-lg">${s.school}</h2><p class="text-xs text-gray-600">${s.teacher}</p></div>
+                    <div class="text-center"><h1 class="font-black text-xl">${s.subject}</h1><p class="text-xs font-bold bg-black text-white px-2 rounded inline-block">${s.title}</p></div>
+                    <div class="text-left"><div class="border-2 border-black px-2 py-0.5 mb-1 rounded"><span class="text-[10px] font-bold block">ID</span><span class="font-mono font-bold text-lg">${s.id}</span></div><p class="text-[10px] font-bold">${s.classRoom}</p></div>
+                </div>
+                
+                <div class="border border-black rounded p-2 mb-2 bg-gray-50 flex gap-4">
+                    <div class="flex-1"><span class="text-xs font-bold">الاسم:</span><div class="border-b border-dotted border-black mt-3"></div></div>
+                    <div class="w-24"><span class="text-xs font-bold">رقم:</span><div class="border-b border-dotted border-black mt-3"></div></div>
+                </div>
             </div>
 
-            <!-- Questions -->
-            <div class="${s.layoutType==='sheet'?'flex flex-wrap content-start':'w-full'}">`;
+            <!-- Questions Area -->
+            <div class="flex-1 overflow-hidden ${s.layoutType==='sheet'?'flex flex-wrap content-start':'w-full'}">`;
             
         for(let i=0; i<s.q; i++) {
             let bubbles = '';
             for(let j=0; j<s.o; j++) {
                 let cls = '';
                 if(viewMode && studentData) {
-                    const k = s.keys[i].answers; const st = studentData.answers[i]||[];
-                    if(k.includes(j) && st.includes(j)) cls='correct';
-                    else if(st.includes(j) && !k.includes(j)) cls='wrong';
-                    else if(k.includes(j) && !st.includes(j)) cls='missed';
+                    const keyRef = app.settings.keys[i]?.answers || [];
+                    const st = studentData.answers[i]||[];
+                    if(keyRef.includes(j) && st.includes(j)) cls='correct';
+                    else if(st.includes(j) && !keyRef.includes(j)) cls='wrong';
+                    else if(keyRef.includes(j) && !st.includes(j)) cls='missed';
                 }
                 bubbles += `<div class="bubble ${cls}">${app.labels[j]}</div>`;
             }
 
             if(s.layoutType === 'sheet') {
-                content += `<div class="q-row inline-flex w-[48%] mx-[1%] border-b border-gray-100 py-1 items-center justify-between"><span class="font-bold text-sm w-6 text-center">${i+1}</span><div class="bubble-container">${bubbles}</div></div>`;
+                content += `<div class="q-row inline-flex w-[48%] mx-[1%] border-b border-gray-100 py-1 items-center justify-between h-[32px]"><span class="font-bold text-sm w-6 text-center">${i+1}</span><div class="bubble-container">${bubbles}</div></div>`;
             } else {
                 content += `
-                <div class="flex border-b border-gray-300 py-1 break-inside-avoid items-center">
-                    <div class="w-8 font-bold text-center bg-gray-100 text-sm py-1 border border-gray-300 ml-2">${i+1}</div>
-                    <div class="flex-1 text-sm relative px-2 tiny-edit-container">${viewMode?`سؤال ${i+1}`:`<div class="tiny-edit">نص السؤال...</div>`}</div>
-                    <div class="w-[35%]"><div class="bubble-container justify-center">${bubbles}</div></div>
+                <div class="flex border-b border-gray-200 py-1 items-center h-auto min-h-[35px]">
+                    <div class="w-6 font-bold text-center bg-gray-100 text-xs py-1 border border-gray-300 ml-2 rounded">${i+1}</div>
+                    <div class="flex-1 text-xs relative px-1 tiny-edit-container leading-tight">${viewMode?`سؤال ${i+1}`:`<div class="tiny-edit">نص السؤال...</div>`}</div>
+                    <div class="w-[35%]"><div class="bubble-container justify-center scale-90">${bubbles}</div></div>
                 </div>`;
             }
         }
@@ -584,37 +576,31 @@
     }
 
     function updatePrintPreview(viewMode=false, studentData=null) {
-        // Requirement 4: Real-time layout preview
         const container = viewMode ? document.getElementById('modalContent') : document.getElementById('printableArea');
-        container.innerHTML = ''; // Clear
+        container.innerHTML = '';
 
         if(viewMode) {
-            // Modal View is always single sheet
             container.innerHTML = generateExamHTML(true, studentData);
             return;
         }
 
-        const size = document.getElementById('pdf-size-select').value; // 1, 2, 4
+        const size = document.getElementById('pdf-size-select').value;
         const singleHtml = generateExamHTML(false, null);
         
-        // Setup Grid
         container.className = `paper-sheet print-grid layout-${size}`;
         
-        // Calculate Scale
+        // Accurate Scales for A4 fitting
         let scale = 1;
-        if(size === "2") scale = 0.707; // A4 -> A5
-        if(size === "4") scale = 0.5;   // A4 -> A6
-        
-        // Loop to create copies
+        if(size === "2") scale = 0.65; 
+        if(size === "4") scale = 0.48; 
+
         for(let k=0; k<parseInt(size); k++) {
             const cell = document.createElement('div');
-            cell.className = 'exam-instance relative w-full h-full overflow-hidden';
-            
+            cell.className = 'exam-cell';
             const scaler = document.createElement('div');
-            scaler.className = 'exam-scaler absolute top-0 left-0 bg-white'; // Using absolute to not push flow
+            scaler.className = 'exam-scaler';
             scaler.style.transform = `scale(${scale})`;
             scaler.innerHTML = singleHtml;
-            
             cell.appendChild(scaler);
             container.appendChild(cell);
         }
@@ -647,11 +633,17 @@
         if(isEditMode) toggleEdit();
         const el = document.getElementById('printableArea');
         document.getElementById('loadingOverlay').classList.remove('hidden');
+        document.getElementById('loadingText').innerText = "جارٍ إنشاء ملف PDF عالي الدقة...";
         
         try {
-            // WYSIWYG: Capture the grid as it is on screen
-            const canvas = await html2canvas(el, { scale: 2, useCORS: true });
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const canvas = await html2canvas(el, { 
+                scale: 4, // High quality
+                useCORS: true,
+                width: 794, // Force A4 pixel width at 96dpi approx
+                height: 1123,
+                windowWidth: 1200
+            });
+            const imgData = canvas.toDataURL('image/jpeg', 0.90);
             const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
             pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
             pdf.save(`MarkWise_Exam_${app.settings.id}.pdf`);
@@ -839,7 +831,7 @@
     
     function viewRes(i) {
         document.getElementById('paperModal').classList.remove('hidden');
-        updatePrintPreview(true, app.results[i]); // Show digital version
+        updatePrintPreview(true, app.results[i]);
         const img = document.getElementById('modalOriginalImage');
         if(app.results[i].snapshot) { img.src = app.results[i].snapshot; img.classList.remove('hidden'); } else img.classList.add('hidden');
     }
