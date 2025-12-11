@@ -7,7 +7,7 @@
     
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Tailwind CSS -->
@@ -31,92 +31,103 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
 
     <style>
-        /* --- Mobile & Layout Containers --- */
+        /* --- General Layout --- */
+        body { background-color: #f3f4f6; }
         .paper-wrapper {
-            width: 100%;
-            overflow-x: auto; /* Scroll horizontally on mobile */
-            padding-bottom: 20px;
-            display: flex;
-            justify-content: center;
-            -webkit-overflow-scrolling: touch;
+            width: 100%; overflow-x: auto; padding-bottom: 20px;
+            display: flex; justify-content: center; -webkit-overflow-scrolling: touch;
         }
 
-        /* --- Main Print Container (A4 Fixed) --- */
+        /* --- Print Container (A4 Fixed) --- */
         #printableArea {
-            width: 210mm;
-            height: 297mm;
-            min-width: 210mm; /* Force desktop width even on mobile */
-            min-height: 297mm;
-            background: white;
-            margin: 0 auto;
-            position: relative;
-            overflow: hidden;
+            width: 210mm; height: 297mm; min-width: 210mm; min-height: 297mm;
+            background: white; margin: 0 auto; position: relative; overflow: hidden;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
-        /* --- Grid System for Multi-Page --- */
-        .print-grid {
-            display: grid;
-            width: 100%; height: 100%;
-            padding: 0; margin: 0;
-        }
-        .layout-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
-        .layout-2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } /* Top/Bottom */
-        .layout-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; } /* 2x2 */
-
-        /* --- Cells & Scalers (The Fix for Alignment) --- */
-        .exam-cell {
-            display: flex;
-            justify-content: center; /* Horizontally Center */
-            align-items: center;     /* Vertically Center */
-            overflow: hidden;
-            border: 1px dashed #e5e7eb; /* Preview guide line */
-            position: relative;
-        }
-
-        .exam-scaler {
-            width: 210mm;   /* Always internal A4 */
-            height: 297mm;
-            background: white;
-            flex-shrink: 0;
-            transform-origin: center center; /* Crucial for not shifting in RTL */
-            display: flex;
-            flex-direction: column;
-            direction: rtl; 
-        }
-
-        /* --- Bubbles & Markers --- */
-        .scan-marker { width: 20px; height: 20px; background: black; position: absolute; z-index: 50; }
+        /* --- Grid System & Transformations --- */
+        .print-grid { display: block; width: 100%; height: 100%; position: relative; }
         
-        .bubble-container { display: flex; justify-content: center; gap: 5px; }
+        /* Layout 1: 100% */
+        .layout-1 .exam-cell { width: 210mm; height: 297mm; display: block; overflow: hidden; }
+        .layout-1 .exam-scaler { width: 210mm; height: 297mm; transform: scale(1); transform-origin: top right; }
+
+        /* Layout 2: 50% */
+        .layout-2 .exam-cell {
+            width: 210mm; height: 148.5mm; position: relative; overflow: hidden;
+            border-bottom: 1px dashed #e5e7eb; display: flex; justify-content: center; align-items: center;
+        }
+        .layout-2 .exam-scaler {
+            width: 210mm; height: 297mm; position: absolute;
+            transform: rotate(-90deg) scale(0.66); transform-origin: center center;
+        }
+
+        /* Layout 4: 25% */
+        .layout-4 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .layout-4 .exam-cell { position: relative; overflow: hidden; border: 1px dashed #e5e7eb; }
+        .layout-4 .exam-scaler {
+            width: 210mm; height: 297mm; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.48); transform-origin: center center;
+        }
+
+        /* --- Exam Content Styling --- */
+        .exam-scaler { background: white; display: flex; flex-direction: column; direction: rtl; }
+
+        /* --- Bubbles Styling (Fixed Alignment) --- */
+        .bubble-container { display: flex; justify-content: center; gap: 6px; }
         
         .bubble {
-            width: 26px; height: 26px; 
-            border: 2px solid #334155; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 13px; font-weight: 800; font-family: 'Arial', sans-serif;
-            background: white; z-index: 10; transition: all 0.2s;
-            line-height: 1; /* Fix vertical alignment */
-            padding-bottom: 3px; /* Arabic letter centering tweak */
+            width: 26px; 
+            height: 26px; 
+            box-sizing: border-box;
+            border: 2px solid #000; 
+            border-radius: 50%;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            
+            font-size: 13px; 
+            font-weight: 800; 
+            font-family: 'Arial', sans-serif;
+            background: white; 
+            z-index: 10; 
+            
+            /* Vertical Alignment Fix */
+            padding-top: 0 !important;
+            padding-bottom: 5px !important; 
+            line-height: 1 !important;
         }
+        
+        .key-check:checked + span { background-color: black; color: white; border-color: black; }
         .bubble.correct { background-color: #22c55e !important; border-color: #22c55e; color: white; }
         .bubble.wrong { background-color: #ef4444 !important; border-color: #ef4444; color: white; }
         .bubble.missed { background-color: #fbbf24 !important; border-color: #d97706; }
 
-        /* --- Scanner UI --- */
+        /* --- Markers --- */
+        .scan-marker { width: 22px; height: 22px; background: black; position: absolute; z-index: 50; }
         .scan-overlay-box {
             position: absolute; border: 4px solid #4f46e5; 
-            box-shadow: 0 0 20px rgba(79, 70, 229, 0.5);
-            transition: all 0.1s linear; pointer-events: none; z-index: 20;
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.5); pointer-events: none; z-index: 20;
         }
         
-        /* Custom Scrollbar */
+        /* --- Input Fields (Settings Tab) --- */
+        .input-field {
+            width: 100%; padding: 0.625rem; 
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem; 
+            outline: none; transition: all 0.2s;
+        }
+        .input-field:focus { border-color: #4f46e5; ring: 2px solid #4f46e5; }
+
+        /* --- Grades --- */
+        .grade-badge { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
+        .grade-A { background: #15803d; } .grade-B { background: #0ea5e9; } .grade-C { background: #eab308; } .grade-D { background: #ef4444; }
+
         ::-webkit-scrollbar { height: 8px; width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-gray-100 text-slate-800 font-sans min-h-screen pb-20">
+<body class="font-sans min-h-screen flex flex-col">
 
 <audio id="beepSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
@@ -126,45 +137,48 @@
     <h2 class="text-xl font-bold" id="loadingText">جارٍ المعالجة...</h2>
 </div>
 
-<!-- Modal: Student Paper View -->
-<div id="paperModal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex justify-center items-start overflow-y-auto p-4 animate-fade-in backdrop-blur-sm">
+<!-- Modal: Student Stats -->
+<div id="studentStatsModal" class="fixed inset-0 bg-black/80 z-[6000] hidden flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+    <div class="bg-white rounded-xl w-full max-w-2xl p-6 relative shadow-2xl">
+        <button onclick="closeStatsModal()" class="absolute top-4 left-4 bg-gray-100 text-gray-600 w-8 h-8 rounded-full hover:bg-gray-200"><i class="fa-solid fa-times"></i></button>
+        <h3 class="text-xl font-bold mb-4 border-b pb-2 text-primary">تحليل أداء التلميذ</h3>
+        <div id="studentStatsContent" class="space-y-4"></div>
+    </div>
+</div>
+
+<!-- Modal: Paper View -->
+<div id="paperModal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex justify-center items-start overflow-y-auto p-4 backdrop-blur-sm">
     <div class="bg-white rounded-xl w-full max-w-6xl my-4 relative shadow-2xl flex flex-col h-[90vh]">
         <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
-            <h3 class="font-bold text-lg"><i class="fa-solid fa-eye text-primary"></i> مراجعة الورقة</h3>
-            <button onclick="closePaperModal()" class="bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 font-bold transition"><i class="fa-solid fa-times"></i> إغلاق</button>
+            <h3 class="font-bold text-lg">مراجعة الورقة</h3>
+            <button onclick="closePaperModal()" class="bg-red-100 text-red-600 px-4 py-2 rounded-lg font-bold"><i class="fa-solid fa-times"></i> إغلاق</button>
         </div>
         <div class="flex-1 overflow-auto p-6 bg-gray-200 flex flex-col lg:flex-row gap-6 justify-center">
             <div class="flex-1 bg-white p-4 rounded shadow flex flex-col items-center overflow-auto">
                 <h4 class="font-bold mb-2 text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded">النسخة الرقمية</h4>
-                <div class="paper-wrapper">
-                    <!-- Modal always shows single sheet view -->
-                    <div id="modalContent" class="paper-sheet origin-top transform-gpu scale-75 shadow-none"></div>
-                </div>
+                <div class="paper-wrapper"><div id="modalContent" class="paper-sheet origin-top transform-gpu scale-75 shadow-none"></div></div>
             </div>
             <div class="flex-1 bg-white p-4 rounded shadow flex flex-col items-center">
                 <h4 class="font-bold mb-2 text-sm bg-green-100 text-green-800 px-3 py-1 rounded">الصورة الأصلية</h4>
-                <img id="modalOriginalImage" class="max-w-full h-auto border-2 border-gray-300 rounded" alt="Original Scan">
+                <img id="modalOriginalImage" class="max-w-full h-auto border-2 border-gray-300 rounded" alt="Scan">
             </div>
         </div>
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-6 max-w-[1400px]">
+<div class="container mx-auto px-4 py-6 max-w-[1400px] flex-grow">
     
     <!-- Header -->
     <header class="bg-white rounded-2xl shadow-sm p-5 mb-6 flex flex-col lg:flex-row justify-between items-center border-b-4 border-primary">
         <div class="flex items-center gap-4 mb-4 lg:mb-0">
-            <div class="bg-primary p-4 rounded-xl text-white shadow-lg shadow-primary/30">
+            <div class="bg-primary p-4 rounded-xl text-white shadow-lg">
                 <i class="fa-solid fa-graduation-cap fa-2x"></i>
             </div>
             <div>
-                <h1 class="text-3xl font-display font-bold text-gray-800">MarkWise <span class="text-primary text-lg">V11.0</span></h1>
+                <h1 class="text-3xl font-display font-bold text-gray-800">MarkWise <span class="text-primary text-lg">V16.0</span></h1>
                 <p class="text-sm text-gray-500 font-bold flex items-center gap-2 mt-1">
-                    <span id="cvStatus" class="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full text-xs border border-yellow-200">
-                        <i class="fa-solid fa-circle-notch fa-spin"></i> تحميل المحرك...
-                    </span>
-                    <span class="text-gray-400">|</span>
-                    <span>نظام التصحيح الذكي</span>
+                    <span id="cvStatus" class="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full text-xs border border-yellow-200"><i class="fa-solid fa-circle-notch fa-spin"></i> تحميل المحرك...</span>
+                    <span class="text-gray-400">|</span><span>نظام التصحيح الذكي</span>
                 </p>
             </div>
         </div>
@@ -194,80 +208,75 @@
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
             <div class="md:col-span-4 space-y-6">
                 <div class="card p-6">
-                    <h3 class="card-title"><i class="fa-solid fa-school text-primary"></i> البيانات العامة</h3>
+                    <h3 class="card-title text-primary font-bold mb-4 border-b pb-2"><i class="fa-solid fa-school"></i> البيانات العامة</h3>
                     <div class="space-y-4">
-                        <input type="text" id="conf-school" class="input-field" placeholder="اسم المؤسسة">
-                        <input type="text" id="conf-teacher" class="input-field" placeholder="اسم الأستاذ">
-                        <input type="text" id="conf-class" class="input-field" placeholder="القسم / الشعبة">
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 mb-1 block">اسم المؤسسة</label>
+                            <input type="text" id="conf-school" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-0 outline-none transition bg-gray-50" placeholder="أدخل اسم المؤسسة">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 mb-1 block">اسم الأستاذ</label>
+                            <input type="text" id="conf-teacher" class="input-field p-2.5 border border-gray-300 rounded-lg" placeholder="أدخل اسم الأستاذ">
+                        </div>
+                        <div>
+                            <!-- Updated Label -->
+                            <label class="text-xs font-bold text-gray-500 mb-1 block">الفئة المستهدفة</label>
+                            <input type="text" id="conf-class" class="input-field p-2.5 border border-gray-300 rounded-lg" placeholder="مثال: الثانية باك آداب 1">
+                        </div>
                     </div>
                 </div>
-
                 <div class="card p-6">
-                    <h3 class="card-title"><i class="fa-solid fa-file-signature text-primary"></i> بيانات الفرض</h3>
+                    <h3 class="card-title text-primary font-bold mb-4 border-b pb-2"><i class="fa-solid fa-file-signature"></i> بيانات الفرض</h3>
                     <div class="space-y-4">
-                        <input type="text" id="conf-subject" class="input-field" placeholder="المادة">
-                        <input type="text" id="conf-title" class="input-field" placeholder="عنوان الفرض">
-                        <div class="flex items-center gap-2 bg-indigo-50 p-2 rounded-lg border border-indigo-100">
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 mb-1 block">المادة</label>
+                            <input type="text" id="conf-subject" class="input-field p-2.5 border border-gray-300 rounded-lg" placeholder="مثال: اللغة العربية">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 mb-1 block">عنوان الفرض</label>
+                            <input type="text" id="conf-title" class="input-field p-2.5 border border-gray-300 rounded-lg" placeholder="مثال: الفرض المحروس رقم 1">
+                        </div>
+                        <div class="flex items-center gap-2 bg-indigo-50 p-2 rounded-lg border border-indigo-200">
                             <span class="text-xs font-bold text-indigo-800">ID:</span>
                             <input type="text" id="conf-id" class="bg-transparent font-mono font-bold text-center flex-1 outline-none text-lg text-indigo-700" readonly>
                             <button onclick="generateID()" class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-rotate"></i></button>
                         </div>
                     </div>
                 </div>
-
                 <div class="card p-6 border-l-4 border-l-purple-500">
-                    <h3 class="card-title text-purple-700"><i class="fa-solid fa-layer-group"></i> نوع الورقة</h3>
-                    <div class="flex flex-col gap-3 mt-3">
+                    <h3 class="card-title text-purple-700 font-bold mb-3"><i class="fa-solid fa-layer-group"></i> نوع الورقة</h3>
+                    <div class="flex flex-col gap-3">
                         <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-purple-50 transition selection-radio">
                             <input type="radio" name="layoutType" value="full" class="w-5 h-5 text-purple-600" checked>
-                            <div>
-                                <span class="font-bold block text-sm">ورقة متكاملة</span>
-                                <span class="text-xs text-gray-500">الأسئلة والخيارات في صفحة واحدة</span>
-                            </div>
+                            <div><span class="font-bold block text-sm">ورقة متكاملة</span><span class="text-xs text-gray-500">الأسئلة والخيارات في صفحة واحدة</span></div>
                         </label>
                         <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-purple-50 transition selection-radio">
                             <input type="radio" name="layoutType" value="sheet" class="w-5 h-5 text-purple-600">
-                            <div>
-                                <span class="font-bold block text-sm">ورقة إجابة فقط</span>
-                                <span class="text-xs text-gray-500">شبكة مربعات مدمجة فقط</span>
-                            </div>
+                            <div><span class="font-bold block text-sm">ورقة إجابة فقط</span><span class="text-xs text-gray-500">شبكة مربعات مدمجة فقط</span></div>
                         </label>
                     </div>
                 </div>
             </div>
-
             <div class="md:col-span-8">
                 <div class="card p-6 h-full flex flex-col">
                     <div class="flex flex-wrap justify-between items-center border-b pb-4 mb-4 gap-4">
                         <div class="flex gap-4">
-                            <div>
-                                <label class="text-xs font-bold block mb-1">الأسئلة</label>
-                                <input type="number" id="conf-q" value="20" min="1" max="100" class="input-field w-20 text-center" onchange="updateKeyGrid()">
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold block mb-1">الخيارات</label>
-                                <input type="number" id="conf-o" value="4" min="2" max="6" class="input-field w-20 text-center" onchange="updateKeyGrid()">
-                            </div>
+                            <div><label class="text-xs font-bold block mb-1">الأسئلة</label><input type="number" id="conf-q" value="10" min="1" max="100" class="input-field w-20 text-center border p-2 rounded" onchange="updateKeyGrid()"></div>
+                            <div><label class="text-xs font-bold block mb-1">الخيارات</label><input type="number" id="conf-o" value="4" min="2" max="6" class="input-field w-20 text-center border p-2 rounded" onchange="updateKeyGrid()"></div>
                         </div>
                         <div class="flex items-center gap-2">
                             <input type="checkbox" id="conf-partial" class="w-4 h-4 rounded text-primary focus:ring-primary">
                             <label for="conf-partial" class="text-sm font-bold cursor-pointer">احتساب النقطة الجزئية</label>
                         </div>
                     </div>
-
                     <div class="flex-1 overflow-y-auto max-h-[500px] border rounded-lg bg-gray-50">
                         <table class="w-full text-sm text-center">
                             <thead class="bg-gray-100 text-gray-700 sticky top-0 z-10 shadow-sm">
-                                <tr>
-                                    <th class="p-3">س</th>
-                                    <th class="p-3">الإجابة الصحيحة</th>
-                                    <th class="p-3 w-24">النقاط</th>
-                                </tr>
+                                <tr><th class="p-3">س</th><th class="p-3">الإجابة الصحيحة</th><th class="p-3 w-24">النقاط</th></tr>
                             </thead>
                             <tbody id="key-grid-body" class="divide-y divide-gray-200 bg-white"></tbody>
                         </table>
                     </div>
-
                     <div class="mt-6 pt-4 border-t flex justify-end">
                         <button onclick="saveExamToMyExams()" class="bg-gradient-to-l from-primary to-secondary text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 flex items-center gap-2">
                             <i class="fa-solid fa-save"></i> حفظ والانتقال للتصميم
@@ -281,22 +290,21 @@
     <!-- 2. DESIGN & PRINT -->
     <div id="design" class="section-panel hidden space-y-4">
         <div class="card p-4 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-30">
-            <h3 class="font-bold text-lg flex items-center gap-2"><i class="fa-regular fa-eye text-primary"></i> معاينة الورقة</h3>
             <div class="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border">
-                <span class="text-sm font-bold text-gray-600">تخطيط الصفحة:</span>
+                <span class="text-sm font-bold text-gray-600">تخطيط الطباعة:</span>
                 <select id="pdf-size-select" onchange="updatePrintPreview()" class="bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary">
                     <option value="1">100% (ورقة واحدة)</option>
-                    <option value="2">50% (ورقتان / صفحة)</option>
-                    <option value="4">25% (4 أوراق / صفحة)</option>
+                    <option value="2">50% (ورقتان أفقتيان)</option>
+                    <option value="4">25% (4 أوراق)</option>
                 </select>
             </div>
             <div class="flex gap-2">
                 <button onclick="toggleEdit()" id="btn-edit-mode" class="px-4 py-2 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg hover:bg-yellow-100 font-bold text-sm transition"><i class="fa-solid fa-pen"></i> تحرير</button>
-                <button onclick="downloadPDF()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm shadow-lg flex items-center gap-2"><i class="fa-solid fa-print"></i> تحميل PDF</button>
+                <button onclick="downloadImage()" class="px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 font-bold text-sm transition flex items-center gap-2"><i class="fa-solid fa-image"></i> صورة PNG</button>
+                <button onclick="downloadPDF()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm shadow-lg flex items-center gap-2"><i class="fa-solid fa-print"></i> PDF</button>
             </div>
         </div>
         
-        <!-- Viewer Container -->
         <div class="bg-slate-200/50 p-4 rounded-xl border border-slate-300 min-h-[600px] flex justify-center">
             <div class="paper-wrapper">
                 <div id="printableArea" class="paper-sheet"></div>
@@ -308,65 +316,58 @@
     <div id="scan" class="section-panel hidden">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2">
-                <!-- IMPORTANT ID ALERT -->
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-r-lg flex items-start justify-between shadow-sm animate-pulse-once">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-triangle-exclamation text-yellow-500 fa-xl"></i>
-                        <div>
-                            <p class="font-bold text-yellow-800 text-sm">تنبيه هام جداً:</p>
-                            <p class="text-xs text-yellow-700">تأكد أن ID المطبوع على الورقة هو: <span class="font-mono font-black text-lg text-black bg-yellow-200 px-2 rounded mx-1" id="scan-ui-id">0000</span></p>
-                        </div>
+                        <div><p class="font-bold text-yellow-800 text-sm">تنبيه هام جداً:</p><p class="text-xs text-yellow-700">تأكد أن ID المطبوع هو: <span class="font-mono font-black text-lg text-black bg-yellow-200 px-2 rounded mx-1" id="scan-ui-id">0000</span></p></div>
                     </div>
                 </div>
-
                 <div class="card p-2 relative bg-gray-900 rounded-xl overflow-hidden shadow-2xl">
                     <div class="relative w-full aspect-[3/4] lg:aspect-[4/3] bg-black rounded-lg overflow-hidden">
                         <video id="videoFeed" class="w-full h-full object-cover" playsinline muted></video>
+                        <!-- Guides -->
                         <div id="scanner-ui" class="absolute inset-0 z-10 pointer-events-none hidden">
-                            <!-- Guide Box -->
                             <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[85%] h-[85%] border-2 border-white/30 rounded-lg">
                                 <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-yellow-400 rounded-tl-lg"></div>
                                 <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-yellow-400 rounded-tr-lg"></div>
                                 <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-yellow-400 rounded-bl-lg"></div>
                                 <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-yellow-400 rounded-br-lg"></div>
                             </div>
-                            <!-- Status -->
-                            <div class="absolute bottom-4 left-0 right-0 text-center">
-                                <span id="scan-status" class="bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md transition-all">ابحث عن العلامات الأربعة...</span>
-                            </div>
+                            <div class="absolute bottom-4 left-0 right-0 text-center"><span id="scan-status" class="bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md transition-all">ابحث عن العلامات الأربعة...</span></div>
                         </div>
-                        <!-- Start Overlay -->
+                        
+                        <!-- Result Overlay -->
+                        <div id="scan-result-overlay" class="absolute inset-0 z-30 bg-black/90 flex flex-col items-center justify-center hidden">
+                            <h2 class="text-white font-bold mb-4 text-xl">تم تصحيح الورقة</h2>
+                            <div class="relative w-full h-1/2 mb-4">
+                                <img id="scan-feedback-img" class="w-full h-full object-contain border-2 border-white/20 rounded">
+                                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/90 p-6 rounded-2xl shadow-2xl text-center border-4 border-primary backdrop-blur-sm">
+                                    <div class="text-7xl font-black text-gray-800 mb-2" id="scan-feedback-score">0/0</div>
+                                    <div id="scan-feedback-grade" class="text-4xl font-bold inline-block px-6 py-2 rounded-lg text-white shadow">A</div>
+                                </div>
+                            </div>
+                            <button onclick="nextScan()" class="bg-primary hover:bg-secondary text-white text-xl px-12 py-4 rounded-full font-bold shadow-lg transition transform hover:scale-105 flex items-center gap-3">
+                                <span>التالي (Next)</span> <i class="fa-solid fa-arrow-left"></i>
+                            </button>
+                        </div>
+
+                        <!-- Start Button -->
                         <div id="cam-start-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90 z-20 text-white">
                             <i class="fa-solid fa-camera fa-4x mb-4 text-gray-500"></i>
-                            <button onclick="startCamera()" class="bg-primary hover:bg-secondary text-white px-8 py-3 rounded-full font-bold shadow-lg transition transform hover:scale-105">
-                                <i class="fa-solid fa-play"></i> تشغيل الكاميرا
-                            </button>
-                            <label class="mt-4 text-gray-400 cursor-pointer hover:text-white text-sm">
-                                <i class="fa-solid fa-image"></i> تحميل صورة من الملفات
-                                <input type="file" hidden accept="image/*" onchange="handleFileUpload(event)">
-                            </label>
+                            <button onclick="startCamera()" class="bg-primary hover:bg-secondary text-white px-8 py-3 rounded-full font-bold shadow-lg transition transform hover:scale-105">تشغيل الكاميرا</button>
+                            <label class="mt-4 text-gray-400 cursor-pointer hover:text-white text-sm"><i class="fa-solid fa-image"></i> تحميل صورة<input type="file" hidden accept="image/*" onchange="handleFileUpload(event)"></label>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Controls -->
             <div class="lg:col-span-1 space-y-4">
                 <div class="card p-4">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-sm font-bold">التقاط تلقائي</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="auto-capture-toggle" class="sr-only peer" checked>
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
-                    </div>
+                    <div class="flex items-center justify-between mb-4"><span class="text-sm font-bold">التقاط تلقائي</span><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="auto-capture-toggle" class="sr-only peer" checked><div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-primary"></div></label></div>
                     <button onclick="stopCamera()" class="w-full bg-red-100 text-red-600 py-2 rounded font-bold hover:bg-red-200 text-sm mb-2">إيقاف الكاميرا</button>
                 </div>
                 <div class="card p-4 flex-1 h-[400px] flex flex-col">
                     <h3 class="font-bold border-b pb-2 mb-2 text-sm text-gray-500">النتائج الحديثة</h3>
-                    <div id="recent-scans" class="flex-1 overflow-y-auto space-y-2 text-sm pr-1">
-                        <div class="text-center text-gray-400 py-4">لا توجد نتائج</div>
-                    </div>
+                    <div id="recent-scans" class="flex-1 overflow-y-auto space-y-2 text-sm pr-1"><div class="text-center text-gray-400 py-4">لا توجد نتائج</div></div>
                 </div>
             </div>
         </div>
@@ -374,43 +375,38 @@
 
     <!-- 4. RESULTS -->
     <div id="results" class="section-panel hidden space-y-6">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="stat-card border-l-4 border-blue-500 p-4 bg-white rounded shadow-sm">
-                <div class="text-gray-500 text-xs font-bold">الأوراق</div>
-                <div class="text-2xl font-bold text-blue-600" id="st-count">0</div>
+        <div class="card p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <span class="font-bold text-sm text-gray-600">تصفية حسب القسم:</span>
+                <select id="filter-class" onchange="renderResultsTable()" class="p-2 border rounded bg-gray-50 w-full md:w-48 outline-none focus:ring-2 focus:ring-primary"><option value="all">الكل</option></select>
             </div>
-            <div class="stat-card border-l-4 border-green-500 p-4 bg-white rounded shadow-sm">
-                <div class="text-gray-500 text-xs font-bold">المعدل</div>
-                <div class="text-2xl font-bold text-green-600" id="st-avg">0</div>
-            </div>
-            <div class="stat-card border-l-4 border-purple-500 p-4 bg-white rounded shadow-sm">
-                <div class="text-gray-500 text-xs font-bold">الأعلى</div>
-                <div class="text-2xl font-bold text-purple-600" id="st-max">0</div>
-            </div>
-            <div class="stat-card border-l-4 border-red-500 p-4 bg-white rounded shadow-sm">
-                <div class="text-gray-500 text-xs font-bold">الأدنى</div>
-                <div class="text-2xl font-bold text-red-600" id="st-min">0</div>
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <div class="relative w-full md:w-64">
+                    <input type="text" id="filter-search" onkeyup="renderResultsTable()" placeholder="بحث عن تلميذ..." class="w-full pl-8 pr-3 py-2 border rounded outline-none focus:ring-2 focus:ring-primary">
+                    <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+                <button onclick="toggleSort()" id="sort-btn" class="bg-gray-100 px-3 py-2 rounded border hover:bg-gray-200"><i class="fa-solid fa-sort-amount-down"></i></button>
             </div>
         </div>
-        
-        <div class="card p-6">
-             <div class="h-60"><canvas id="qChart"></canvas></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="card p-6">
+                <h4 class="font-bold mb-4 text-sm text-gray-600 border-b pb-2">توزيع درجات التحكم (A/B/C/D)</h4>
+                <div class="h-60"><canvas id="masteryChart"></canvas></div>
+            </div>
+             <div class="card p-6">
+                 <h4 class="font-bold mb-4 text-sm text-gray-600 border-b pb-2">تحليل الأسئلة (نسبة النجاح)</h4>
+                 <div class="h-60"><canvas id="qChart"></canvas></div>
+            </div>
         </div>
-
         <div class="card overflow-hidden">
             <div class="bg-gray-50 p-4 border-b flex justify-between items-center">
                 <h3 class="font-bold">قائمة التلاميذ</h3>
-                <button onclick="exportResultsCSV()" class="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 shadow"><i class="fa-solid fa-file-csv"></i> Excel</button>
+                <button onclick="exportResultsCSV()" class="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 shadow"><i class="fa-solid fa-file-csv"></i> تصدير Excel</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-right whitespace-nowrap">
                     <thead class="bg-gray-100 text-xs font-bold text-gray-600 uppercase">
-                        <tr>
-                            <th class="p-4">الاسم</th>
-                            <th class="p-4">النقطة</th>
-                            <th class="p-4">النسبة</th>
-                            <th class="p-4 text-center">...</th>
-                        </tr>
+                        <tr><th class="p-4">الاسم</th><th class="p-4">القسم</th><th class="p-4">النقطة</th><th class="p-4">النسبة</th><th class="p-4">درجة التحكم</th><th class="p-4 text-center">الإجراءات</th></tr>
                     </thead>
                     <tbody id="res-body" class="divide-y divide-gray-100 text-sm"></tbody>
                 </table>
@@ -427,12 +423,13 @@
     </div>
 </div>
 
+<footer id="app-footer" class="bg-white border-t py-4 text-center mt-6"></footer>
+
 <!-- Hidden Canvas -->
 <canvas id="processCanvas" class="hidden"></canvas>
 
 <style>
     .card { @apply bg-white rounded-xl shadow-sm border border-gray-100; }
-    .input-field { @apply w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition; }
     .action-btn { @apply px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition flex items-center gap-2; }
     .tab-btn { @apply px-4 py-3 font-bold text-gray-500 rounded-lg whitespace-nowrap transition hover:bg-gray-50 hover:text-gray-700; }
     .tab-btn.active { @apply bg-primary/10 text-primary border-b-2 border-primary rounded-b-none; }
@@ -440,110 +437,67 @@
 </style>
 
 <script>
-    /** --- STATE --- */
     const app = {
-        settings: { school: '', teacher: '', classRoom: '', subject: '', title: '', id: '', q: 20, o: 4, partial: false, layoutType: 'full', keys: [] },
+        settings: { school: '', teacher: '', classRoom: '', subject: '', title: '', id: '', q: 10, o: 4, partial: false, layoutType: 'full', keys: [] },
         results: [], savedExams: [], labels: ['أ', 'ب', 'ج', 'د', 'هـ', 'و'],
-        cvReady: false, stream: null, isScanning: false, lastCaptureTime: 0
+        cvReady: false, stream: null, isScanning: false, sortAsc: false
     };
 
-    /** --- INIT --- */
-    function onOpenCvReady() {
-        app.cvReady = true;
-        const s = document.getElementById('cvStatus');
-        s.innerHTML = '<i class="fa-solid fa-check"></i> المحرك جاهز';
-        s.className = "text-green-700 bg-green-50 px-2 py-0.5 rounded-full text-xs border border-green-200 font-bold";
-    }
-
-    window.onload = () => {
-        generateID(); updateKeyGrid(); loadLocalData(); initStatsChart();
-    };
-
+    function onOpenCvReady() { app.cvReady = true; const s = document.getElementById('cvStatus'); s.innerHTML = '<i class="fa-solid fa-check"></i> المحرك جاهز'; s.className = "text-green-700 bg-green-50 px-2 py-0.5 rounded-full text-xs border border-green-200 font-bold"; }
+    window.onload = () => { generateID(); updateKeyGrid(); loadLocalData(); initStatsChart(); injectCopyright(); };
+    function injectCopyright() { document.getElementById('app-footer').innerHTML = `<p class="text-sm text-gray-500">© Copyright 2025 MarkWise - All rights reserved.<br><span class="text-xs text-gray-400">Designed with ❤️ by Rachid Outgadirt</span></p>`; }
     function generateID() { document.getElementById('conf-id').value = Math.floor(1000 + Math.random()*9000); }
+    function switchTab(id) { document.querySelectorAll('.section-panel').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); if(id !== 'scan') stopCamera(); else document.getElementById('scan-ui-id').innerText = app.settings.id || '----'; if(id === 'results') renderResultsTable(); if(id === 'exams') renderExamsList(); if(id === 'design') { saveCurrentSettings(); updatePrintPreview(); } }
 
-    function switchTab(id) {
-        document.querySelectorAll('.section-panel').forEach(d => d.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('tab-'+id).classList.add('active');
-
-        if(id !== 'scan') stopCamera();
-        else document.getElementById('scan-ui-id').innerText = app.settings.id || '----';
-
-        if(id === 'results') renderResultsTable();
-        if(id === 'exams') renderExamsList();
-        if(id === 'design') { saveCurrentSettings(); updatePrintPreview(); }
-    }
-
-    /** --- SETTINGS --- */
+    /* --- SETTINGS --- */
     function updateKeyGrid() {
-        const q = parseInt(document.getElementById('conf-q').value);
-        const o = parseInt(document.getElementById('conf-o').value);
-        const tbody = document.getElementById('key-grid-body');
-        tbody.innerHTML = '';
+        const q = parseInt(document.getElementById('conf-q').value); const o = parseInt(document.getElementById('conf-o').value);
+        const tbody = document.getElementById('key-grid-body'); tbody.innerHTML = '';
         for(let i=0; i<q; i++) {
-            let opts = '';
-            for(let j=0; j<o; j++) opts += `<label class="inline-flex items-center justify-center w-8 h-8 mx-1 bg-gray-50 border rounded-full cursor-pointer hover:bg-blue-50 transition"><input type="checkbox" name="q${i}" value="${j}" class="hidden peer"><span class="font-bold text-gray-500 peer-checked:text-primary pt-[2px]">${app.labels[j]}</span></label>`;
+            let opts = ''; for(let j=0; j<o; j++) opts += `<label class="inline-flex items-center justify-center w-8 h-8 mx-1 bg-gray-50 border border-gray-300 rounded-full cursor-pointer transition"><input type="checkbox" name="q${i}" value="${j}" class="hidden peer key-check"><span class="flex items-center justify-center w-full h-full rounded-full font-bold text-gray-500 pt-[2px]">${app.labels[j]}</span></label>`;
             tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="p-2 font-bold text-gray-500">${i+1}</td><td class="p-2">${opts}</td><td class="p-2"><input type="number" step="0.5" id="pts-${i}" value="1" class="w-16 p-1 border rounded text-center text-sm"></td></tr>`;
         }
     }
-
     function saveCurrentSettings() {
         const s = app.settings;
-        s.school = document.getElementById('conf-school').value;
-        s.teacher = document.getElementById('conf-teacher').value;
-        s.classRoom = document.getElementById('conf-class').value;
-        s.subject = document.getElementById('conf-subject').value;
-        s.title = document.getElementById('conf-title').value;
-        s.id = document.getElementById('conf-id').value;
-        s.q = parseInt(document.getElementById('conf-q').value);
-        s.o = parseInt(document.getElementById('conf-o').value);
-        s.partial = document.getElementById('conf-partial').checked;
-        s.layoutType = document.querySelector('input[name="layoutType"]:checked').value;
+        s.school = document.getElementById('conf-school').value; s.teacher = document.getElementById('conf-teacher').value;
+        s.classRoom = document.getElementById('conf-class').value; s.subject = document.getElementById('conf-subject').value;
+        s.title = document.getElementById('conf-title').value; s.id = document.getElementById('conf-id').value;
+        s.q = parseInt(document.getElementById('conf-q').value); s.o = parseInt(document.getElementById('conf-o').value);
+        s.partial = document.getElementById('conf-partial').checked; s.layoutType = document.querySelector('input[name="layoutType"]:checked').value;
         s.keys = [];
-        for(let i=0; i<s.q; i++) {
-            const checks = document.querySelectorAll(`input[name="q${i}"]:checked`);
-            const pts = parseFloat(document.getElementById(`pts-${i}`).value) || 1;
-            s.keys.push({ id: i, answers: Array.from(checks).map(c=>parseInt(c.value)), points: pts });
-        }
+        for(let i=0; i<s.q; i++) { const checks = document.querySelectorAll(`input[name="q${i}"]:checked`); const pts = parseFloat(document.getElementById(`pts-${i}`).value) || 1; s.keys.push({ id: i, answers: Array.from(checks).map(c=>parseInt(c.value)), points: pts }); }
     }
+    function saveExamToMyExams() { saveCurrentSettings(); const ex = { meta: {...app.settings}, date: new Date().toLocaleDateString('ar-MA'), timestamp: Date.now() }; const idx = app.savedExams.findIndex(e => e.meta.id === app.settings.id); if(idx>=0) app.savedExams[idx] = ex; else app.savedExams.push(ex); saveToLocalStorage(); alert('تم الحفظ بنجاح'); switchTab('design'); }
 
-    function saveExamToMyExams() {
-        saveCurrentSettings();
-        const ex = { meta: {...app.settings}, date: new Date().toLocaleDateString('ar-MA'), timestamp: Date.now() };
-        const idx = app.savedExams.findIndex(e => e.meta.id === app.settings.id);
-        if(idx>=0) app.savedExams[idx] = ex; else app.savedExams.push(ex);
-        saveToLocalStorage();
-        alert('تم الحفظ بنجاح');
-        switchTab('design');
-    }
-
-    /** --- FIXED DESIGN & PREVIEW LOGIC --- */
+    /* --- DESIGN GENERATOR (Updated: Labels Changed) --- */
     function generateExamHTML(viewMode, studentData) {
         const s = app.settings;
         let content = `
         <div class="relative w-full h-full p-[15mm] flex flex-col justify-between">
-            <!-- Markers -->
-            <div class="scan-marker" style="top:15mm; left:15mm;"></div>
-            <div class="scan-marker" style="top:15mm; right:15mm;"></div>
-            <div class="scan-marker" style="bottom:15mm; left:15mm;"></div>
-            <div class="scan-marker" style="bottom:15mm; right:15mm;"></div>
+            <div class="absolute top-4 w-full flex justify-center items-center gap-2 opacity-100 z-40">
+                <i class="fa-solid fa-file-circle-check fa-xl text-primary"></i>
+                <span class="font-black text-2xl tracking-tighter font-display text-primary uppercase">MarkWise</span>
+            </div>
             
-            <!-- Header -->
-            <div class="flex-none">
-                <div class="border-b-2 border-black pb-2 mb-2 flex justify-between items-end">
-                    <div class="text-right"><h2 class="font-bold text-lg">${s.school}</h2><p class="text-xs text-gray-600">${s.teacher}</p></div>
-                    <div class="text-center"><h1 class="font-black text-xl">${s.subject}</h1><p class="text-xs font-bold bg-black text-white px-2 rounded inline-block">${s.title}</p></div>
-                    <div class="text-left"><div class="border-2 border-black px-2 py-0.5 mb-1 rounded"><span class="text-[10px] font-bold block">ID</span><span class="font-mono font-bold text-lg">${s.id}</span></div><p class="text-[10px] font-bold">${s.classRoom}</p></div>
+            <div class="scan-marker" style="top:15mm; left:15mm;"></div><div class="scan-marker" style="top:15mm; right:15mm;"></div>
+            <div class="scan-marker" style="bottom:15mm; left:15mm;"></div><div class="scan-marker" style="bottom:15mm; right:15mm;"></div>
+            
+            <div class="flex-none mt-6 pt-4">
+                <div class="border-b-2 border-black pb-4 mb-2 flex justify-between items-end">
+                    <div class="text-right w-1/3"><h2 class="font-bold text-lg">${s.school}</h2><p class="text-xs text-gray-600">${s.teacher}</p></div>
+                    
+                    <div class="text-center w-1/3 flex flex-col items-center justify-end pb-1">
+                        <h1 class="font-black text-2xl mb-1 leading-relaxed p-1">${s.subject}</h1>
+                        <p class="text-xs font-bold bg-black text-white px-4 py-1.5 pb-2 rounded-lg inline-block leading-normal mb-1 shadow-sm">${s.title}</p>
+                    </div>
+                    
+                    <div class="text-left w-1/3"><div class="border-2 border-black px-2 py-0.5 mb-1 rounded inline-block"><span class="text-[10px] font-bold block">ID</span><span class="font-mono font-bold text-lg">${s.id}</span></div><p class="text-[10px] font-bold block mt-1">${s.classRoom}</p></div>
                 </div>
-                
-                <div class="border border-black rounded p-2 mb-2 bg-gray-50 flex gap-4">
-                    <div class="flex-1"><span class="text-xs font-bold">الاسم:</span><div class="border-b border-dotted border-black mt-3"></div></div>
-                    <div class="w-24"><span class="text-xs font-bold">رقم:</span><div class="border-b border-dotted border-black mt-3"></div></div>
-                </div>
+                <!-- Updated "رقم" to "القسم" -->
+                <div class="border border-black rounded p-2 mb-2 bg-gray-50 flex gap-4"><div class="flex-1"><span class="text-xs font-bold">الاسم:</span><div class="border-b border-dotted border-black mt-3"></div></div><div class="w-24"><span class="text-xs font-bold">القسم:</span><div class="border-b border-dotted border-black mt-3"></div></div></div>
             </div>
 
-            <!-- Questions Area -->
             <div class="flex-1 overflow-hidden ${s.layoutType==='sheet'?'flex flex-wrap content-start':'w-full'}">`;
             
         for(let i=0; i<s.q; i++) {
@@ -551,321 +505,189 @@
             for(let j=0; j<s.o; j++) {
                 let cls = '';
                 if(viewMode && studentData) {
-                    const keyRef = app.settings.keys[i]?.answers || [];
-                    const st = studentData.answers[i]||[];
+                    const keyRef = app.settings.keys[i]?.answers || []; const st = studentData.answers[i]||[];
                     if(keyRef.includes(j) && st.includes(j)) cls='correct';
                     else if(st.includes(j) && !keyRef.includes(j)) cls='wrong';
                     else if(keyRef.includes(j) && !st.includes(j)) cls='missed';
                 }
                 bubbles += `<div class="bubble ${cls}">${app.labels[j]}</div>`;
             }
-
             if(s.layoutType === 'sheet') {
                 content += `<div class="q-row inline-flex w-[48%] mx-[1%] border-b border-gray-100 py-1 items-center justify-between h-[32px]"><span class="font-bold text-sm w-6 text-center">${i+1}</span><div class="bubble-container">${bubbles}</div></div>`;
             } else {
-                content += `
-                <div class="flex border-b border-gray-200 py-1 items-center h-auto min-h-[35px]">
-                    <div class="w-6 font-bold text-center bg-gray-100 text-xs py-1 border border-gray-300 ml-2 rounded">${i+1}</div>
-                    <div class="flex-1 text-xs relative px-1 tiny-edit-container leading-tight">${viewMode?`سؤال ${i+1}`:`<div class="tiny-edit">نص السؤال...</div>`}</div>
-                    <div class="w-[35%]"><div class="bubble-container justify-center scale-90">${bubbles}</div></div>
-                </div>`;
+                content += `<div class="flex border-b border-gray-200 py-1 items-center h-auto min-h-[35px]"><div class="w-6 font-bold text-center bg-gray-100 text-xs py-1 border border-gray-300 ml-2 rounded">${i+1}</div><div class="flex-1 text-xs relative px-1 tiny-edit-container leading-tight">${viewMode?`سؤال ${i+1}`:`<div class="tiny-edit">نص السؤال...</div>`}</div><div class="w-[35%]"><div class="bubble-container justify-center scale-90">${bubbles}</div></div></div>`;
             }
         }
-        content += `</div></div>`;
+        content += `</div><div class="absolute bottom-3 left-0 w-full text-center"><p class="text-[9px] text-gray-500 border-t border-gray-300 mx-16 pt-1">MarkWise App <span class="mx-1 text-gray-300">|</span> www.mywebsite.com <span class="mx-1 text-gray-300">|</span> 212662545188</p></div></div>`;
         return content;
     }
 
     function updatePrintPreview(viewMode=false, studentData=null) {
         const container = viewMode ? document.getElementById('modalContent') : document.getElementById('printableArea');
         container.innerHTML = '';
-
-        if(viewMode) {
-            container.innerHTML = generateExamHTML(true, studentData);
-            return;
-        }
+        if(viewMode) { container.innerHTML = generateExamHTML(true, studentData); return; }
 
         const size = document.getElementById('pdf-size-select').value;
         const singleHtml = generateExamHTML(false, null);
+        container.className = `print-grid layout-${size}`;
         
-        container.className = `paper-sheet print-grid layout-${size}`;
-        
-        // Accurate Scales for A4 fitting
-        let scale = 1;
-        if(size === "2") scale = 0.65; 
-        if(size === "4") scale = 0.48; 
-
-        for(let k=0; k<parseInt(size); k++) {
-            const cell = document.createElement('div');
-            cell.className = 'exam-cell';
-            const scaler = document.createElement('div');
-            scaler.className = 'exam-scaler';
-            scaler.style.transform = `scale(${scale})`;
+        let loops = parseInt(size);
+        for(let k=0; k<loops; k++) {
+            const cell = document.createElement('div'); cell.className = 'exam-cell';
+            const scaler = document.createElement('div'); scaler.className = 'exam-scaler';
             scaler.innerHTML = singleHtml;
-            cell.appendChild(scaler);
-            container.appendChild(cell);
+            cell.appendChild(scaler); container.appendChild(cell);
         }
-
         if(app.settings.layoutType !== 'sheet') initTinyMCE();
     }
 
     let isEditMode = false;
     function toggleEdit() {
-        if(app.settings.layoutType === 'sheet') return alert('التحرير غير متاح في ورقة الإجابة فقط');
+        if(app.settings.layoutType === 'sheet') return alert('التحرير غير متاح في وضع ورقة الإجابة فقط');
         isEditMode = !isEditMode;
-        const btn = document.getElementById('btn-edit-mode');
-        if(isEditMode) {
-            initTinyMCE();
-            btn.innerHTML = '<i class="fa-solid fa-check"></i> إنهاء';
-            btn.className = "px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary font-bold text-sm transition";
-        } else {
-            tinymce.remove();
-            btn.innerHTML = '<i class="fa-solid fa-pen"></i> تحرير';
-            btn.className = "px-4 py-2 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg hover:bg-yellow-100 font-bold text-sm transition";
-        }
+        if(isEditMode) initTinyMCE(); else tinymce.remove();
+        document.getElementById('btn-edit-mode').innerHTML = isEditMode ? '<i class="fa-solid fa-check"></i> إنهاء' : '<i class="fa-solid fa-pen"></i> تحرير';
+        document.getElementById('btn-edit-mode').classList.toggle('bg-primary', isEditMode);
+        document.getElementById('btn-edit-mode').classList.toggle('text-white', isEditMode);
+    }
+    
+    // Updated TinyMCE with required tools
+    function initTinyMCE() { 
+        if(tinymce.get().length>0) tinymce.remove(); 
+        tinymce.init({ 
+            selector: '.tiny-edit', 
+            inline: true, 
+            menubar: false, 
+            toolbar: 'fontsize | bold italic underline | forecolor | alignright aligncenter alignleft' 
+        }); 
     }
 
-    function initTinyMCE() {
-        if(tinymce.get().length > 0) tinymce.remove();
-        tinymce.init({ selector: '.tiny-edit', inline: true, menubar: false, toolbar: 'bold italic | forecolor' });
-    }
-
+    async function captureElement(el) { return await html2canvas(el, { scale: 3, useCORS: true, width: 794, height: 1123, windowWidth: 1200 }); }
     async function downloadPDF() {
-        if(isEditMode) toggleEdit();
-        const el = document.getElementById('printableArea');
-        document.getElementById('loadingOverlay').classList.remove('hidden');
-        document.getElementById('loadingText').innerText = "جارٍ إنشاء ملف PDF عالي الدقة...";
-        
-        try {
-            const canvas = await html2canvas(el, { 
-                scale: 4, // High quality
-                useCORS: true,
-                width: 794, // Force A4 pixel width at 96dpi approx
-                height: 1123,
-                windowWidth: 1200
-            });
-            const imgData = canvas.toDataURL('image/jpeg', 0.90);
-            const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-            pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-            pdf.save(`MarkWise_Exam_${app.settings.id}.pdf`);
-        } catch(e) { alert("Error: " + e.message); } 
-        finally { document.getElementById('loadingOverlay').classList.add('hidden'); }
+        if(isEditMode) toggleEdit(); document.getElementById('loadingOverlay').classList.remove('hidden');
+        try { const canvas = await captureElement(document.getElementById('printableArea')); const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4'); pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297); pdf.save(`MarkWise_Exam_${app.settings.id}.pdf`); } catch(e) { alert("خطأ: "+e.message); } finally { document.getElementById('loadingOverlay').classList.add('hidden'); }
+    }
+    async function downloadImage() {
+        if(isEditMode) toggleEdit(); document.getElementById('loadingOverlay').classList.remove('hidden');
+        try { const canvas = await captureElement(document.getElementById('printableArea')); const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = `MarkWise_Exam_${app.settings.id}.png`; a.click(); } catch(e) { alert("خطأ: "+e.message); } finally { document.getElementById('loadingOverlay').classList.add('hidden'); }
     }
 
-    /** --- SCANNER LOGIC --- */
-    async function startCamera() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return alert("الكاميرا غير مدعومة");
-        try {
-            app.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: {ideal: 1920} } });
-            const vid = document.getElementById('videoFeed');
-            vid.srcObject = app.stream;
-            vid.onloadedmetadata = () => {
-                vid.play();
-                document.getElementById('cam-start-overlay').classList.add('hidden');
-                document.getElementById('scanner-ui').classList.remove('hidden');
-                app.isScanning = true;
-                requestAnimationFrame(scanLoop);
-            };
-        } catch (e) { alert("خطأ الكاميرا: " + e.message); }
-    }
+    /* --- RESULTS & ANALYSIS --- */
+    function getMasteryGrade(score, total) { if(score >= total) return 'A'; if(score >= total * 0.5) return 'B'; if(score >= total * 0.25) return 'C'; return 'D'; }
+    function toggleSort() { app.sortAsc = !app.sortAsc; renderResultsTable(); }
 
-    function stopCamera() {
-        app.isScanning = false;
-        if(app.stream) app.stream.getTracks().forEach(t=>t.stop());
-        document.getElementById('cam-start-overlay').classList.remove('hidden');
-        document.getElementById('scanner-ui').classList.add('hidden');
+    function renderResultsTable() {
+        const selClass = document.getElementById('filter-class').value; const search = document.getElementById('filter-search').value.toLowerCase();
+        let filtered = app.results.filter(r => (selClass === 'all' || r.classRoom === selClass) && (r.name.toLowerCase().includes(search)));
+        filtered.sort((a,b) => app.sortAsc ? a.score - b.score : b.score - a.score);
+        const b = document.getElementById('res-body'); b.innerHTML='';
+        filtered.forEach((r,i) => {
+            const grade = getMasteryGrade(r.score, r.total);
+            b.innerHTML+=`<tr class="hover:bg-gray-50"><td class="p-4 flex items-center gap-2"><button onclick='viewStudentStats(${JSON.stringify(r)})' class="text-primary hover:bg-indigo-50 p-1 rounded-full w-8 h-8 flex items-center justify-center transition"><i class="fa-solid fa-chart-pie"></i></button><input value="${r.name}" onchange="updateResName(${r.id}, this.value)" class="bg-transparent border-b outline-none w-32"></td><td class="p-4">${r.classRoom || '-'}</td><td class="p-4 font-bold text-${r.percentage>=50?'green':'red'}-600">${r.score}/${r.total}</td><td class="p-4">${r.percentage}%</td><td class="p-4"><div class="grade-badge grade-${grade}">${grade}</div></td><td class="p-4 text-center"><button onclick='viewRes(${r.id})' class="text-blue-600 p-2"><i class="fa-solid fa-eye"></i></button><button onclick="delRes(${r.id})" class="text-red-600 p-2"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+        });
+        const classSet = new Set(app.results.map(r=>r.classRoom).filter(Boolean)); const sel = document.getElementById('filter-class');
+        if(sel.options.length === 1) classSet.forEach(c => sel.innerHTML+=`<option value="${c}">${c}</option>`);
+        updateCharts(filtered);
     }
-
-    function handleFileUpload(e) {
-        const file = e.target.files[0]; if(!file) return; stopCamera();
-        const img = new Image(); img.src = URL.createObjectURL(file);
-        img.onload = () => {
-            const canvas = document.createElement('canvas'); canvas.width=img.width; canvas.height=img.height;
-            canvas.getContext('2d').drawImage(img,0,0);
-            processImage(canvas, true);
-        };
+    
+    function updateResName(id, val) { const r=app.results.find(x=>x.id===id); if(r){r.name=val; saveToLocalStorage();} }
+    function delRes(id) { if(confirm('حذف؟')){ app.results = app.results.filter(x=>x.id!==id); saveToLocalStorage(); renderResultsTable(); } }
+    function viewRes(id) { const r=app.results.find(x=>x.id===id); document.getElementById('paperModal').classList.remove('hidden'); updatePrintPreview(true, r); document.getElementById('modalOriginalImage').src=r.snapshot || ''; }
+    
+    let statsChart, qChart, studChart;
+    function initStatsChart() { 
+        statsChart = new Chart(document.getElementById('masteryChart').getContext('2d'), { type: 'pie', data: { labels: ['A','B','C','D'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#15803d','#0ea5e9','#eab308','#ef4444'] }] }, options: { maintainAspectRatio: false } });
+        qChart = new Chart(document.getElementById('qChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ label: '% Correct', data: [], backgroundColor: '#4f46e5' }] }, options: { maintainAspectRatio: false } });
     }
+    function updateCharts(data) {
+        if(!statsChart || !qChart) return;
+        let counts = {A:0, B:0, C:0, D:0}; data.forEach(r => counts[getMasteryGrade(r.score, r.total)]++);
+        statsChart.data.datasets[0].data = [counts.A, counts.B, counts.C, counts.D]; statsChart.update();
+        let qStats = new Array(app.settings.q).fill(0); data.forEach(r => r.answers.forEach((a,i) => { if(i<app.settings.q && JSON.stringify(a.sort())===JSON.stringify(app.settings.keys[i].answers.sort())) qStats[i]++; }));
+        qChart.data.labels = qStats.map((_,i)=>`Q${i+1}`); qChart.data.datasets[0].data = qStats.map(s => Math.round((s/data.length)*100)); qChart.update();
+    }
+    function viewStudentStats(r) {
+        document.getElementById('studentStatsModal').classList.remove('hidden');
+        const container = document.getElementById('studentStatsContent'); const grade = getMasteryGrade(r.score, r.total);
+        container.innerHTML = `<div class="flex items-center gap-4 mb-4"><div class="grade-badge grade-${grade} w-16 h-16 text-2xl shadow-lg">${grade}</div><div><h2 class="font-bold text-lg">${r.name}</h2><p class="text-gray-500">${r.score} / ${r.total} (${r.percentage}%)</p></div></div><div class="h-64"><canvas id="studentDetailChart"></canvas></div>`;
+        const qData = r.answers.map((a,i) => { if(i >= app.settings.q) return 0; return JSON.stringify(a.sort()) === JSON.stringify(app.settings.keys[i].answers.sort()) ? 1 : 0; });
+        if(studChart) studChart.destroy();
+        studChart = new Chart(document.getElementById('studentDetailChart'), { type: 'bar', data: { labels: Array.from({length: app.settings.q}, (_,i)=>`Q${i+1}`), datasets: [{ label: 'Performance (1=Right, 0=Wrong)', data: qData, backgroundColor: qData.map(v=>v?'#22c55e':'#ef4444') }] }, options: { scales: { y: { min: 0, max: 1, ticks: { stepSize: 1 } } } } });
+    }
+    function closeStatsModal() { document.getElementById('studentStatsModal').classList.add('hidden'); }
 
-    let stableFrames = 0;
+    /* --- SCANNER --- */
+    async function startCamera() { if(!navigator.mediaDevices) return alert("الكاميرا غير مدعومة"); try { app.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: {ideal: 1920} } }); const vid = document.getElementById('videoFeed'); vid.srcObject = app.stream; vid.onloadedmetadata = () => { vid.play(); document.getElementById('cam-start-overlay').classList.add('hidden'); document.getElementById('scanner-ui').classList.remove('hidden'); app.isScanning=true; requestAnimationFrame(scanLoop); }; } catch(e) { alert("خطأ: "+e.message); } }
+    function stopCamera() { app.isScanning=false; if(app.stream) app.stream.getTracks().forEach(t=>t.stop()); document.getElementById('cam-start-overlay').classList.remove('hidden'); document.getElementById('scanner-ui').classList.add('hidden'); }
+    function handleFileUpload(e) { const f=e.target.files[0]; if(f){stopCamera(); const i=new Image(); i.src=URL.createObjectURL(f); i.onload=()=>{const c=document.createElement('canvas'); c.width=i.width; c.height=i.height; c.getContext('2d').drawImage(i,0,0); processImage(c,true);};} }
+
+    let frames=0;
     function scanLoop() {
         if(!app.isScanning || !app.cvReady) return;
-        const vid = document.getElementById('videoFeed');
-        if(vid.readyState === vid.HAVE_ENOUGH_DATA) {
-            const canvas = document.getElementById('processCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = vid.videoWidth/2; canvas.height = vid.videoHeight/2;
-            ctx.drawImage(vid,0,0,canvas.width,canvas.height);
-            
-            if(detectMarkers(canvas)) {
-                stableFrames++;
-                const st = document.getElementById('scan-status');
-                st.innerText = "جاري التثبيت..."; st.className = "bg-green-600/80 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md";
-                if(stableFrames > 15 && document.getElementById('auto-capture-toggle').checked) {
-                    const full = document.createElement('canvas'); full.width=vid.videoWidth; full.height=vid.videoHeight;
-                    full.getContext('2d').drawImage(vid,0,0);
-                    processImage(full, false);
-                    stableFrames = 0;
-                }
-            } else {
-                stableFrames = 0;
-                document.getElementById('scan-status').innerText = "ابحث عن العلامات الأربعة...";
-                document.getElementById('scan-status').className = "bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold";
-            }
+        const vid=document.getElementById('videoFeed');
+        if(vid.readyState===vid.HAVE_ENOUGH_DATA) {
+            const c=document.getElementById('processCanvas'); const ctx=c.getContext('2d');
+            c.width=vid.videoWidth/2; c.height=vid.videoHeight/2; ctx.drawImage(vid,0,0,c.width,c.height);
+            if(detectMarkers(c)) { frames++; document.getElementById('scan-status').innerText="ثبت الكاميرا..."; document.getElementById('scan-status').className="bg-green-600/80 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md"; if(frames>15 && document.getElementById('auto-capture-toggle').checked) { const full=document.createElement('canvas'); full.width=vid.videoWidth; full.height=vid.videoHeight; full.getContext('2d').drawImage(vid,0,0); processImage(full,false); frames=0; } } else { frames=0; document.getElementById('scan-status').innerText="ابحث عن العلامات الأربعة..."; document.getElementById('scan-status').className="bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold"; }
         }
         requestAnimationFrame(scanLoop);
     }
-
     function detectMarkers(canvas) {
-        let src = cv.imread(canvas);
-        let gray = new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
-        let thresh = new cv.Mat(); cv.adaptiveThreshold(gray,thresh,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY_INV,21,10);
-        let contours = new cv.MatVector(); let hier = new cv.Mat();
-        cv.findContours(thresh,contours,hier,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
-        
-        let cands = 0;
-        for(let i=0; i<contours.size(); i++) {
-            let cnt = contours.get(i);
-            if(cv.contourArea(cnt) > (canvas.width*canvas.height*0.001)) {
-                let peri = cv.arcLength(cnt,true); let approx = new cv.Mat();
-                cv.approxPolyDP(cnt,approx,0.04*peri,true);
-                if(approx.rows===4 && cv.isContourConvex(approx)) cands++;
-                approx.delete();
-            }
-        }
-        src.delete(); gray.delete(); thresh.delete(); contours.delete(); hier.delete();
-        return cands >= 4;
+        let src=cv.imread(canvas); let gray=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY); let thresh=new cv.Mat(); cv.adaptiveThreshold(gray,thresh,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY_INV,21,10); let cnts=new cv.MatVector(); cv.findContours(thresh,cnts,new cv.Mat(),cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
+        let found=0; for(let i=0; i<cnts.size(); i++) { let c=cnts.get(i); if(cv.contourArea(c)>(canvas.width*canvas.height*0.001)) { let p=cv.arcLength(c,true); let approx=new cv.Mat(); cv.approxPolyDP(c,approx,0.04*p,true); if(approx.rows===4 && cv.isContourConvex(approx)) found++; approx.delete(); } }
+        src.delete(); gray.delete(); thresh.delete(); cnts.delete(); return found>=4;
     }
-
-    function processImage(canvasInput, manual) {
+    function processImage(canvas, manual) {
         document.getElementById('beepSound').play().catch(()=>{});
-        const snap = canvasInput.toDataURL('image/jpeg', 0.8);
-        
         try {
-            let src = cv.imread(canvasInput);
-            let gray = new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
-            let thresh = new cv.Mat(); cv.adaptiveThreshold(gray,thresh,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY_INV,51,10);
-            
-            // Warp Perspective
-            let contours = new cv.MatVector(); let hier = new cv.Mat();
-            cv.findContours(thresh,contours,hier,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
-            let markers = [];
-            for(let i=0; i<contours.size(); i++) {
-                let r = cv.boundingRect(contours.get(i));
-                let ar = r.width/r.height;
-                if(cv.contourArea(contours.get(i))>400 && ar>0.7 && ar<1.3) markers.push(r);
-            }
-            
+            let src=cv.imread(canvas); let gray=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY); let thresh=new cv.Mat(); cv.adaptiveThreshold(gray,thresh,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY_INV,51,10); let cnts=new cv.MatVector(); cv.findContours(thresh,cnts,new cv.Mat(),cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
+            let markers=[]; for(let i=0; i<cnts.size(); i++) { let r=cv.boundingRect(cnts.get(i)); let ar=r.width/r.height; if(cv.contourArea(cnts.get(i))>400 && ar>0.7 && ar<1.3) markers.push(r); }
             if(markers.length<4) { if(manual) alert("العلامات غير واضحة"); return; }
-            markers.sort((a,b)=>a.y-b.y);
-            let top = markers.slice(0,2).sort((a,b)=>a.x-b.x);
-            let bot = markers.slice(2,4).sort((a,b)=>a.x-b.x);
+            markers.sort((a,b)=>a.y-b.y); let top=markers.slice(0,2).sort((a,b)=>a.x-b.x); let bot=markers.slice(2,4).sort((a,b)=>a.x-b.x);
+            let srcTri=cv.matFromArray(4,1,cv.CV_32FC2,[top[0].x,top[0].y,top[1].x+top[1].width,top[1].y,bot[0].x,bot[0].y+bot[0].height,bot[1].x+bot[1].width,bot[1].y+bot[1].height]);
+            let dstTri=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,1000,0,0,1414,1000,1414]);
+            let M=cv.getPerspectiveTransform(srcTri,dstTri); let warped=new cv.Mat(); cv.warpPerspective(thresh,warped,M,new cv.Size(1000,1414));
             
-            let srcTri = cv.matFromArray(4,1,cv.CV_32FC2,[top[0].x,top[0].y,top[1].x+top[1].width,top[1].y,bot[0].x,bot[0].y+bot[0].height,bot[1].x+bot[1].width,bot[1].y+bot[1].height]);
-            let dstTri = cv.matFromArray(4,1,cv.CV_32FC2,[0,0,1000,0,0,1414,1000,1414]);
-            let M = cv.getPerspectiveTransform(srcTri,dstTri);
-            let warped = new cv.Mat(); cv.warpPerspective(thresh,warped,M,new cv.Size(1000,1414));
-            
-            // Scan Grid
-            let detected = [];
-            let startY = 1414 * 0.25; 
-            let contentH = 1414 * 0.65;
-            let q = app.settings.q; let o = app.settings.o;
-            
-            if(app.settings.layoutType === 'sheet') {
-                let half = Math.ceil(q/2); let rowH = contentH/half;
-                for(let i=0; i<half; i++) detected[i] = scanRow(warped, 0, 450, startY+(i*rowH), rowH, o);
-                for(let i=half; i<q; i++) detected[i] = scanRow(warped, 550, 450, startY+((i-half)*rowH), rowH, o);
-            } else {
-                let rowH = contentH/q;
-                for(let i=0; i<q; i++) detected[i] = scanRow(warped, 600, 350, startY+(i*rowH), rowH, o);
-            }
-
-            src.delete(); gray.delete(); thresh.delete(); contours.delete(); hier.delete(); srcTri.delete(); dstTri.delete(); M.delete(); warped.delete();
-            saveResult(detected, snap);
+            let detected=[]; let startY=1414*0.25; let contentH=1414*0.65; let q=app.settings.q; let o=app.settings.o;
+            if(app.settings.layoutType==='sheet') { let half=Math.ceil(q/2); let rowH=contentH/half; for(let i=0; i<half; i++) detected[i]=scanRow(warped,0,450,startY+(i*rowH),rowH,o); for(let i=half; i<q; i++) detected[i]=scanRow(warped,550,450,startY+((i-half)*rowH),rowH,o); } else { let rowH=contentH/q; for(let i=0; i<q; i++) detected[i]=scanRow(warped,600,350,startY+(i*rowH),rowH,o); }
+            src.delete(); gray.delete(); thresh.delete(); cnts.delete(); srcTri.delete(); dstTri.delete(); M.delete(); warped.delete();
+            saveResult(detected, canvas.toDataURL('image/jpeg', 0.8));
         } catch(e) { if(manual) alert("خطأ: "+e.message); }
     }
-
-    function scanRow(mat, xOff, w, y, h, opts) {
-        let ans = []; let bubbleW = w/opts;
-        for(let j=0; j<opts; j++) {
-            let roi = mat.roi(new cv.Rect(xOff+(j*bubbleW)+(bubbleW*0.25), y+(h*0.25), bubbleW*0.5, h*0.5));
-            if(cv.countNonZero(roi) > (roi.rows*roi.cols*0.45)) ans.push(j);
-            roi.delete();
-        }
-        return ans;
+    function scanRow(mat,xOff,w,y,h,opts) {
+        let ans=[]; let bW=w/opts; for(let j=0; j<opts; j++) { let roi=mat.roi(new cv.Rect(xOff+(j*bW)+(bW*0.25),y+(h*0.25),bW*0.5,h*0.5)); if(cv.countNonZero(roi)>(roi.rows*roi.cols*0.45)) ans.push(j); roi.delete(); } return ans;
     }
-
     function saveResult(answers, snap) {
-        let sc = 0; let tot = 0;
-        app.settings.keys.forEach((k,i) => {
-            if(i<answers.length && answers[i]) {
-                tot+=k.points;
-                let s = answers[i].sort().toString(); let c = k.answers.sort().toString();
-                if(s===c) sc+=k.points;
-            }
-        });
-        const r = { id: Date.now(), name: `ورقة ${app.results.length+1}`, score: sc, total: tot, percentage: Math.round((sc/tot)*100)||0, answers, snapshot: snap };
-        app.results.push(r);
-        saveToLocalStorage();
+        let sc=0; let tot=0; app.settings.keys.forEach((k,i)=>{ if(i<answers.length){ tot+=k.points; if(JSON.stringify(answers[i].sort())===JSON.stringify(k.answers.sort())) sc+=k.points; } });
+        const r={id:Date.now(),name:`ورقة ${app.results.length+1}`,classRoom:app.settings.classRoom,score:sc,total:tot,percentage:Math.round((sc/tot)*100)||0,answers,snapshot:snap};
+        app.results.push(r); saveToLocalStorage();
+        document.getElementById('recent-scans').insertAdjacentHTML('afterbegin',`<div class="bg-white p-2 border-l-4 ${r.percentage>=50?'border-green-500':'border-red-500'} flex justify-between"><div><b>${r.name}</b></div><div>${r.score}/${r.total}</div></div>`);
         
-        const list = document.getElementById('recent-scans');
-        list.insertAdjacentHTML('afterbegin', `<div class="bg-white p-2 border-l-4 ${r.percentage>=50?'border-green-500':'border-red-500'} flex justify-between"><div><b>${r.name}</b></div><div class="font-bold">${r.score}/${r.total}</div></div>`);
-        
-        const st = document.getElementById('scan-status');
-        st.innerText = `تم: ${r.score}/${r.total}`; st.className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg";
-        setTimeout(()=> { st.innerText="ابحث عن العلامات..."; st.className="bg-black/60 text-white px-4 py-2 rounded-full"; }, 2000);
-    }
-
-    /** --- CHART & UTILS --- */
-    function renderResultsTable() {
-        const b = document.getElementById('res-body'); b.innerHTML='';
-        const sc = app.results.map(r=>r.score);
-        if(sc.length) {
-            document.getElementById('st-count').innerText=sc.length; document.getElementById('st-avg').innerText=(sc.reduce((a,b)=>a+b,0)/sc.length).toFixed(1);
-            document.getElementById('st-max').innerText=Math.max(...sc); document.getElementById('st-min').innerText=Math.min(...sc);
-            updateChart();
-        }
-        app.results.forEach((r,i) => {
-            b.innerHTML+=`<tr class="hover:bg-gray-50"><td class="p-4"><input value="${r.name}" onchange="app.results[${i}].name=this.value;saveToLocalStorage()" class="bg-transparent border-b outline-none"></td><td class="p-4 font-bold text-${r.percentage>=50?'green':'red'}-600">${r.score}</td><td class="p-4">${r.percentage}%</td><td class="p-4"><button onclick='viewRes(${i})' class="text-blue-600"><i class="fa-solid fa-eye"></i></button><button onclick="delRes(${i})" class="text-red-600 mr-2"><i class="fa-solid fa-trash"></i></button></td></tr>`;
-        });
+        app.isScanning = false;
+        const overlay = document.getElementById('scan-result-overlay');
+        document.getElementById('scan-feedback-img').src = snap;
+        document.getElementById('scan-feedback-score').innerText = sc + '/' + tot;
+        const grade = getMasteryGrade(sc, tot);
+        const gradeEl = document.getElementById('scan-feedback-grade');
+        gradeEl.innerText = grade;
+        gradeEl.className = `text-4xl font-bold inline-block px-6 py-2 rounded-lg text-white shadow grade-${grade}`;
+        overlay.classList.remove('hidden');
     }
     
-    function viewRes(i) {
-        document.getElementById('paperModal').classList.remove('hidden');
-        updatePrintPreview(true, app.results[i]);
-        const img = document.getElementById('modalOriginalImage');
-        if(app.results[i].snapshot) { img.src = app.results[i].snapshot; img.classList.remove('hidden'); } else img.classList.add('hidden');
-    }
-    function closePaperModal() { document.getElementById('paperModal').classList.add('hidden'); }
-    function delRes(i) { if(confirm('حذف؟')) { app.results.splice(i,1); saveToLocalStorage(); renderResultsTable(); } }
-
-    let chart;
-    function initStatsChart() { chart = new Chart(document.getElementById('qChart'), { type: 'bar', data: {labels:[],datasets:[{label:'% الصحيح',data:[],backgroundColor:'#4f46e5'}]} }); }
-    function updateChart() {
-        if(!chart) return;
-        let stats = new Array(app.settings.q).fill(0);
-        app.results.forEach(r => r.answers.forEach((a,i) => { if(i<app.settings.q && JSON.stringify(a.sort())===JSON.stringify(app.settings.keys[i].answers.sort())) stats[i]++; }));
-        chart.data.labels = stats.map((_,i)=>`Q${i+1}`);
-        chart.data.datasets[0].data = stats.map(s => Math.round((s/app.results.length)*100));
-        chart.update();
+    function nextScan() {
+        document.getElementById('scan-result-overlay').classList.add('hidden');
+        app.isScanning = true;
+        requestAnimationFrame(scanLoop);
     }
 
-    function renderExamsList() {
-        const g = document.getElementById('exams-grid'); g.innerHTML='';
-        app.savedExams.forEach((e,i) => {
-            g.innerHTML += `<div class="bg-white border rounded p-4 relative group"><h4 class="font-bold">${e.meta.title}</h4><p class="text-xs text-gray-500 mb-2">${e.meta.subject} | ID: ${e.meta.id}</p><button onclick="loadExam(${i})" class="bg-primary text-white text-xs px-3 py-1 rounded">تحميل</button><button onclick="app.savedExams.splice(${i},1);saveToLocalStorage();renderExamsList()" class="text-red-500 absolute top-4 left-4 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash"></i></button></div>`;
-        });
-    }
+    function renderExamsList() { const g=document.getElementById('exams-grid'); g.innerHTML=''; app.savedExams.forEach((e,i)=>{g.innerHTML+=`<div class="bg-white border rounded p-4 relative group"><h4 class="font-bold">${e.meta.title}</h4><p class="text-xs text-gray-500">${e.meta.subject} | ID:${e.meta.id}</p><button onclick="loadExam(${i})" class="bg-primary text-white text-xs px-3 py-1 rounded mt-2">تحميل</button><button onclick="app.savedExams.splice(${i},1);saveToLocalStorage();renderExamsList()" class="text-red-500 absolute top-4 left-4 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash"></i></button></div>`;}); }
     function loadExam(i) { app.settings={...app.savedExams[i].meta}; document.getElementById('conf-id').value=app.settings.id; updateKeyGrid(); setTimeout(()=>{app.settings.keys.forEach((k,x)=>{if(x<app.settings.q){k.answers.forEach(a=>document.querySelector(`input[name="q${x}"][value="${a}"]`).checked=true)}})},100); switchTab('settings'); }
-
-    function saveToLocalStorage() { localStorage.setItem('markwise_v11', JSON.stringify({s:app.settings, r:app.results, e:app.savedExams})); }
-    function loadLocalData() { const d=JSON.parse(localStorage.getItem('markwise_v11')); if(d) { app.settings={...app.settings,...d.s}; app.results=d.r||[]; app.savedExams=d.e||[]; document.getElementById('conf-school').value=app.settings.school; document.getElementById('conf-id').value=app.settings.id; } }
-    function resetApp() { if(confirm('حذف الكل؟')) { localStorage.removeItem('markwise_v11'); location.reload(); } }
-    function exportData() { const b=new Blob([localStorage.getItem('markwise_v11')]); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='backup.json'; a.click(); }
-    function importData(e) { const r=new FileReader(); r.onload=x=>{localStorage.setItem('markwise_v11',x.target.result);location.reload()}; r.readAsText(e.target.files[0]); }
-    function exportResultsCSV() {
-        let csv = "\uFEFFالاسم,المجموع,%\n" + app.results.map(r=>`"${r.name}",${r.score}/${r.total},${r.percentage}`).join("\n");
-        const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURI(csv); a.download='res.csv'; a.click();
-    }
+    function saveToLocalStorage() { localStorage.setItem('markwise_v16', JSON.stringify({s:app.settings, r:app.results, e:app.savedExams})); }
+    function loadLocalData() { const d=JSON.parse(localStorage.getItem('markwise_v16')); if(d) { app.settings={...app.settings,...d.s}; app.results=d.r||[]; app.savedExams=d.e||[]; document.getElementById('conf-school').value=app.settings.school; document.getElementById('conf-id').value=app.settings.id; } }
+    function resetApp() { if(confirm('حذف الكل؟')) { localStorage.removeItem('markwise_v16'); location.reload(); } }
+    function exportData() { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([localStorage.getItem('markwise_v16')])); a.download='backup.json'; a.click(); }
+    function importData(e) { const r=new FileReader(); r.onload=x=>{localStorage.setItem('markwise_v16',x.target.result);location.reload()}; r.readAsText(e.target.files[0]); }
+    function exportResultsCSV() { const c="\uFEFFالاسم,القسم,المجموع,%\n"+app.results.map(r=>`"${r.name}","${r.classRoom}",${r.score}/${r.total},${r.percentage}`).join("\n"); const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURI(c); a.download='res.csv'; a.click(); }
 </script>
 </body>
 </html>
