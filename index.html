@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MarkWise - المصحح الآلي الذكي</title>
+    <title>MarkWise - المصحح الآلي الاحترافي</title>
     
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,7 +32,7 @@
 
     <style>
         /* --- General Layout --- */
-        body { background-color: #f3f4f6; }
+        body { background-color: #f3f4f6; overflow-x: hidden; }
         .paper-wrapper {
             width: 100%; overflow-x: auto; padding-bottom: 20px;
             display: flex; justify-content: center; -webkit-overflow-scrolling: touch;
@@ -45,14 +45,11 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
-        /* --- Grid System & Transformations --- */
+        /* --- Grid System --- */
         .print-grid { display: block; width: 100%; height: 100%; position: relative; }
-        
-        /* Layout 1: 100% */
         .layout-1 .exam-cell { width: 210mm; height: 297mm; display: block; overflow: hidden; }
         .layout-1 .exam-scaler { width: 210mm; height: 297mm; transform: scale(1); transform-origin: top right; }
-
-        /* Layout 2: 50% */
+        
         .layout-2 .exam-cell {
             width: 210mm; height: 148.5mm; position: relative; overflow: hidden;
             border-bottom: 1px dashed #e5e7eb; display: flex; justify-content: center; align-items: center;
@@ -62,7 +59,6 @@
             transform: rotate(-90deg) scale(0.66); transform-origin: center center;
         }
 
-        /* Layout 4: 25% */
         .layout-4 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
         .layout-4 .exam-cell { position: relative; overflow: hidden; border: 1px dashed #e5e7eb; }
         .layout-4 .exam-scaler {
@@ -73,29 +69,24 @@
         /* --- Exam Content Styling --- */
         .exam-scaler { background: white; display: flex; flex-direction: column; direction: rtl; }
 
-        /* --- Bubbles Styling (Fixed Alignment) --- */
-        .bubble-container { display: flex; justify-content: center; gap: 6px; }
+        /* --- Bubbles Styling (Updated for Precision) --- */
+        .bubble-container { display: flex; justify-content: center; gap: 8px; }
         
         .bubble {
-            width: 26px; 
-            height: 26px; 
+            width: 24px; 
+            height: 24px; 
             box-sizing: border-box;
-            border: 2px solid #000; 
+            border: 2px solid #333; 
             border-radius: 50%;
             display: flex; 
             justify-content: center; 
             align-items: center;
-            
-            font-size: 13px; 
+            font-size: 12px; 
             font-weight: 800; 
             font-family: 'Arial', sans-serif;
             background: white; 
             z-index: 10; 
-            
-            /* Vertical Alignment Fix */
-            padding-top: 0 !important;
-            padding-bottom: 5px !important; 
-            line-height: 1 !important;
+            padding-bottom: 2px;
         }
         
         .key-check:checked + span { background-color: black; color: white; border-color: black; }
@@ -103,14 +94,14 @@
         .bubble.wrong { background-color: #ef4444 !important; border-color: #ef4444; color: white; }
         .bubble.missed { background-color: #fbbf24 !important; border-color: #d97706; }
 
-        /* --- Markers --- */
-        .scan-marker { width: 22px; height: 22px; background: black; position: absolute; z-index: 50; }
-        .scan-overlay-box {
-            position: absolute; border: 4px solid #4f46e5; 
-            box-shadow: 0 0 20px rgba(79, 70, 229, 0.5); pointer-events: none; z-index: 20;
+        /* --- Markers (CRITICAL: Fixed Position & Size) --- */
+        /* These act as anchors for the computer vision */
+        .scan-marker { 
+            width: 20px; height: 20px; 
+            background: black; position: absolute; z-index: 50; 
         }
         
-        /* --- Input Fields (Settings Tab) --- */
+        /* --- Input Fields --- */
         .input-field {
             width: 100%; padding: 0.625rem; 
             border: 1px solid #cbd5e1;
@@ -119,7 +110,7 @@
         }
         .input-field:focus { border-color: #4f46e5; ring: 2px solid #4f46e5; }
 
-        /* --- Grades --- */
+        /* --- Grade Badges --- */
         .grade-badge { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
         .grade-A { background: #15803d; } .grade-B { background: #0ea5e9; } .grade-C { background: #eab308; } .grade-D { background: #ef4444; }
 
@@ -130,6 +121,7 @@
 <body class="font-sans min-h-screen flex flex-col">
 
 <audio id="beepSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+<audio id="shutterSound" src="https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg"></audio>
 
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="fixed inset-0 bg-black/90 z-[9999] hidden flex-col items-center justify-center text-white">
@@ -159,8 +151,12 @@
                 <div class="paper-wrapper"><div id="modalContent" class="paper-sheet origin-top transform-gpu scale-75 shadow-none"></div></div>
             </div>
             <div class="flex-1 bg-white p-4 rounded shadow flex flex-col items-center">
-                <h4 class="font-bold mb-2 text-sm bg-green-100 text-green-800 px-3 py-1 rounded">الصورة الأصلية</h4>
-                <img id="modalOriginalImage" class="max-w-full h-auto border-2 border-gray-300 rounded" alt="Scan">
+                <h4 class="font-bold mb-2 text-sm bg-green-100 text-green-800 px-3 py-1 rounded">الصورة الأصلية + التحليل</h4>
+                <div class="relative w-full">
+                    <img id="modalOriginalImage" class="max-w-full h-auto border-2 border-gray-300 rounded" alt="Scan">
+                    <!-- Debug Overlay for Verified Bubbles -->
+                    <canvas id="debug-overlay-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -175,10 +171,10 @@
                 <i class="fa-solid fa-graduation-cap fa-2x"></i>
             </div>
             <div>
-                <h1 class="text-3xl font-display font-bold text-gray-800">MarkWise <span class="text-primary text-lg">V16.0</span></h1>
+                <h1 class="text-3xl font-display font-bold text-gray-800">MarkWise <span class="text-primary text-lg">V17.0 Pro</span></h1>
                 <p class="text-sm text-gray-500 font-bold flex items-center gap-2 mt-1">
                     <span id="cvStatus" class="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full text-xs border border-yellow-200"><i class="fa-solid fa-circle-notch fa-spin"></i> تحميل المحرك...</span>
-                    <span class="text-gray-400">|</span><span>نظام التصحيح الذكي</span>
+                    <span class="text-gray-400">|</span><span>نظام التصحيح الدقيق</span>
                 </p>
             </div>
         </div>
@@ -210,32 +206,16 @@
                 <div class="card p-6">
                     <h3 class="card-title text-primary font-bold mb-4 border-b pb-2"><i class="fa-solid fa-school"></i> البيانات العامة</h3>
                     <div class="space-y-4">
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 mb-1 block">اسم المؤسسة</label>
-                            <input type="text" id="conf-school" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:ring-0 outline-none transition bg-gray-50" placeholder="أدخل اسم المؤسسة">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 mb-1 block">اسم الأستاذ</label>
-                            <input type="text" id="conf-teacher" class="input-field p-2.5 border border-gray-300 rounded-lg" placeholder="أدخل اسم الأستاذ">
-                        </div>
-                        <div>
-                            <!-- Updated Label -->
-                            <label class="text-xs font-bold text-gray-500 mb-1 block">الفئة المستهدفة</label>
-                            <input type="text" id="conf-class" class="input-field p-2.5 border border-gray-300 rounded-lg" placeholder="مثال: الثانية باك آداب 1">
-                        </div>
+                        <div><label class="text-xs font-bold text-gray-500 mb-1 block">اسم المؤسسة</label><input type="text" id="conf-school" class="input-field" placeholder="أدخل اسم المؤسسة"></div>
+                        <div><label class="text-xs font-bold text-gray-500 mb-1 block">اسم الأستاذ</label><input type="text" id="conf-teacher" class="input-field" placeholder="أدخل اسم الأستاذ"></div>
+                        <div><label class="text-xs font-bold text-gray-500 mb-1 block">الفئة المستهدفة</label><input type="text" id="conf-class" class="input-field" placeholder="مثال: الثانية باك آداب 1"></div>
                     </div>
                 </div>
                 <div class="card p-6">
                     <h3 class="card-title text-primary font-bold mb-4 border-b pb-2"><i class="fa-solid fa-file-signature"></i> بيانات الفرض</h3>
                     <div class="space-y-4">
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 mb-1 block">المادة</label>
-                            <input type="text" id="conf-subject" class="input-field p-2.5 border border-gray-300 rounded-lg" placeholder="مثال: اللغة العربية">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 mb-1 block">عنوان الفرض</label>
-                            <input type="text" id="conf-title" class="input-field p-2.5 border border-gray-300 rounded-lg" placeholder="مثال: الفرض المحروس رقم 1">
-                        </div>
+                        <div><label class="text-xs font-bold text-gray-500 mb-1 block">المادة</label><input type="text" id="conf-subject" class="input-field" placeholder="مثال: اللغة العربية"></div>
+                        <div><label class="text-xs font-bold text-gray-500 mb-1 block">عنوان الفرض</label><input type="text" id="conf-title" class="input-field" placeholder="مثال: الفرض المحروس رقم 1"></div>
                         <div class="flex items-center gap-2 bg-indigo-50 p-2 rounded-lg border border-indigo-200">
                             <span class="text-xs font-bold text-indigo-800">ID:</span>
                             <input type="text" id="conf-id" class="bg-transparent font-mono font-bold text-center flex-1 outline-none text-lg text-indigo-700" readonly>
@@ -261,7 +241,7 @@
                 <div class="card p-6 h-full flex flex-col">
                     <div class="flex flex-wrap justify-between items-center border-b pb-4 mb-4 gap-4">
                         <div class="flex gap-4">
-                            <div><label class="text-xs font-bold block mb-1">الأسئلة</label><input type="number" id="conf-q" value="10" min="1" max="100" class="input-field w-20 text-center border p-2 rounded" onchange="updateKeyGrid()"></div>
+                            <div><label class="text-xs font-bold block mb-1">الأسئلة</label><input type="number" id="conf-q" value="10" min="1" max="60" class="input-field w-20 text-center border p-2 rounded" onchange="updateKeyGrid()"></div>
                             <div><label class="text-xs font-bold block mb-1">الخيارات</label><input type="number" id="conf-o" value="4" min="2" max="6" class="input-field w-20 text-center border p-2 rounded" onchange="updateKeyGrid()"></div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -319,55 +299,94 @@
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-r-lg flex items-start justify-between shadow-sm animate-pulse-once">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-triangle-exclamation text-yellow-500 fa-xl"></i>
-                        <div><p class="font-bold text-yellow-800 text-sm">تنبيه هام جداً:</p><p class="text-xs text-yellow-700">تأكد أن ID المطبوع هو: <span class="font-mono font-black text-lg text-black bg-yellow-200 px-2 rounded mx-1" id="scan-ui-id">0000</span></p></div>
+                        <div>
+                            <p class="font-bold text-yellow-800 text-sm">إرشادات هامة للتصحيح:</p>
+                            <p class="text-xs text-yellow-700">تأكد أن المربعات السوداء الأربعة ظاهرة بالكامل داخل الإطار. الإضاءة الجيدة ضرورية.</p>
+                        </div>
                     </div>
+                    <div class="font-mono font-black text-lg bg-yellow-200 px-2 rounded" id="scan-ui-id">ID: 0000</div>
                 </div>
+                
                 <div class="card p-2 relative bg-gray-900 rounded-xl overflow-hidden shadow-2xl">
                     <div class="relative w-full aspect-[3/4] lg:aspect-[4/3] bg-black rounded-lg overflow-hidden">
                         <video id="videoFeed" class="w-full h-full object-cover" playsinline muted></video>
-                        <!-- Guides -->
+                        
+                        <!-- ROI Guide -->
                         <div id="scanner-ui" class="absolute inset-0 z-10 pointer-events-none hidden">
-                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[85%] h-[85%] border-2 border-white/30 rounded-lg">
-                                <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-yellow-400 rounded-tl-lg"></div>
-                                <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-yellow-400 rounded-tr-lg"></div>
-                                <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-yellow-400 rounded-bl-lg"></div>
-                                <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-yellow-400 rounded-br-lg"></div>
+                            <div class="absolute top-[10%] left-[10%] w-[80%] h-[80%] border-2 border-primary/50 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
+                                <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                                <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                                <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                                <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                                <!-- Crosshair -->
+                                <div class="absolute top-1/2 left-1/2 w-8 h-[2px] bg-primary/30 -translate-x-1/2"></div>
+                                <div class="absolute top-1/2 left-1/2 h-8 w-[2px] bg-primary/30 -translate-y-1/2"></div>
                             </div>
-                            <div class="absolute bottom-4 left-0 right-0 text-center"><span id="scan-status" class="bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md transition-all">ابحث عن العلامات الأربعة...</span></div>
+                            <div class="absolute bottom-6 left-0 right-0 text-center">
+                                <span id="scan-status" class="bg-black/60 text-white px-6 py-2 rounded-full text-sm font-bold backdrop-blur-md transition-all border border-white/20">
+                                    <i class="fa-solid fa-expand"></i> طابق المربعات مع الزوايا
+                                </span>
+                            </div>
                         </div>
                         
                         <!-- Result Overlay -->
-                        <div id="scan-result-overlay" class="absolute inset-0 z-30 bg-black/90 flex flex-col items-center justify-center hidden">
-                            <h2 class="text-white font-bold mb-4 text-xl">تم تصحيح الورقة</h2>
-                            <div class="relative w-full h-1/2 mb-4">
-                                <img id="scan-feedback-img" class="w-full h-full object-contain border-2 border-white/20 rounded">
-                                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/90 p-6 rounded-2xl shadow-2xl text-center border-4 border-primary backdrop-blur-sm">
-                                    <div class="text-7xl font-black text-gray-800 mb-2" id="scan-feedback-score">0/0</div>
-                                    <div id="scan-feedback-grade" class="text-4xl font-bold inline-block px-6 py-2 rounded-lg text-white shadow">A</div>
+                        <div id="scan-result-overlay" class="absolute inset-0 z-30 bg-black/95 flex flex-col items-center justify-center hidden">
+                            <h2 class="text-white font-bold mb-4 text-xl"><i class="fa-solid fa-check-circle text-green-500"></i> تم التصحيح</h2>
+                            <div class="relative w-full h-[60%] mb-4 flex justify-center p-4">
+                                <img id="scan-feedback-img" class="max-h-full max-w-full object-contain border-2 border-white/20 rounded shadow-2xl">
+                                <canvas id="scan-overlay-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+                                
+                                <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-white/90 p-4 px-8 rounded-2xl shadow-2xl text-center border-b-4 border-primary backdrop-blur-sm min-w-[200px]">
+                                    <div class="text-6xl font-black text-gray-800 mb-1 leading-none" id="scan-feedback-score">--</div>
+                                    <div class="text-xs text-gray-500 font-bold uppercase tracking-widest">Score</div>
                                 </div>
                             </div>
-                            <button onclick="nextScan()" class="bg-primary hover:bg-secondary text-white text-xl px-12 py-4 rounded-full font-bold shadow-lg transition transform hover:scale-105 flex items-center gap-3">
-                                <span>التالي (Next)</span> <i class="fa-solid fa-arrow-left"></i>
-                            </button>
+                            <div class="flex gap-4">
+                                <button onclick="nextScan()" class="bg-primary hover:bg-secondary text-white text-lg px-8 py-3 rounded-full font-bold shadow-lg transition transform hover:scale-105 flex items-center gap-2">
+                                    <span>التالي</span> <i class="fa-solid fa-arrow-left"></i>
+                                </button>
+                                <button onclick="discardScan()" class="bg-red-600 hover:bg-red-700 text-white text-lg px-4 py-3 rounded-full font-bold shadow-lg transition">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Start Button -->
-                        <div id="cam-start-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90 z-20 text-white">
-                            <i class="fa-solid fa-camera fa-4x mb-4 text-gray-500"></i>
-                            <button onclick="startCamera()" class="bg-primary hover:bg-secondary text-white px-8 py-3 rounded-full font-bold shadow-lg transition transform hover:scale-105">تشغيل الكاميرا</button>
-                            <label class="mt-4 text-gray-400 cursor-pointer hover:text-white text-sm"><i class="fa-solid fa-image"></i> تحميل صورة<input type="file" hidden accept="image/*" onchange="handleFileUpload(event)"></label>
+                        <div id="cam-start-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-20 text-white">
+                            <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-6 shadow-xl border border-slate-700">
+                                <i class="fa-solid fa-camera fa-2x text-gray-400"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-6">جاهز للمسح الضوئي؟</h3>
+                            <button onclick="startCamera()" class="bg-primary hover:bg-secondary text-white px-10 py-4 rounded-full font-bold shadow-lg hover:shadow-primary/50 transition transform hover:-translate-y-1">تشغيل الكاميرا</button>
+                            <label class="mt-8 text-gray-400 cursor-pointer hover:text-white text-sm bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 transition">
+                                <i class="fa-solid fa-image text-primary mr-2"></i> تحميل صورة من الملفات
+                                <input type="file" hidden accept="image/*" onchange="handleFileUpload(event)">
+                            </label>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="lg:col-span-1 space-y-4">
                 <div class="card p-4">
-                    <div class="flex items-center justify-between mb-4"><span class="text-sm font-bold">التقاط تلقائي</span><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="auto-capture-toggle" class="sr-only peer" checked><div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-primary"></div></label></div>
-                    <button onclick="stopCamera()" class="w-full bg-red-100 text-red-600 py-2 rounded font-bold hover:bg-red-200 text-sm mb-2">إيقاف الكاميرا</button>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-bolt text-yellow-500"></i> التقاط تلقائي</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-capture-toggle" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-primary transition-colors">
+                                <div class="absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-transform peer-checked:translate-x-full"></div>
+                            </div>
+                        </label>
+                    </div>
+                    <button onclick="stopCamera()" class="w-full bg-red-50 text-red-600 py-2 rounded font-bold hover:bg-red-100 text-sm mb-2 border border-red-100 transition">إيقاف الكاميرا</button>
                 </div>
                 <div class="card p-4 flex-1 h-[400px] flex flex-col">
                     <h3 class="font-bold border-b pb-2 mb-2 text-sm text-gray-500">النتائج الحديثة</h3>
-                    <div id="recent-scans" class="flex-1 overflow-y-auto space-y-2 text-sm pr-1"><div class="text-center text-gray-400 py-4">لا توجد نتائج</div></div>
+                    <div id="recent-scans" class="flex-1 overflow-y-auto space-y-2 text-sm pr-1">
+                        <div class="text-center text-gray-400 py-8 flex flex-col items-center">
+                            <i class="fa-solid fa-clipboard-list fa-2x mb-2 opacity-50"></i>
+                            <p>لا توجد نتائج</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -425,7 +444,7 @@
 
 <footer id="app-footer" class="bg-white border-t py-4 text-center mt-6"></footer>
 
-<!-- Hidden Canvas -->
+<!-- Hidden Process Canvas -->
 <canvas id="processCanvas" class="hidden"></canvas>
 
 <style>
@@ -440,14 +459,18 @@
     const app = {
         settings: { school: '', teacher: '', classRoom: '', subject: '', title: '', id: '', q: 10, o: 4, partial: false, layoutType: 'full', keys: [] },
         results: [], savedExams: [], labels: ['أ', 'ب', 'ج', 'د', 'هـ', 'و'],
-        cvReady: false, stream: null, isScanning: false, sortAsc: false
+        cvReady: false, stream: null, isScanning: false, sortAsc: false,
+        // Constants for scanning logic
+        PAPER_WIDTH: 1000, 
+        PAPER_HEIGHT: 1414, // A4 aspect ratio 1:1.414
+        MARKER_OFFSET: 15, // mm in CSS (approx)
     };
 
     function onOpenCvReady() { app.cvReady = true; const s = document.getElementById('cvStatus'); s.innerHTML = '<i class="fa-solid fa-check"></i> المحرك جاهز'; s.className = "text-green-700 bg-green-50 px-2 py-0.5 rounded-full text-xs border border-green-200 font-bold"; }
     window.onload = () => { generateID(); updateKeyGrid(); loadLocalData(); initStatsChart(); injectCopyright(); };
-    function injectCopyright() { document.getElementById('app-footer').innerHTML = `<p class="text-sm text-gray-500">© Copyright 2025 MarkWise - All rights reserved.<br><span class="text-xs text-gray-400">Designed with ❤️ by Rachid Outgadirt</span></p>`; }
+    function injectCopyright() { document.getElementById('app-footer').innerHTML = `<p class="text-sm text-gray-500">© Copyright 2025 MarkWise Pro - All rights reserved.</p>`; }
     function generateID() { document.getElementById('conf-id').value = Math.floor(1000 + Math.random()*9000); }
-    function switchTab(id) { document.querySelectorAll('.section-panel').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); if(id !== 'scan') stopCamera(); else document.getElementById('scan-ui-id').innerText = app.settings.id || '----'; if(id === 'results') renderResultsTable(); if(id === 'exams') renderExamsList(); if(id === 'design') { saveCurrentSettings(); updatePrintPreview(); } }
+    function switchTab(id) { document.querySelectorAll('.section-panel').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); if(id !== 'scan') stopCamera(); else document.getElementById('scan-ui-id').innerText = "ID: " + (app.settings.id || '----'); if(id === 'results') renderResultsTable(); if(id === 'exams') renderExamsList(); if(id === 'design') { saveCurrentSettings(); updatePrintPreview(); } }
 
     /* --- SETTINGS --- */
     function updateKeyGrid() {
@@ -470,34 +493,37 @@
     }
     function saveExamToMyExams() { saveCurrentSettings(); const ex = { meta: {...app.settings}, date: new Date().toLocaleDateString('ar-MA'), timestamp: Date.now() }; const idx = app.savedExams.findIndex(e => e.meta.id === app.settings.id); if(idx>=0) app.savedExams[idx] = ex; else app.savedExams.push(ex); saveToLocalStorage(); alert('تم الحفظ بنجاح'); switchTab('design'); }
 
-    /* --- DESIGN GENERATOR (Updated: Labels Changed) --- */
+    /* --- DESIGN GENERATOR (Precise Positioning) --- */
     function generateExamHTML(viewMode, studentData) {
         const s = app.settings;
+        // Markers are absolute positioned at 15mm from edges.
         let content = `
-        <div class="relative w-full h-full p-[15mm] flex flex-col justify-between">
+        <div class="relative w-full h-full p-[15mm] flex flex-col justify-between select-none">
+            <!-- Header -->
             <div class="absolute top-4 w-full flex justify-center items-center gap-2 opacity-100 z-40">
                 <i class="fa-solid fa-file-circle-check fa-xl text-primary"></i>
                 <span class="font-black text-2xl tracking-tighter font-display text-primary uppercase">MarkWise</span>
             </div>
             
-            <div class="scan-marker" style="top:15mm; left:15mm;"></div><div class="scan-marker" style="top:15mm; right:15mm;"></div>
-            <div class="scan-marker" style="bottom:15mm; left:15mm;"></div><div class="scan-marker" style="bottom:15mm; right:15mm;"></div>
+            <!-- MARKERS: Fixed at corners -->
+            <div class="scan-marker" style="top:15mm; left:15mm;"></div>
+            <div class="scan-marker" style="top:15mm; right:15mm;"></div>
+            <div class="scan-marker" style="bottom:15mm; left:15mm;"></div>
+            <div class="scan-marker" style="bottom:15mm; right:15mm;"></div>
             
             <div class="flex-none mt-6 pt-4">
                 <div class="border-b-2 border-black pb-4 mb-2 flex justify-between items-end">
                     <div class="text-right w-1/3"><h2 class="font-bold text-lg">${s.school}</h2><p class="text-xs text-gray-600">${s.teacher}</p></div>
-                    
                     <div class="text-center w-1/3 flex flex-col items-center justify-end pb-1">
                         <h1 class="font-black text-2xl mb-1 leading-relaxed p-1">${s.subject}</h1>
                         <p class="text-xs font-bold bg-black text-white px-4 py-1.5 pb-2 rounded-lg inline-block leading-normal mb-1 shadow-sm">${s.title}</p>
                     </div>
-                    
                     <div class="text-left w-1/3"><div class="border-2 border-black px-2 py-0.5 mb-1 rounded inline-block"><span class="text-[10px] font-bold block">ID</span><span class="font-mono font-bold text-lg">${s.id}</span></div><p class="text-[10px] font-bold block mt-1">${s.classRoom}</p></div>
                 </div>
-                <!-- Updated "رقم" to "القسم" -->
                 <div class="border border-black rounded p-2 mb-2 bg-gray-50 flex gap-4"><div class="flex-1"><span class="text-xs font-bold">الاسم:</span><div class="border-b border-dotted border-black mt-3"></div></div><div class="w-24"><span class="text-xs font-bold">القسم:</span><div class="border-b border-dotted border-black mt-3"></div></div></div>
             </div>
 
+            <!-- Questions Area -->
             <div class="flex-1 overflow-hidden ${s.layoutType==='sheet'?'flex flex-wrap content-start':'w-full'}">`;
             
         for(let i=0; i<s.q; i++) {
@@ -513,12 +539,12 @@
                 bubbles += `<div class="bubble ${cls}">${app.labels[j]}</div>`;
             }
             if(s.layoutType === 'sheet') {
-                content += `<div class="q-row inline-flex w-[48%] mx-[1%] border-b border-gray-100 py-1 items-center justify-between h-[32px]"><span class="font-bold text-sm w-6 text-center">${i+1}</span><div class="bubble-container">${bubbles}</div></div>`;
+                content += `<div class="q-row inline-flex w-[48%] mx-[1%] border-b border-gray-100 py-1 items-center justify-between h-[34px]"><span class="font-bold text-sm w-6 text-center">${i+1}</span><div class="bubble-container">${bubbles}</div></div>`;
             } else {
-                content += `<div class="flex border-b border-gray-200 py-1 items-center h-auto min-h-[35px]"><div class="w-6 font-bold text-center bg-gray-100 text-xs py-1 border border-gray-300 ml-2 rounded">${i+1}</div><div class="flex-1 text-xs relative px-1 tiny-edit-container leading-tight">${viewMode?`سؤال ${i+1}`:`<div class="tiny-edit">نص السؤال...</div>`}</div><div class="w-[35%]"><div class="bubble-container justify-center scale-90">${bubbles}</div></div></div>`;
+                content += `<div class="flex border-b border-gray-200 py-1 items-center h-auto min-h-[36px]"><div class="w-6 font-bold text-center bg-gray-100 text-xs py-1 border border-gray-300 ml-2 rounded">${i+1}</div><div class="flex-1 text-xs relative px-1 tiny-edit-container leading-tight">${viewMode?`سؤال ${i+1}`:`<div class="tiny-edit">نص السؤال...</div>`}</div><div class="w-[35%]"><div class="bubble-container justify-center scale-90">${bubbles}</div></div></div>`;
             }
         }
-        content += `</div><div class="absolute bottom-3 left-0 w-full text-center"><p class="text-[9px] text-gray-500 border-t border-gray-300 mx-16 pt-1">MarkWise App <span class="mx-1 text-gray-300">|</span> www.mywebsite.com <span class="mx-1 text-gray-300">|</span> 212662545188</p></div></div>`;
+        content += `</div><div class="absolute bottom-3 left-0 w-full text-center"><p class="text-[9px] text-gray-500 border-t border-gray-300 mx-16 pt-1">MarkWise App <span class="mx-1 text-gray-300">|</span> V17.0 Pro</p></div></div>`;
         return content;
     }
 
@@ -551,15 +577,9 @@
         document.getElementById('btn-edit-mode').classList.toggle('text-white', isEditMode);
     }
     
-    // Updated TinyMCE with required tools
     function initTinyMCE() { 
         if(tinymce.get().length>0) tinymce.remove(); 
-        tinymce.init({ 
-            selector: '.tiny-edit', 
-            inline: true, 
-            menubar: false, 
-            toolbar: 'fontsize | bold italic underline | forecolor | alignright aligncenter alignleft' 
-        }); 
+        tinymce.init({ selector: '.tiny-edit', inline: true, menubar: false, toolbar: 'fontsize | bold italic underline | forecolor | alignright aligncenter alignleft' }); 
     }
 
     async function captureElement(el) { return await html2canvas(el, { scale: 3, useCORS: true, width: 794, height: 1123, windowWidth: 1200 }); }
@@ -573,7 +593,7 @@
     }
 
     /* --- RESULTS & ANALYSIS --- */
-    function getMasteryGrade(score, total) { if(score >= total) return 'A'; if(score >= total * 0.5) return 'B'; if(score >= total * 0.25) return 'C'; return 'D'; }
+    function getMasteryGrade(score, total) { if(score >= total * 0.8) return 'A'; if(score >= total * 0.6) return 'B'; if(score >= total * 0.4) return 'C'; return 'D'; }
     function toggleSort() { app.sortAsc = !app.sortAsc; renderResultsTable(); }
 
     function renderResultsTable() {
@@ -592,7 +612,14 @@
     
     function updateResName(id, val) { const r=app.results.find(x=>x.id===id); if(r){r.name=val; saveToLocalStorage();} }
     function delRes(id) { if(confirm('حذف؟')){ app.results = app.results.filter(x=>x.id!==id); saveToLocalStorage(); renderResultsTable(); } }
-    function viewRes(id) { const r=app.results.find(x=>x.id===id); document.getElementById('paperModal').classList.remove('hidden'); updatePrintPreview(true, r); document.getElementById('modalOriginalImage').src=r.snapshot || ''; }
+    function viewRes(id) { 
+        const r=app.results.find(x=>x.id===id); 
+        document.getElementById('paperModal').classList.remove('hidden'); 
+        updatePrintPreview(true, r); 
+        document.getElementById('modalOriginalImage').src=r.snapshot || '';
+        // Draw debug squares over original if available data
+        /* In a real production app, we would store ROI coordinates. For now, just show image */
+    }
     
     let statsChart, qChart, studChart;
     function initStatsChart() { 
@@ -615,62 +642,334 @@
         studChart = new Chart(document.getElementById('studentDetailChart'), { type: 'bar', data: { labels: Array.from({length: app.settings.q}, (_,i)=>`Q${i+1}`), datasets: [{ label: 'Performance (1=Right, 0=Wrong)', data: qData, backgroundColor: qData.map(v=>v?'#22c55e':'#ef4444') }] }, options: { scales: { y: { min: 0, max: 1, ticks: { stepSize: 1 } } } } });
     }
     function closeStatsModal() { document.getElementById('studentStatsModal').classList.add('hidden'); }
+    function closePaperModal() { document.getElementById('paperModal').classList.add('hidden'); }
 
-    /* --- SCANNER --- */
-    async function startCamera() { if(!navigator.mediaDevices) return alert("الكاميرا غير مدعومة"); try { app.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: {ideal: 1920} } }); const vid = document.getElementById('videoFeed'); vid.srcObject = app.stream; vid.onloadedmetadata = () => { vid.play(); document.getElementById('cam-start-overlay').classList.add('hidden'); document.getElementById('scanner-ui').classList.remove('hidden'); app.isScanning=true; requestAnimationFrame(scanLoop); }; } catch(e) { alert("خطأ: "+e.message); } }
-    function stopCamera() { app.isScanning=false; if(app.stream) app.stream.getTracks().forEach(t=>t.stop()); document.getElementById('cam-start-overlay').classList.remove('hidden'); document.getElementById('scanner-ui').classList.add('hidden'); }
-    function handleFileUpload(e) { const f=e.target.files[0]; if(f){stopCamera(); const i=new Image(); i.src=URL.createObjectURL(f); i.onload=()=>{const c=document.createElement('canvas'); c.width=i.width; c.height=i.height; c.getContext('2d').drawImage(i,0,0); processImage(c,true);};} }
+    /* --- SCANNER & OPENCV LOGIC (REWRITTEN) --- */
+    
+    async function startCamera() { 
+        if(!navigator.mediaDevices) return alert("الكاميرا غير مدعومة"); 
+        try { 
+            // Request high resolution for better OCR
+            app.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: {ideal: 1920}, height: {ideal: 1080} } }); 
+            const vid = document.getElementById('videoFeed'); 
+            vid.srcObject = app.stream; 
+            vid.onloadedmetadata = () => { 
+                vid.play(); 
+                document.getElementById('cam-start-overlay').classList.add('hidden'); 
+                document.getElementById('scanner-ui').classList.remove('hidden'); 
+                app.isScanning=true; 
+                requestAnimationFrame(scanLoop); 
+            }; 
+        } catch(e) { alert("خطأ في تشغيل الكاميرا: "+e.message); } 
+    }
+    
+    function stopCamera() { 
+        app.isScanning=false; 
+        if(app.stream) app.stream.getTracks().forEach(t=>t.stop()); 
+        document.getElementById('cam-start-overlay').classList.remove('hidden'); 
+        document.getElementById('scanner-ui').classList.add('hidden'); 
+    }
+
+    function handleFileUpload(e) { 
+        const f=e.target.files[0]; 
+        if(f){
+            stopCamera(); 
+            const i=new Image(); 
+            i.src=URL.createObjectURL(f); 
+            i.onload=()=>{
+                const c=document.createElement('canvas'); 
+                c.width=i.width; c.height=i.height; 
+                c.getContext('2d').drawImage(i,0,0); 
+                processImage(c,true); // Manual processing
+            };
+        } 
+    }
 
     let frames=0;
+    let stabilizeCounter = 0;
+
     function scanLoop() {
         if(!app.isScanning || !app.cvReady) return;
         const vid=document.getElementById('videoFeed');
+        
         if(vid.readyState===vid.HAVE_ENOUGH_DATA) {
-            const c=document.getElementById('processCanvas'); const ctx=c.getContext('2d');
-            c.width=vid.videoWidth/2; c.height=vid.videoHeight/2; ctx.drawImage(vid,0,0,c.width,c.height);
-            if(detectMarkers(c)) { frames++; document.getElementById('scan-status').innerText="ثبت الكاميرا..."; document.getElementById('scan-status').className="bg-green-600/80 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md"; if(frames>15 && document.getElementById('auto-capture-toggle').checked) { const full=document.createElement('canvas'); full.width=vid.videoWidth; full.height=vid.videoHeight; full.getContext('2d').drawImage(vid,0,0); processImage(full,false); frames=0; } } else { frames=0; document.getElementById('scan-status').innerText="ابحث عن العلامات الأربعة..."; document.getElementById('scan-status').className="bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold"; }
+            const c=document.getElementById('processCanvas'); 
+            const ctx=c.getContext('2d');
+            // Use lower resolution for fast detection loop (improves FPS)
+            const scale = 0.5;
+            c.width=vid.videoWidth * scale; 
+            c.height=vid.videoHeight * scale; 
+            ctx.drawImage(vid,0,0,c.width,c.height);
+            
+            // Fast marker check
+            if(detectMarkersFast(c)) { 
+                stabilizeCounter++;
+                document.getElementById('scan-status').innerHTML = '<i class="fa-solid fa-camera"></i> ثبت الكاميرا... ' + Math.min(100, stabilizeCounter*10) + '%';
+                document.getElementById('scan-status').className="bg-green-600/90 text-white px-6 py-2 rounded-full text-sm font-bold backdrop-blur-md shadow-lg"; 
+                
+                // If stable for ~10-15 frames and auto-capture is on
+                if(stabilizeCounter > 12 && document.getElementById('auto-capture-toggle').checked) { 
+                    const full=document.createElement('canvas'); 
+                    full.width=vid.videoWidth; 
+                    full.height=vid.videoHeight; 
+                    full.getContext('2d').drawImage(vid,0,0); 
+                    document.getElementById('shutterSound').play().catch(e=>{});
+                    processImage(full, false); 
+                    stabilizeCounter=0; 
+                } 
+            } else { 
+                stabilizeCounter = Math.max(0, stabilizeCounter - 1);
+                document.getElementById('scan-status').innerHTML = '<i class="fa-solid fa-expand"></i> طابق المربعات مع الزوايا';
+                document.getElementById('scan-status').className="bg-black/60 text-white px-6 py-2 rounded-full text-sm font-bold border border-white/20"; 
+            }
         }
         requestAnimationFrame(scanLoop);
     }
-    function detectMarkers(canvas) {
-        let src=cv.imread(canvas); let gray=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY); let thresh=new cv.Mat(); cv.adaptiveThreshold(gray,thresh,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY_INV,21,10); let cnts=new cv.MatVector(); cv.findContours(thresh,cnts,new cv.Mat(),cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
-        let found=0; for(let i=0; i<cnts.size(); i++) { let c=cnts.get(i); if(cv.contourArea(c)>(canvas.width*canvas.height*0.001)) { let p=cv.arcLength(c,true); let approx=new cv.Mat(); cv.approxPolyDP(c,approx,0.04*p,true); if(approx.rows===4 && cv.isContourConvex(approx)) found++; approx.delete(); } }
-        src.delete(); gray.delete(); thresh.delete(); cnts.delete(); return found>=4;
-    }
-    function processImage(canvas, manual) {
-        document.getElementById('beepSound').play().catch(()=>{});
-        try {
-            let src=cv.imread(canvas); let gray=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY); let thresh=new cv.Mat(); cv.adaptiveThreshold(gray,thresh,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY_INV,51,10); let cnts=new cv.MatVector(); cv.findContours(thresh,cnts,new cv.Mat(),cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
-            let markers=[]; for(let i=0; i<cnts.size(); i++) { let r=cv.boundingRect(cnts.get(i)); let ar=r.width/r.height; if(cv.contourArea(cnts.get(i))>400 && ar>0.7 && ar<1.3) markers.push(r); }
-            if(markers.length<4) { if(manual) alert("العلامات غير واضحة"); return; }
-            markers.sort((a,b)=>a.y-b.y); let top=markers.slice(0,2).sort((a,b)=>a.x-b.x); let bot=markers.slice(2,4).sort((a,b)=>a.x-b.x);
-            let srcTri=cv.matFromArray(4,1,cv.CV_32FC2,[top[0].x,top[0].y,top[1].x+top[1].width,top[1].y,bot[0].x,bot[0].y+bot[0].height,bot[1].x+bot[1].width,bot[1].y+bot[1].height]);
-            let dstTri=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,1000,0,0,1414,1000,1414]);
-            let M=cv.getPerspectiveTransform(srcTri,dstTri); let warped=new cv.Mat(); cv.warpPerspective(thresh,warped,M,new cv.Size(1000,1414));
-            
-            let detected=[]; let startY=1414*0.25; let contentH=1414*0.65; let q=app.settings.q; let o=app.settings.o;
-            if(app.settings.layoutType==='sheet') { let half=Math.ceil(q/2); let rowH=contentH/half; for(let i=0; i<half; i++) detected[i]=scanRow(warped,0,450,startY+(i*rowH),rowH,o); for(let i=half; i<q; i++) detected[i]=scanRow(warped,550,450,startY+((i-half)*rowH),rowH,o); } else { let rowH=contentH/q; for(let i=0; i<q; i++) detected[i]=scanRow(warped,600,350,startY+(i*rowH),rowH,o); }
-            src.delete(); gray.delete(); thresh.delete(); cnts.delete(); srcTri.delete(); dstTri.delete(); M.delete(); warped.delete();
-            saveResult(detected, canvas.toDataURL('image/jpeg', 0.8));
-        } catch(e) { if(manual) alert("خطأ: "+e.message); }
-    }
-    function scanRow(mat,xOff,w,y,h,opts) {
-        let ans=[]; let bW=w/opts; for(let j=0; j<opts; j++) { let roi=mat.roi(new cv.Rect(xOff+(j*bW)+(bW*0.25),y+(h*0.25),bW*0.5,h*0.5)); if(cv.countNonZero(roi)>(roi.rows*roi.cols*0.45)) ans.push(j); roi.delete(); } return ans;
-    }
-    function saveResult(answers, snap) {
-        let sc=0; let tot=0; app.settings.keys.forEach((k,i)=>{ if(i<answers.length){ tot+=k.points; if(JSON.stringify(answers[i].sort())===JSON.stringify(k.answers.sort())) sc+=k.points; } });
-        const r={id:Date.now(),name:`ورقة ${app.results.length+1}`,classRoom:app.settings.classRoom,score:sc,total:tot,percentage:Math.round((sc/tot)*100)||0,answers,snapshot:snap};
-        app.results.push(r); saveToLocalStorage();
-        document.getElementById('recent-scans').insertAdjacentHTML('afterbegin',`<div class="bg-white p-2 border-l-4 ${r.percentage>=50?'border-green-500':'border-red-500'} flex justify-between"><div><b>${r.name}</b></div><div>${r.score}/${r.total}</div></div>`);
+
+    // Fast contour check for UI feedback
+    function detectMarkersFast(canvas) {
+        let src=cv.imread(canvas); 
+        let gray=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY); 
+        // Use simpler threshold for speed
+        let thresh=new cv.Mat(); cv.threshold(gray, thresh, 80, 255, cv.THRESH_BINARY_INV);
+        let cnts=new cv.MatVector(); cv.findContours(thresh,cnts,new cv.Mat(),cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
         
+        let found=0; 
+        const minArea = (canvas.width * canvas.height) * 0.001; // 0.1% of screen
+        
+        for(let i=0; i<cnts.size(); i++) { 
+            let c=cnts.get(i); 
+            let area = cv.contourArea(c);
+            if(area > minArea) { 
+                let p=cv.arcLength(c,true); 
+                let approx=new cv.Mat(); 
+                cv.approxPolyDP(c,approx,0.04*p,true); 
+                // Check if it's a square (4 corners + convex)
+                if(approx.rows===4 && cv.isContourConvex(approx)) found++; 
+                approx.delete(); 
+            } 
+        }
+        
+        src.delete(); gray.delete(); thresh.delete(); cnts.delete(); 
+        return found>=4;
+    }
+
+    // Sort points: TL, TR, BR, BL
+    function sortPoints(points) {
+        // Sort by Y first
+        points.sort((a,b) => a.y - b.y);
+        // Top two (TL, TR)
+        let top = points.slice(0,2).sort((a,b) => a.x - b.x);
+        // Bottom two (BL, BR)
+        let bot = points.slice(2,4).sort((a,b) => a.x - b.x);
+        
+        // Return TL, TR, BL, BR
+        return [top[0], top[1], bot[0], bot[1]];
+    }
+
+    // MAIN PROCESSING LOGIC
+    function processImage(canvas, manual) {
+        try {
+            let src=cv.imread(canvas); 
+            let gray=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY); 
+            
+            // Better thresholding (Otsu is better for paper)
+            let thresh=new cv.Mat(); 
+            cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
+            cv.threshold(gray, thresh, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU);
+            
+            let cnts=new cv.MatVector(); 
+            cv.findContours(thresh,cnts,new cv.Mat(),cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
+
+            let markers=[]; 
+            for(let i=0; i<cnts.size(); i++) { 
+                let c = cnts.get(i);
+                let p = cv.arcLength(c,true);
+                let approx = new cv.Mat();
+                cv.approxPolyDP(c, approx, 0.04*p, true);
+                
+                // Only strict squares
+                if(approx.rows === 4 && cv.isContourConvex(approx)) {
+                    let rect = cv.boundingRect(c);
+                    let ar = rect.width / rect.height;
+                    // Square Aspect Ratio check + reasonable size
+                    if(ar >= 0.8 && ar <= 1.2 && rect.width > 20) {
+                        // Calculate center
+                        let M = cv.moments(c);
+                        let cx = M.m10 / M.m00;
+                        let cy = M.m01 / M.m00;
+                        markers.push({x:cx, y:cy});
+                    }
+                }
+                approx.delete();
+            }
+
+            if(markers.length < 4) { 
+                if(manual) alert("لم يتم العثور على العلامات الأربعة بوضوح. حاول تحسين الإضاءة."); 
+                src.delete(); gray.delete(); thresh.delete(); cnts.delete();
+                return; 
+            }
+
+            // --- 1. Perspective Warp ---
+            // If more than 4, take largest ones or outer ones (Logic simplified here: take 4 corners of bounding box of markers)
+            // Assuming 4 main markers found:
+            let sorted = sortPoints(markers); // TL, TR, BL, BR
+            
+            // Source Points
+            let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                sorted[0].x, sorted[0].y, // TL
+                sorted[1].x, sorted[1].y, // TR
+                sorted[2].x, sorted[2].y, // BL
+                sorted[3].x, sorted[3].y  // BR
+            ]);
+            
+            // Destination Points (Standard A4 Grid)
+            // Paper Dimensions defined in `app`: 1000 x 1414
+            // Markers are at 15mm. Total Width 210mm. 15/210 * 1000 ~= 71px
+            // For robustness, we map the CENTERS of markers to specific coords
+            const W = app.PAPER_WIDTH;
+            const H = app.PAPER_HEIGHT;
+            const PADDING_X = (15 / 210) * W; 
+            const PADDING_Y = (15 / 297) * H;
+            
+            let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                PADDING_X, PADDING_Y,          // TL
+                W - PADDING_X, PADDING_Y,      // TR
+                PADDING_X, H - PADDING_Y,      // BL
+                W - PADDING_X, H - PADDING_Y   // BR
+            ]);
+            
+            let M = cv.getPerspectiveTransform(srcTri, dstTri); 
+            let warped = new cv.Mat(); 
+            cv.warpPerspective(thresh, warped, M, new cv.Size(W, H));
+            
+            // --- 2. Bubble Detection ---
+            // Coordinate Logic (Must match CSS)
+            // Header takes approx top 20% (markers at 15mm, header content below)
+            // Questions start area.
+            
+            let detected = [];
+            let q = app.settings.q; 
+            let o = app.settings.o;
+            
+            // Define Grid Area (Inside the markers essentially)
+            // Questions usually start ~50mm down. 50/297 * 1414 ~= 238
+            // But let's rely on relative spacing.
+            
+            // NOTE: These numbers are tuned to the HTML layout above.
+            const START_Y = 320; // Y pixel where Q1 starts
+            const END_Y = 1300; // Y pixel where Q end (approx)
+            const AVAILABLE_H = END_Y - START_Y;
+            
+            if(app.settings.layoutType === 'sheet') {
+                // 2 Columns
+                let half = Math.ceil(q/2);
+                let rowH = AVAILABLE_H / half;
+                
+                for(let i=0; i<half; i++) {
+                    // Col 1 (Left)
+                    detected[i] = scanRow(warped, 150, 300, START_Y + (i*rowH), rowH, o);
+                }
+                for(let i=half; i<q; i++) {
+                    // Col 2 (Right)
+                    detected[i] = scanRow(warped, 550, 300, START_Y + ((i-half)*rowH), rowH, o);
+                }
+            } else {
+                // Full Layout: Bubbles are on the Left (RTL) or Right?
+                // In HTML: <div class="w-[35%]">...bubbles...</div>
+                // The flex container is RTL, so bubbles are on the LEFT.
+                // Width = 1000. 35% is approx 350px.
+                // Left X range: 50 to 350.
+                
+                let rowH = AVAILABLE_H / q;
+                for(let i=0; i<q; i++) {
+                    detected[i] = scanRow(warped, 50, 350, START_Y + (i*rowH), rowH, o);
+                }
+            }
+
+            // Cleanup
+            src.delete(); gray.delete(); thresh.delete(); cnts.delete(); srcTri.delete(); dstTri.delete(); M.delete(); warped.delete();
+            
+            saveResult(detected, canvas.toDataURL('image/jpeg', 0.8));
+
+        } catch(e) { 
+            console.error(e);
+            if(manual) alert("خطأ أثناء المعالجة: " + e.message); 
+        }
+    }
+
+    // Scans a specific row for bubbles
+    // x, y: Top-Left of the row area
+    // w, h: Width and Height of the row
+    // opts: Number of options (bubbles)
+    function scanRow(mat, x, w, y, h, opts) {
+        let ans = [];
+        // Gap between bubbles. In CSS it's gap-2 or gap-6.
+        // We assume bubbles are evenly distributed in the width W
+        let step = w / opts;
+        
+        for(let j=0; j<opts; j++) {
+            // Define ROI for the bubble
+            // Center of the slot
+            let cx = x + (j * step) + (step / 2);
+            let cy = y + (h / 2);
+            
+            // Bubble radius approx (tuned for 1000px width)
+            let r = 18; 
+            
+            let roiX = cx - r;
+            let roiY = cy - r;
+            
+            // Bounds check
+            if(roiX < 0) roiX=0; if(roiY<0) roiY=0;
+            
+            let roi = mat.roi(new cv.Rect(roiX, roiY, r*2, r*2));
+            
+            // Count non-zero (white pixels in inverted image = black ink)
+            let total = roi.rows * roi.cols;
+            let nonZero = cv.countNonZero(roi);
+            
+            // Threshold: if > 40% is filled, it's marked
+            if(nonZero > total * 0.40) {
+                ans.push(j);
+            }
+            roi.delete();
+        }
+        return ans;
+    }
+
+    function saveResult(answers, snap) {
+        let sc=0; let tot=0; 
+        app.settings.keys.forEach((k,i)=>{ 
+            if(i<answers.length){ 
+                tot+=k.points; 
+                // Flexible grading (Exact match)
+                if(JSON.stringify(answers[i].sort())===JSON.stringify(k.answers.sort())) {
+                    sc+=k.points; 
+                } else if(app.settings.partial && k.answers.length > 1) {
+                    // Logic for partial credit could go here
+                }
+            } 
+        });
+        
+        const r={id:Date.now(), name:`ورقة ${app.results.length+1}`, classRoom:app.settings.classRoom, score:sc, total:tot, percentage:Math.round((sc/tot)*100)||0, answers, snapshot:snap};
+        app.results.push(r); 
+        saveToLocalStorage();
+        
+        // Update Recent List
+        document.getElementById('recent-scans').insertAdjacentHTML('afterbegin',`
+            <div class="bg-white p-3 border-r-4 ${r.percentage>=50?'border-green-500':'border-red-500'} flex justify-between rounded shadow-sm animate-fade-in">
+                <div><span class="font-bold block text-gray-800">${r.name}</span><span class="text-xs text-gray-500">${new Date().toLocaleTimeString('ar-MA')}</span></div>
+                <div class="text-lg font-bold ${r.percentage>=50?'text-green-600':'text-red-600'}">${r.score}/${r.total}</div>
+            </div>
+        `);
+        
+        // Show Overlay
         app.isScanning = false;
+        document.getElementById('beepSound').play().catch(()=>{});
         const overlay = document.getElementById('scan-result-overlay');
         document.getElementById('scan-feedback-img').src = snap;
-        document.getElementById('scan-feedback-score').innerText = sc + '/' + tot;
-        const grade = getMasteryGrade(sc, tot);
-        const gradeEl = document.getElementById('scan-feedback-grade');
-        gradeEl.innerText = grade;
-        gradeEl.className = `text-4xl font-bold inline-block px-6 py-2 rounded-lg text-white shadow grade-${grade}`;
+        document.getElementById('scan-feedback-score').innerText = Math.round((sc/tot)*100) + '%';
         overlay.classList.remove('hidden');
     }
     
@@ -679,15 +978,24 @@
         app.isScanning = true;
         requestAnimationFrame(scanLoop);
     }
+    
+    function discardScan() {
+        // Remove last added result
+        app.results.pop();
+        saveToLocalStorage();
+        document.getElementById('recent-scans').firstElementChild.remove();
+        nextScan();
+    }
 
+    /* --- DATA MANAGEMENT --- */
     function renderExamsList() { const g=document.getElementById('exams-grid'); g.innerHTML=''; app.savedExams.forEach((e,i)=>{g.innerHTML+=`<div class="bg-white border rounded p-4 relative group"><h4 class="font-bold">${e.meta.title}</h4><p class="text-xs text-gray-500">${e.meta.subject} | ID:${e.meta.id}</p><button onclick="loadExam(${i})" class="bg-primary text-white text-xs px-3 py-1 rounded mt-2">تحميل</button><button onclick="app.savedExams.splice(${i},1);saveToLocalStorage();renderExamsList()" class="text-red-500 absolute top-4 left-4 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash"></i></button></div>`;}); }
     function loadExam(i) { app.settings={...app.savedExams[i].meta}; document.getElementById('conf-id').value=app.settings.id; updateKeyGrid(); setTimeout(()=>{app.settings.keys.forEach((k,x)=>{if(x<app.settings.q){k.answers.forEach(a=>document.querySelector(`input[name="q${x}"][value="${a}"]`).checked=true)}})},100); switchTab('settings'); }
-    function saveToLocalStorage() { localStorage.setItem('markwise_v16', JSON.stringify({s:app.settings, r:app.results, e:app.savedExams})); }
-    function loadLocalData() { const d=JSON.parse(localStorage.getItem('markwise_v16')); if(d) { app.settings={...app.settings,...d.s}; app.results=d.r||[]; app.savedExams=d.e||[]; document.getElementById('conf-school').value=app.settings.school; document.getElementById('conf-id').value=app.settings.id; } }
-    function resetApp() { if(confirm('حذف الكل؟')) { localStorage.removeItem('markwise_v16'); location.reload(); } }
-    function exportData() { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([localStorage.getItem('markwise_v16')])); a.download='backup.json'; a.click(); }
-    function importData(e) { const r=new FileReader(); r.onload=x=>{localStorage.setItem('markwise_v16',x.target.result);location.reload()}; r.readAsText(e.target.files[0]); }
-    function exportResultsCSV() { const c="\uFEFFالاسم,القسم,المجموع,%\n"+app.results.map(r=>`"${r.name}","${r.classRoom}",${r.score}/${r.total},${r.percentage}`).join("\n"); const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURI(c); a.download='res.csv'; a.click(); }
+    function saveToLocalStorage() { localStorage.setItem('markwise_v17_pro', JSON.stringify({s:app.settings, r:app.results, e:app.savedExams})); }
+    function loadLocalData() { const d=JSON.parse(localStorage.getItem('markwise_v17_pro')); if(d) { app.settings={...app.settings,...d.s}; app.results=d.r||[]; app.savedExams=d.e||[]; document.getElementById('conf-school').value=app.settings.school; document.getElementById('conf-id').value=app.settings.id; } }
+    function resetApp() { if(confirm('سيتم حذف جميع البيانات والنتائج. هل أنت متأكد؟')) { localStorage.removeItem('markwise_v17_pro'); location.reload(); } }
+    function exportData() { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([localStorage.getItem('markwise_v17_pro')])); a.download='MarkWise_Backup.json'; a.click(); }
+    function importData(e) { const r=new FileReader(); r.onload=x=>{localStorage.setItem('markwise_v17_pro',x.target.result);location.reload()}; r.readAsText(e.target.files[0]); }
+    function exportResultsCSV() { const c="\uFEFFالاسم,القسم,المجموع,%\n"+app.results.map(r=>`"${r.name}","${r.classRoom}",${r.score}/${r.total},${r.percentage}`).join("\n"); const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURI(c); a.download='Results.csv'; a.click(); }
 </script>
 </body>
 </html>
