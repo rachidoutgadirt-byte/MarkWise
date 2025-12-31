@@ -2,693 +2,1229 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MarkWise - نظام ZipGrade المتطور</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartMark - نظام التصحيح الآلي</title>
     
-    <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Tailwind CSS -->
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { primary: '#4f46e5', secondary: '#4338ca', surface: '#f8fafc', success: '#22c55e', error: '#ef4444' },
-                    fontFamily: { sans: ['Tajawal', 'sans-serif'], display: ['Cairo', 'sans-serif'] }
-                }
-            }
-        }
-    </script>
-
-    <!-- OpenCV & Tools -->
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
 
     <style>
-        body { background-color: #f3f4f6; overflow-x: hidden; touch-action: pan-y; }
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
         
-        /* --- ZipGrade Style Overlay --- */
-        .corner-guide {
-            position: absolute; width: 60px; height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.4);
-            transition: all 0.2s ease; z-index: 20;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        body { font-family: 'Tajawal', sans-serif; background-color: #f3f4f6; }
+        
+        /* Loader */
+        .loader-overlay {
+            position: fixed; inset: 0; background: rgba(255,255,255,0.95);
+            z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .corner-guide.locked {
-            border-color: #22c55e; /* Green when detected */
-            background-color: rgba(34, 197, 94, 0.2);
-            transform: scale(1.1);
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%;
+            width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 1rem;
         }
-        /* Corners positioning */
-        .guide-tl { top: 10%; left: 10%; border-radius: 0 0 16px 0; border-left: 0; border-top: 0; border-right: 4px solid; border-bottom: 4px solid; transform: rotate(180deg); }
-        .guide-tr { top: 10%; right: 10%; border-radius: 0 0 0 16px; border-right: 0; border-top: 0; border-left: 4px solid; border-bottom: 4px solid; transform: rotate(180deg); }
-        .guide-bl { bottom: 10%; left: 10%; border-radius: 0 16px 0 0; border-left: 0; border-bottom: 0; border-right: 4px solid; border-top: 4px solid; transform: rotate(180deg); }
-        .guide-br { bottom: 10%; right: 10%; border-radius: 16px 0 0 0; border-right: 0; border-bottom: 0; border-left: 4px solid; border-top: 4px solid; transform: rotate(180deg); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- Paper Styles --- */
-        #printableArea { width: 210mm; min-height: 297mm; background: white; margin: 0 auto; overflow: hidden; position: relative; }
-        .bubble { width: 24px; height: 24px; border: 2px solid #333; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; }
-        .bubble.correct { background: #22c55e; color: white; border-color: #22c55e; }
-        .bubble.wrong { background: #ef4444; color: white; border-color: #ef4444; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+
+        /* Scanner Overlay */
+        .scanner-modal {
+            position: fixed; inset: 0; background: #000; z-index: 5000;
+            display: none; flex-direction: column;
+        }
+        .scanner-active { display: flex; }
+        .guide-box {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 85%; height: 75%; border: 3px solid #00ff00; border-radius: 10px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); pointer-events: none;
+        }
         
-        /* Markers for printing */
-        .scan-marker { width: 20px; height: 20px; background: black; position: absolute; z-index: 50; }
+        /* Bubble Select UI */
+        .bubble-select {
+            width: 35px; height: 35px; border-radius: 50%; border: 2px solid #d1d5db;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            font-weight: bold; font-size: 14px; transition: all 0.2s; user-select: none;
+        }
+        .bubble-select.selected { background-color: #4f46e5; color: white; border-color: #4f46e5; }
+
+        /* Preview Bubbles Colors */
+        .bubble-correct { background-color: #10b981 !important; border-color: #10b981 !important; color: white; } /* Green */
+        .bubble-wrong { background-color: #ef4444 !important; border-color: #ef4444 !important; color: white; } /* Red */
+        .bubble-partial { background-color: #f97316 !important; border-color: #f97316 !important; color: white; } /* Orange */
+        .bubble-empty { border-color: #3b82f6 !important; background-color: transparent; } /* Blue Outline for Empty detection visual */
+        .bubble-missed-key { border: 2px dashed #10b981; } /* Dashed green for correct answers student missed */
+
+        /* --- Sheet Generator Styles --- */
+        #sheet-generator-container {
+            position: fixed; left: -9999px; top: 0; width: 210mm; min-height: 297mm; background: white;
+            box-sizing: border-box; color: black; z-index: 100;
+        }
         
-        /* Snapshot Image in Results */
-        .name-snapshot { height: 40px; border: 1px solid #ccc; border-radius: 4px; object-fit: cover; }
+        .sheet-wrapper { width: 100%; height: 100%; display: grid; border: 1px solid white; }
+        
+        .single-exam-sheet {
+            padding: 10mm; display: flex; flex-direction: column; position: relative; background: white; box-sizing: border-box;
+        }
+
+        /* Full Page Layout (1 Sheet) */
+        .single-layout { padding: 15mm !important; }
+        .single-layout .sheet-content-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        .single-layout .student-field { height: 14mm; }
+        .single-layout h1 { font-size: 28px !important; }
+        .single-layout h3 { font-size: 18px !important; }
+
+        /* Multi Layout (2 or 4 Sheets) */
+        .multi-layout .sheet-content-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+
+        /* The Black Anchor Frame */
+        .omr-anchor-frame {
+            border: 3px solid #000; padding: 15px; border-radius: 8px; margin-top: 10px;
+            flex-grow: 1; display: flex; flex-direction: column;
+        }
+        
+        .cut-line-h { border-bottom: 2px dashed #999; position: absolute; bottom: 0; left: 0; right: 0; }
+        .cut-line-v { border-right: 2px dashed #999; position: absolute; top: 0; bottom: 0; right: 0; }
+
+        /* OMR Grid */
+        .omr-grid-row { display: flex; flex-direction: row; align-items: center; gap: 15px; margin-bottom: 8px; }
+        .omr-num-box {
+            width: 30px; text-align: center; font-weight: bold; font-size: 12px; flex-shrink: 0;
+            border-left: 1px solid #ccc; padding-left: 5px;
+        }
+        .omr-bubbles-group { display: flex; gap: 12px; }
+        .omr-bubble-wrapper { width: 22px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .omr-bubble { width: 18px; height: 18px; border: 1.5px solid black; border-radius: 50%; background: white; }
+        .omr-header-label { font-size: 11px; font-weight: bold; height: 15px; display: flex; align-items: flex-end; }
+        .student-field {
+            border: 1px solid #000; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; background: #fdfdfd;
+        }
     </style>
 </head>
-<body class="font-sans min-h-screen flex flex-col">
+<body class="text-gray-800 h-screen flex overflow-hidden">
 
-<audio id="beepSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-<audio id="successSound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
-
-<!-- Loading & Modals -->
-<div id="loadingOverlay" class="fixed inset-0 bg-black/90 z-[9999] hidden flex-col items-center justify-center text-white">
-    <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-    <h2 class="text-xl font-bold">جارٍ المعالجة...</h2>
-</div>
-
-<!-- Header -->
-<div class="container mx-auto px-4 py-4">
-    <header class="bg-white rounded-2xl shadow-sm p-4 mb-4 flex flex-col md:flex-row justify-between items-center border-b-4 border-primary">
-        <div class="flex items-center gap-4">
-            <div class="bg-primary p-3 rounded-xl text-white"><i class="fa-solid fa-qrcode fa-2x"></i></div>
-            <div>
-                <h1 class="text-2xl font-bold text-gray-800">MarkWise <span class="text-primary text-sm">Pro</span></h1>
-                <p class="text-xs font-bold text-gray-500 mt-1 flex gap-2 items-center">
-                    <span id="cvStatus" class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-[10px]">جاري تحميل المحرك...</span>
-                </p>
-            </div>
-        </div>
-        <div class="flex gap-2 mt-4 md:mt-0">
-            <button onclick="resetApp()" class="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-bold text-sm"><i class="fa-solid fa-trash"></i> تهيئة</button>
-        </div>
-    </header>
-
-    <!-- Navigation -->
-    <div class="bg-white rounded-xl shadow-sm mb-6 p-1 flex overflow-x-auto gap-1">
-        <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn active px-4 py-2 rounded-lg font-bold text-sm flex-1 whitespace-nowrap bg-primary text-white">الإعدادات</button>
-        <button onclick="switchTab('design')" id="tab-design" class="tab-btn px-4 py-2 rounded-lg font-bold text-sm flex-1 whitespace-nowrap text-gray-500 hover:bg-gray-50">الطباعة</button>
-        <button onclick="switchTab('scan')" id="tab-scan" class="tab-btn px-4 py-2 rounded-lg font-bold text-sm flex-1 whitespace-nowrap text-gray-500 hover:bg-gray-50">الماسح الضوئي</button>
-        <button onclick="switchTab('results')" id="tab-results" class="tab-btn px-4 py-2 rounded-lg font-bold text-sm flex-1 whitespace-nowrap text-gray-500 hover:bg-gray-50">النتائج</button>
+    <div id="loader" class="loader-overlay">
+        <div class="spinner"></div>
+        <h2 class="text-xl font-bold text-indigo-700">SmartMark OMR</h2>
     </div>
 
-    <!-- 1. SETTINGS TAB -->
-    <div id="settings" class="section-panel block space-y-4">
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h3 class="font-bold text-lg mb-4 text-primary border-b pb-2">بيانات الفرض</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" id="conf-school" class="border p-3 rounded-lg w-full" placeholder="اسم المؤسسة">
-                <input type="text" id="conf-teacher" class="border p-3 rounded-lg w-full" placeholder="اسم الأستاذ">
-                <input type="text" id="conf-subject" class="border p-3 rounded-lg w-full" placeholder="المادة">
-                <input type="text" id="conf-title" class="border p-3 rounded-lg w-full" placeholder="عنوان الفرض (مثال: فرض 1)">
-            </div>
+    <aside class="sidebar w-64 bg-indigo-900 text-white flex flex-col shadow-xl hidden md:flex">
+        <div class="p-6 border-b border-indigo-800 text-center">
+            <h1 class="text-2xl font-extrabold tracking-wider"><i class="fa-solid fa-check-double ml-2"></i>SmartMark</h1>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg text-primary">سلم التنقيط</h3>
-                <div class="flex gap-2">
-                    <div class="bg-gray-100 px-3 py-1 rounded">
-                        <span class="text-xs font-bold text-gray-500">عدد الأسئلة:</span>
-                        <input type="number" id="conf-q" value="10" min="1" max="50" class="w-12 bg-transparent text-center font-bold outline-none" onchange="updateKeyGrid()">
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('dashboard')" class="nav-btn w-full text-right px-4 py-3 rounded-lg hover:bg-indigo-800 transition flex items-center gap-3 bg-indigo-800 text-white" id="btn-dashboard">
+                <i class="fa-solid fa-chart-pie w-6"></i> الإحصائيات
+            </button>
+            <button onclick="switchTab('create')" class="nav-btn w-full text-right px-4 py-3 rounded-lg hover:bg-indigo-800 transition flex items-center gap-3 text-indigo-200" id="btn-create">
+                <i class="fa-solid fa-file-circle-plus w-6"></i> إنشاء امتحان
+            </button>
+            <button onclick="switchTab('manage')" class="nav-btn w-full text-right px-4 py-3 rounded-lg hover:bg-indigo-800 transition flex items-center gap-3 text-indigo-200" id="btn-manage">
+                <i class="fa-solid fa-list-check w-6"></i> إدارة الامتحان
+            </button>
+            <button onclick="switchTab('results')" class="nav-btn w-full text-right px-4 py-3 rounded-lg hover:bg-indigo-800 transition flex items-center gap-3 text-indigo-200" id="btn-results">
+                <i class="fa-solid fa-square-poll-vertical w-6"></i> النتائج
+            </button>
+        </nav>
+        <div class="p-4 border-t border-indigo-800">
+            <button onclick="backupData()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-sm transition shadow-lg flex items-center justify-center gap-2">
+                <i class="fa-solid fa-download"></i> نسخة احتياطية
+            </button>
+            <input type="file" id="restoreInput" class="hidden" onchange="restoreData(this)">
+            <button onclick="document.getElementById('restoreInput').click()" class="w-full mt-2 bg-transparent border border-indigo-500 hover:bg-indigo-800 text-indigo-200 py-1 rounded-lg text-sm transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-upload"></i> استعادة
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center md:hidden z-20">
+            <span class="font-bold text-indigo-700 text-lg">SmartMark</span>
+            <button onclick="document.querySelector('aside').classList.toggle('hidden'); document.querySelector('aside').classList.toggle('absolute'); document.querySelector('aside').classList.toggle('z-50'); document.querySelector('aside').classList.toggle('h-full');" class="text-gray-600">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </header>
+
+        <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+
+            <!-- 1. Dashboard -->
+            <section id="tab-dashboard" class="space-y-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">لوحة القيادة</h2>
+                    <select id="statsFilter" onchange="updateDashboard()" class="border rounded-md px-3 py-1 text-sm bg-white shadow-sm min-w-[200px]">
+                        <option value="all">كل البيانات</option>
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-r-4 border-blue-500">
+                        <p class="text-gray-500 text-sm">عدد الامتحانات</p><h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-exams">0</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-r-4 border-green-500">
+                        <p class="text-gray-500 text-sm">أوراق مصححة</p><h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-papers">0</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-r-4 border-purple-500">
+                        <p class="text-gray-500 text-sm">متوسط الأداء</p><h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-average">0%</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-r-4 border-orange-500">
+                        <p class="text-gray-500 text-sm">أفضل فصل/امتحان</p><h3 class="text-xl font-bold text-gray-800 mt-1 truncate" id="stat-best-class">-</h3>
                     </div>
                 </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                    <!-- General / Exam Grades Distribution -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm">
+                        <h3 class="font-bold text-gray-700 mb-4">توزيع درجات التحكم</h3>
+                        <canvas id="chartGrades"></canvas>
+                    </div>
+                    
+                    <!-- Performance Chart (Dynamic) -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm">
+                        <h3 class="font-bold text-gray-700 mb-4" id="performanceChartTitle">الأداء حسب الفصول</h3>
+                        <canvas id="chartPerformance"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Create Exam -->
+            <section id="tab-create" class="hidden max-w-4xl mx-auto">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-6 border-b bg-gray-50">
+                        <h2 class="text-xl font-bold text-indigo-900">إنشاء ورقة امتحان جديدة</h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">اسم الامتحان</label>
+                                <input type="text" id="examTitle" class="w-full border rounded-lg px-4 py-2 outline-none" placeholder="مثال: رياضيات">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">القسم</label>
+                                <input type="text" id="examClass" class="w-full border rounded-lg px-4 py-2 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-row gap-4">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">عدد الأسئلة</label>
+                                <input type="number" id="qCount" min="1" max="100" value="5" onchange="renderAnswerKeyGrid('create')" class="w-full border rounded-lg px-4 py-2">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">عدد الخيارات</label>
+                                <input type="number" id="oCount" min="2" max="10" value="4" onchange="renderAnswerKeyGrid('create')" class="w-full border rounded-lg px-4 py-2">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">النقطة لكل سؤال</label>
+                                <input type="number" id="pointsPerQ" min="0.25" step="0.25" value="1" class="w-full border rounded-lg px-4 py-2">
+                            </div>
+                            <div class="flex items-center pt-6">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" id="partialCredit" class="form-checkbox h-5 w-5 text-indigo-600">
+                                    <span class="mr-2 text-sm font-bold text-gray-700">تفعيل النقطة الجزئية</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4 bg-gray-50">
+                            <h3 class="font-bold text-sm text-gray-700 mb-3">حدد الإجابات الصحيحة:</h3>
+                            <div id="answerKeyGrid" class="grid gap-2 overflow-x-auto pb-2"></div>
+                        </div>
+
+                        <div class="pt-4 border-t">
+                            <button onclick="saveExam()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow transition">
+                                <i class="fa-solid fa-save ml-2"></i> حفظ الامتحان
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Manage Exams (Formerly Archive) -->
+            <section id="tab-manage" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">إدارة الامتحان</h2>
+                    <input type="text" id="manageSearch" onkeyup="renderManagement()" placeholder="بحث..." class="border rounded-lg px-4 py-2 bg-white shadow-sm w-64">
+                </div>
+                <div id="emptyManageState" class="hidden flex flex-col items-center justify-center p-12 bg-white border-2 border-dashed rounded-lg text-gray-400">
+                    <i class="fa-solid fa-folder-open text-4xl mb-3"></i>
+                    <p>لا يوجد امتحانات محفوظة</p>
+                </div>
+                <div id="manageGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </section>
+
+            <!-- 4. Results -->
+            <section id="tab-results" class="hidden">
+                 <div class="bg-white rounded-xl shadow-sm min-h-[500px] flex flex-col">
+                    <div class="p-6 border-b flex flex-col md:flex-row justify-between gap-4 items-center">
+                        <h2 class="text-xl font-bold text-gray-800">سجل النتائج</h2>
+                        <div class="flex gap-3 w-full md:w-auto flex-wrap">
+                            <select id="resultFilterClass" onchange="renderResultsTable()" class="border rounded px-3 py-2 text-sm bg-white"><option value="">كل الأقسام</option></select>
+                            <input type="text" id="resultSearch" onkeyup="renderResultsTable()" placeholder="بحث..." class="border rounded px-3 py-2 text-sm flex-1">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto flex-1 p-2">
+                        <table class="w-full text-right border-collapse">
+                            <thead class="bg-gray-50 text-gray-600 text-xs uppercase font-bold">
+                                <tr>
+                                    <th class="p-3 border-b">#</th>
+                                    <th class="p-3 border-b">الامتحان</th>
+                                    <th class="p-3 border-b">اسم التلميذ (صورة)</th>
+                                    <th class="p-3 border-b text-center">النقطة</th>
+                                    <th class="p-3 border-b text-center">درجة التحكم</th>
+                                    <th class="p-3 border-b text-center">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody" class="text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer id="app-footer" class="bg-white border-t p-4 text-center text-xs text-gray-500 z-10"></footer>
+    </main>
+
+    <!-- Modals -->
+    
+    <!-- Scanner -->
+    <div id="scannerModal" class="scanner-modal">
+        <div class="absolute top-4 left-4 z-50">
+            <button onclick="closeScanner()" class="bg-red-600 text-white px-4 py-2 rounded-full font-bold shadow-lg">إغلاق</button>
+        </div>
+        <div class="relative w-full h-full flex justify-center items-center bg-black">
+            <video id="videoInput" playsinline autoplay muted class="w-full h-full object-cover opacity-80"></video>
+            <div class="guide-box"></div>
+            <button id="scanTriggerBtn" onclick="processScan()" class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-white text-indigo-700 w-20 h-20 rounded-full border-4 border-indigo-500 shadow-2xl flex items-center justify-center hover:scale-105 transition">
+                <i class="fa-solid fa-camera text-3xl"></i>
+            </button>
+        </div>
+        <canvas id="processCanvas" class="hidden"></canvas>
+    </div>
+
+    <!-- Edit Key Modal -->
+    <div id="editKeyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl transform scale-100 transition">
+            <h3 class="text-xl font-bold mb-4 border-b pb-2 text-indigo-900">تعديل مفتاح الإجابة</h3>
+            <div id="editKeyGrid" class="grid gap-2 overflow-x-auto pb-2 mb-6 max-h-[60vh]"></div>
+            <div class="flex justify-end gap-2">
+                <button onclick="document.getElementById('editKeyModal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">إلغاء</button>
+                <button onclick="saveEditedKey()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">حفظ التعديلات</button>
             </div>
-            <div class="overflow-x-auto border rounded-lg max-h-[400px]">
-                <table class="w-full text-center text-sm">
-                    <thead class="bg-gray-100 sticky top-0"><tr><th class="p-3">س</th><th class="p-3">الإجابة الصحيحة</th><th class="p-3">النقطة</th></tr></thead>
-                    <tbody id="key-grid-body" class="divide-y"></tbody>
+        </div>
+    </div>
+
+    <!-- Download Options Modal -->
+    <div id="downloadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 text-gray-800"><i class="fa-solid fa-print ml-2"></i>إعدادات طباعة الورقة</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">تخطيط الورقة</label>
+                    <select id="dlLayout" class="w-full border rounded-lg px-4 py-2">
+                        <option value="1">1 ورقة (A4 كاملة)</option>
+                        <option value="2">2 ورقة (نصف A4)</option>
+                        <option value="4">4 أوراق (ربع A4)</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="processDownloadSheet('pdf')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-file-pdf"></i> PDF تحميل
+                    </button>
+                    <button onclick="processDownloadSheet('png')" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-image"></i> PNG تحميل
+                    </button>
+                </div>
+            </div>
+            <button onclick="document.getElementById('downloadModal').classList.add('hidden')" class="absolute top-4 left-4 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+    </div>
+
+    <!-- Preview Result Modal -->
+    <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl my-8">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-xl font-bold text-gray-800">معاينة الورقة</h3>
+                <button onclick="document.getElementById('previewModal').classList.add('hidden')" class="text-gray-500 hover:text-red-500"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            </div>
+            
+            <div class="mb-4 text-center">
+                <img id="previewNameImg" class="h-16 border mx-auto mb-2 rounded shadow-sm">
+                <h2 id="previewScore" class="text-2xl font-bold text-indigo-700"></h2>
+            </div>
+            
+            <div class="flex justify-center gap-4 text-xs mb-4">
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-green-500"></span> صحيح</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-500"></span> خطأ</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-orange-500"></span> جزئي</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full border border-blue-500"></span> فارغ</span>
+            </div>
+
+            <div id="previewGrid" class="grid gap-2 overflow-x-auto pb-2 px-2"></div>
+        </div>
+    </div>
+
+    <!-- Mastery Modal -->
+    <div id="masteryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-indigo-900">درجة التحكم (Mastery)</h3>
+                <button onclick="document.getElementById('masteryModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="overflow-y-auto max-h-[60vh]">
+                <table class="w-full text-center border-collapse text-sm">
+                    <thead class="bg-indigo-50 text-indigo-800">
+                        <tr><th class="p-2">السؤال</th><th class="p-2">النقاط</th><th class="p-2">الدرجة</th></tr>
+                    </thead>
+                    <tbody id="masteryTableBody"></tbody>
                 </table>
             </div>
-            <button onclick="saveSettings()" class="w-full bg-primary text-white py-3 rounded-xl font-bold mt-4 shadow-lg">حفظ الإعدادات</button>
         </div>
     </div>
 
-    <!-- 2. DESIGN TAB -->
-    <div id="design" class="section-panel hidden">
-        <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm">
-            <span class="font-bold text-sm">معاينة الورقة</span>
-            <button onclick="printPaper()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm"><i class="fa-solid fa-print"></i> طباعة PDF</button>
-        </div>
-        <div class="bg-gray-200 p-4 rounded-xl overflow-auto flex justify-center min-h-[600px]">
-            <div id="printableArea"></div>
-        </div>
-    </div>
+    <div id="sheet-generator-container"></div>
 
-    <!-- 3. SCAN TAB (ZipGrade Style) -->
-    <div id="scan" class="section-panel hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 relative">
-                <!-- Camera Container -->
-                <div class="bg-black rounded-xl overflow-hidden relative shadow-2xl aspect-[3/4] md:aspect-[4/3]">
-                    <video id="videoFeed" class="w-full h-full object-cover" playsinline muted></video>
-                    
-                    <!-- ZipGrade GUIDES -->
-                    <div id="scan-overlay" class="absolute inset-0 pointer-events-none hidden">
-                        <!-- Corner Boxes -->
-                        <div id="guide-tl" class="corner-guide guide-tl"></div>
-                        <div id="guide-tr" class="corner-guide guide-tr"></div>
-                        <div id="guide-bl" class="corner-guide guide-bl"></div>
-                        <div id="guide-br" class="corner-guide guide-br"></div>
-                        
-                        <!-- Center hint -->
-                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white/80 text-center">
-                            <div class="w-1 h-12 bg-white/20 mx-auto mb-2"></div>
-                            <span id="scan-hint" class="bg-black/50 px-3 py-1 rounded text-xs">ضع العلامات داخل المربعات</span>
-                            <div class="w-1 h-12 bg-white/20 mx-auto mt-2"></div>
-                        </div>
-                    </div>
+    <script>
+        let db = { exams: [], results: [] };
+        let currentExamId = null;
+        let isCvLoaded = false;
+        let stream = null;
+        const ARABIC_OPTIONS = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي'];
+        let createKey = [];
+        let editKey = [];
+        let editingExamId = null;
+        let downloadExamId = null;
 
-                    <!-- Start Camera Button -->
-                    <div id="cam-start-btn" class="absolute inset-0 flex items-center justify-center bg-gray-900 z-30">
-                        <button onclick="startCamera()" class="bg-primary text-white px-8 py-4 rounded-full font-bold shadow-lg hover:scale-105 transition flex items-center gap-3">
-                            <i class="fa-solid fa-camera"></i> تشغيل الكاميرا
-                        </button>
-                        <!-- File Upload Fallback -->
-                        <label class="absolute bottom-10 text-gray-400 cursor-pointer text-sm">
-                            <i class="fa-solid fa-image"></i> تحميل صورة يدوياً
-                            <input type="file" hidden accept="image/*" onchange="handleFileUpload(event)">
-                        </label>
-                    </div>
-
-                    <!-- Result Popup -->
-                    <div id="result-popup" class="absolute inset-0 z-40 bg-black/90 hidden flex-col items-center justify-center p-6">
-                        <h2 class="text-white text-2xl font-bold mb-4">تم التصحيح!</h2>
-                        <div class="flex gap-4 mb-4 w-full h-32 justify-center">
-                            <!-- Show Cropped Name Header -->
-                            <div class="bg-white p-1 rounded">
-                                <p class="text-[10px] text-center mb-1">بيانات التلميذ</p>
-                                <img id="popup-name-img" class="h-full object-contain max-w-[150px]">
-                            </div>
-                            <!-- Score -->
-                            <div class="bg-white p-4 rounded flex flex-col justify-center items-center min-w-[100px]">
-                                <span class="text-4xl font-black text-primary" id="popup-score">0</span>
-                                <span class="text-xs text-gray-500 font-bold">المجموع</span>
-                            </div>
-                        </div>
-                        <div class="flex gap-3">
-                            <button onclick="nextScan()" class="bg-primary text-white px-8 py-3 rounded-full font-bold">التالي</button>
-                            <button onclick="discardResult()" class="bg-red-600 text-white px-4 py-3 rounded-full"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Results Sidebar -->
-            <div class="lg:col-span-1 bg-white rounded-xl shadow-sm p-4 h-[500px] flex flex-col">
-                <h3 class="font-bold border-b pb-2 mb-2">النتائج الحديثة</h3>
-                <div id="recent-list" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 4. RESULTS TAB -->
-    <div id="results" class="section-panel hidden bg-white rounded-xl shadow-sm p-6">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-lg">قائمة النتائج التفصيلية</h3>
-            <button onclick="exportCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-bold text-xs">Excel تصدير</button>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-right">
-                <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
-                    <tr><th class="p-3">الهوية (صورة)</th><th class="p-3">النقطة</th><th class="p-3">النسبة</th><th class="p-3">التوقيت</th><th class="p-3">حذف</th></tr>
-                </thead>
-                <tbody id="results-table-body" class="text-sm divide-y"></tbody>
-            </table>
-        </div>
-    </div>
-
-</div>
-
-<!-- Hidden Canvas for Processing -->
-<canvas id="procCanvas" class="hidden"></canvas>
-
-<script>
-    /* --- APPLICATION STATE --- */
-    const app = {
-        settings: { school: '', teacher: '', subject: '', title: '', q: 10, keys: [] },
-        results: [],
-        cvReady: false,
-        isScanning: false,
-        stream: null,
-        labels: ['A','B','C','D'],
-        // Coordinates for A4 Standard (Design Specific)
-        PAPER_W: 1000, PAPER_H: 1414,
-        // Header Crop Area (Top 15% of paper, avoiding markers)
-        HEADER_RECT: { x: 100, y: 150, w: 800, h: 150 } 
-    };
-
-    /* --- INITIALIZATION --- */
-    function onOpenCvReady() {
-        app.cvReady = true;
-        document.getElementById('cvStatus').innerText = "المحرك جاهز";
-        document.getElementById('cvStatus').className = "bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold";
-    }
-    window.onload = () => { updateKeyGrid(); loadData(); };
-
-    function switchTab(id) {
-        document.querySelectorAll('.section-panel').forEach(p => p.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-        document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('bg-primary', 'text-white'); b.classList.add('text-gray-500'); });
-        document.getElementById('tab-'+id).classList.remove('text-gray-500');
-        document.getElementById('tab-'+id).classList.add('bg-primary', 'text-white');
-        if(id !== 'scan') stopCamera();
-        if(id === 'results') renderResults();
-    }
-
-    /* --- SETTINGS LOGIC --- */
-    function updateKeyGrid() {
-        const q = parseInt(document.getElementById('conf-q').value);
-        const b = document.getElementById('key-grid-body'); b.innerHTML = '';
-        app.settings.keys = app.settings.keys.slice(0, q);
-        for(let i=0; i<q; i++) {
-            let opts = '';
-            for(let j=0; j<4; j++) {
-                opts += `<label class="inline-flex items-center justify-center w-8 h-8 mx-1 border rounded-full cursor-pointer hover:bg-gray-100"><input type="radio" name="k${i}" value="${j}" class="hidden peer"><span class="peer-checked:bg-black peer-checked:text-white w-full h-full rounded-full flex items-center justify-center font-bold text-gray-500">${app.labels[j]}</span></label>`;
-            }
-            b.innerHTML += `<tr><td class="p-2 font-bold">${i+1}</td><td class="p-2">${opts}</td><td class="p-2"><input type="number" id="p${i}" value="1" class="w-12 text-center border rounded"></td></tr>`;
+        function initApp() {
+            const stored = localStorage.getItem('smartmark_db_v1');
+            if (stored) db = JSON.parse(stored);
+            renderAnswerKeyGrid('create');
+            updateDashboard();
+            renderManagement();
+            injectFooter();
+            setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1000);
         }
-    }
-    
-    function saveSettings() {
-        const q = parseInt(document.getElementById('conf-q').value);
-        app.settings.school = document.getElementById('conf-school').value;
-        app.settings.teacher = document.getElementById('conf-teacher').value;
-        app.settings.subject = document.getElementById('conf-subject').value;
-        app.settings.title = document.getElementById('conf-title').value;
-        app.settings.q = q;
-        app.settings.keys = [];
-        for(let i=0; i<q; i++) {
-            const ch = document.querySelector(`input[name="k${i}"]:checked`);
-            app.settings.keys.push({ ans: ch ? parseInt(ch.value) : 0, pts: parseFloat(document.getElementById(`p${i}`).value)||1 });
+
+        function saveData() {
+            localStorage.setItem('smartmark_db_v1', JSON.stringify(db));
+            updateDashboard();
+            renderManagement();
+            renderResultsTable();
         }
-        localStorage.setItem('mw_settings', JSON.stringify(app.settings));
-        generatePaperHTML(); // Auto update print view
-        alert("تم الحفظ");
-        switchTab('design');
-    }
 
-    /* --- GENERATE PAPER (FIXED MARKERS) --- */
-    function generatePaperHTML() {
-        const s = app.settings;
-        let html = `
-        <div style="width:210mm; height:297mm; padding:15mm; position:relative; box-sizing:border-box;">
-            <!-- MARKERS: Fixed at corners (15mm from edge) -->
-            <div class="scan-marker" style="top:15mm; left:15mm;"></div>
-            <div class="scan-marker" style="top:15mm; right:15mm;"></div>
-            <div class="scan-marker" style="bottom:15mm; left:15mm;"></div>
-            <div class="scan-marker" style="bottom:15mm; right:15mm;"></div>
-
-            <!-- HEADER (Identity Area) -->
-            <div class="text-center mb-6 mt-4 border-b-2 border-black pb-2">
-                <h1 class="font-bold text-xl">${s.school}</h1>
-                <div class="flex justify-between items-end mt-2">
-                    <div class="text-right text-xs"><b>الأستاذ:</b> ${s.teacher}</div>
-                    <div class="text-center"><span class="bg-black text-white px-3 py-1 rounded text-sm font-bold">${s.subject} - ${s.title}</span></div>
-                    <div class="text-left text-xs"><b>ID:</b> ${Math.floor(Math.random()*9999)}</div>
-                </div>
-            </div>
-            
-            <!-- HANDWRITING AREA (Important for cropping) -->
-            <div class="border-2 border-dashed border-gray-400 rounded p-4 mb-6 bg-gray-50 flex gap-4" id="identity-box">
-                <div class="flex-1 text-right">
-                    <span class="font-bold text-sm text-gray-600">الاسم الكامل:</span>
-                    <div class="border-b border-black mt-6"></div>
-                </div>
-                <div class="w-1/3 text-right">
-                    <span class="font-bold text-sm text-gray-600">القسم / الرقم:</span>
-                    <div class="border-b border-black mt-6"></div>
-                </div>
-            </div>
-
-            <!-- BUBBLES GRID -->
-            <div class="grid grid-cols-2 gap-x-8 gap-y-2 direction-ltr" dir="ltr">`;
-            
-        for(let i=0; i<s.q; i++) {
-            let bubs = '';
-            for(let j=0; j<4; j++) bubs += `<div class="bubble">${app.labels[j]}</div>`;
-            html += `<div class="flex items-center justify-between border-b py-1"><span class="font-bold w-6">${i+1}</span><div class="flex gap-2">${bubs}</div></div>`;
-        }
+        function onOpenCvReady() { isCvLoaded = true; }
         
-        html += `</div>
-            <div class="absolute bottom-5 left-0 w-full text-center text-[10px] text-gray-400">Powered by MarkWise</div>
-        </div>`;
-        document.getElementById('printableArea').innerHTML = html;
-    }
+        function injectFooter() {
+            document.getElementById('app-footer').innerHTML = `
+                <div class="flex flex-col items-center gap-1">
+                    <p class="font-bold">&copy; Copyright 2025 SmartMark - All rights reserved.</p>
+                    <p class="text-indigo-400">Developed with ❤️</p>
+                </div>
+            `;
+        }
 
-    async function printPaper() {
-        const el = document.getElementById('printableArea');
-        const canvas = await html2canvas(el, {scale:2});
-        const pdf = new jspdf.jsPDF('p','mm','a4');
-        pdf.addImage(canvas.toDataURL('image/jpeg'), 'JPEG', 0, 0, 210, 297);
-        pdf.save('exam_paper.pdf');
-    }
-
-    /* --- ZIPGRADE SCANNING LOGIC --- */
-    async function startCamera() {
-        try {
-            app.stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment', width: {ideal: 1280}, height: {ideal: 720} } 
+        function switchTab(tabId) {
+            ['dashboard', 'create', 'manage', 'results'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('btn-' + t)?.classList.replace('bg-indigo-800', 'text-indigo-200');
+                document.getElementById('btn-' + t)?.classList.remove('text-white');
             });
-            const vid = document.getElementById('videoFeed');
-            vid.srcObject = app.stream;
-            vid.onloadedmetadata = () => {
-                vid.play();
-                document.getElementById('cam-start-btn').classList.add('hidden');
-                document.getElementById('scan-overlay').classList.remove('hidden');
-                app.isScanning = true;
-                requestAnimationFrame(scanLoop);
-            };
-        } catch(e) { alert("تعذر فتح الكاميرا"); }
-    }
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            const active = document.getElementById('btn-' + tabId);
+            active.classList.add('bg-indigo-800', 'text-white');
+            active.classList.remove('text-indigo-200');
 
-    function stopCamera() {
-        app.isScanning = false;
-        if(app.stream) app.stream.getTracks().forEach(t=>t.stop());
-        document.getElementById('cam-start-btn').classList.remove('hidden');
-        document.getElementById('scan-overlay').classList.add('hidden');
-    }
+            if(tabId === 'results') renderResultsTable();
+            if(tabId === 'manage') renderManagement();
+            if(tabId === 'dashboard') updateDashboard();
+        }
 
-    // MAIN SCAN LOOP
-    let frameCount = 0;
-    function scanLoop() {
-        if(!app.isScanning || !app.cvReady) return;
-        
-        const vid = document.getElementById('videoFeed');
-        if(vid.readyState === vid.HAVE_ENOUGH_DATA) {
-            frameCount++;
-            // Process every 3rd frame to save battery/cpu
-            if(frameCount % 3 === 0) {
-                processFrame(vid);
+        // --- Core Logic ---
+
+        function renderAnswerKeyGrid(mode, examData = null) {
+            const qCount = mode === 'create' ? parseInt(document.getElementById('qCount').value) : examData.qCount;
+            const oCount = mode === 'create' ? parseInt(document.getElementById('oCount').value) : examData.oCount;
+            const container = document.getElementById(mode === 'create' ? 'answerKeyGrid' : 'editKeyGrid');
+            
+            let targetKey = mode === 'create' ? createKey : editKey;
+            
+            if (targetKey.length !== qCount) {
+                if (mode === 'edit' && examData) targetKey = JSON.parse(JSON.stringify(examData.key));
+                else targetKey = Array(qCount).fill().map(() => []);
+            }
+            if (mode === 'create') createKey = targetKey;
+            else editKey = targetKey;
+
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `40px repeat(${oCount}, 1fr)`;
+
+            const headerRow = document.createElement('div');
+            headerRow.className = "contents";
+            headerRow.innerHTML = `<span></span>` + Array.from({length: oCount}, (_, i) => 
+                `<span class="text-center font-bold text-gray-600">${ARABIC_OPTIONS[i] || '?'}</span>`
+            ).join('');
+            container.appendChild(headerRow);
+
+            for (let i = 0; i < qCount; i++) {
+                const num = document.createElement('div');
+                num.className = "flex items-center justify-center font-bold bg-indigo-50 text-indigo-700 rounded h-8 text-sm";
+                num.textContent = i + 1;
+                container.appendChild(num);
+
+                for (let j = 0; j < oCount; j++) {
+                    const bubble = document.createElement('div');
+                    const isSelected = targetKey[i] && targetKey[i].includes(j);
+                    bubble.className = `bubble-select mx-auto ${isSelected ? 'selected' : ''}`;
+                    bubble.textContent = ARABIC_OPTIONS[j] || '?';
+                    bubble.onclick = () => {
+                        if (!targetKey[i]) targetKey[i] = [];
+                        const idx = targetKey[i].indexOf(j);
+                        if (idx > -1) targetKey[i].splice(idx, 1);
+                        else targetKey[i].push(j);
+                        renderAnswerKeyGrid(mode, mode === 'edit' ? {qCount, oCount, key: targetKey} : null);
+                    };
+                    container.appendChild(bubble);
+                }
             }
         }
-        requestAnimationFrame(scanLoop);
-    }
 
-    function processFrame(video) {
-        // Create a small working canvas
-        const canvas = document.getElementById('procCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 640; // Downscale for speed
-        canvas.height = 360; // 16:9 aspect
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        function saveExam() {
+            const title = document.getElementById('examTitle').value;
+            const className = document.getElementById('examClass').value;
+            if (!title) return alert("المرجو إدخال اسم الامتحان");
 
-        // Define ROIs (Regions of Interest) based on CSS Guide positions
-        // Guides are at 10% margins.
-        const W = canvas.width;
-        const H = canvas.height;
-        const BOX_SIZE = W * 0.15; // 15% width box
-        
-        // Coordinates of the 4 corner boxes in the scaled canvas
-        const rois = [
-            { x: W*0.1, y: H*0.1, w: BOX_SIZE, h: BOX_SIZE, el: 'guide-tl' }, // Top Left
-            { x: W*0.9 - BOX_SIZE, y: H*0.1, w: BOX_SIZE, h: BOX_SIZE, el: 'guide-tr' }, // Top Right
-            { x: W*0.1, y: H*0.9 - BOX_SIZE, w: BOX_SIZE, h: BOX_SIZE, el: 'guide-bl' }, // Bottom Left
-            { x: W*0.9 - BOX_SIZE, y: H*0.9 - BOX_SIZE, w: BOX_SIZE, h: BOX_SIZE, el: 'guide-br' } // Bottom Right
-        ];
+            const newExam = {
+                id: Date.now(),
+                title, class: className,
+                qCount: parseInt(document.getElementById('qCount').value),
+                oCount: parseInt(document.getElementById('oCount').value),
+                pointsPerQ: parseFloat(document.getElementById('pointsPerQ').value) || 1,
+                partialCredit: document.getElementById('partialCredit').checked,
+                key: JSON.parse(JSON.stringify(createKey)),
+                timestamp: new Date().toISOString()
+            };
 
-        let src = cv.imread(canvas);
-        let gray = new cv.Mat();
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-        
-        // Threshold
-        let thresh = new cv.Mat();
-        cv.threshold(gray, thresh, 80, 255, cv.THRESH_BINARY_INV);
+            db.exams.push(newExam);
+            saveData();
+            alert("تم حفظ الامتحان بنجاح!");
+            createKey = [];
+            document.getElementById('examTitle').value = '';
+            switchTab('manage');
+        }
 
-        let lockedCount = 0;
-        let corners = [];
+        // --- Management Tab ---
 
-        // Check each ROI
-        rois.forEach((roi, idx) => {
-            // Crop the ROI
-            let roiRect = new cv.Rect(roi.x, roi.y, roi.w, roi.h);
-            let roiMat = thresh.roi(roiRect);
+        function renderManagement() {
+            const grid = document.getElementById('manageGrid');
+            const search = document.getElementById('manageSearch').value.toLowerCase();
+            const empty = document.getElementById('emptyManageState');
+            grid.innerHTML = '';
+
+            if (db.exams.length === 0) { empty.classList.remove('hidden'); return; }
+            empty.classList.add('hidden');
+
+            // Sort by Date Descending
+            const sortedExams = [...db.exams].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            sortedExams.filter(e => e.title.toLowerCase().includes(search)).forEach(exam => {
+                const count = db.results.filter(r => r.examId === exam.id).length;
+                const date = new Date(exam.timestamp).toLocaleDateString('ar-MA', {year:'numeric', month:'short', day:'numeric'});
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-xl shadow border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col";
+                card.innerHTML = `
+                    <div class="bg-indigo-50 px-5 py-3 border-b border-indigo-100 flex justify-between items-center">
+                        <span class="text-xs font-bold text-indigo-600 bg-white px-2 py-1 rounded shadow-sm">${date}</span>
+                        <div class="h-8 w-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">${exam.title[0]}</div>
+                    </div>
+                    <div class="p-5 flex-1">
+                        <h3 class="font-bold text-lg text-gray-800 truncate mb-1">${exam.title}</h3>
+                        <p class="text-sm text-gray-500 mb-4"><i class="fa-solid fa-users ml-1"></i> ${exam.class} | <i class="fa-solid fa-list-ol ml-1"></i> ${exam.qCount} أسئلة</p>
+                        <div class="bg-gray-50 rounded p-2 text-center text-sm border">
+                            تم تصحيح <strong class="text-indigo-600">${count}</strong> ورقة
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-3 grid grid-cols-2 gap-2 border-t">
+                        <button onclick="openDownloadModal(${exam.id})" class="bg-white border hover:bg-gray-100 text-gray-700 rounded py-2 text-xs font-bold shadow-sm flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-file-arrow-down"></i> تحميل الورقة
+                        </button>
+                        <button onclick="startScanning(${exam.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded py-2 text-xs font-bold shadow-sm flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-camera"></i> تصحيح
+                        </button>
+                        <button onclick="openEditKey(${exam.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white rounded py-2 text-xs font-bold shadow-sm flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-pen-to-square"></i> تعديل
+                        </button>
+                        <button onclick="deleteExam(${exam.id})" class="bg-red-500 hover:bg-red-600 text-white rounded py-2 text-xs font-bold shadow-sm flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i> حذف
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // --- Sheet Generation (Moved to Modal) ---
+
+        function openDownloadModal(id) {
+            downloadExamId = id;
+            document.getElementById('downloadModal').classList.remove('hidden');
+        }
+
+        async function processDownloadSheet(type) {
+            if (!downloadExamId) return;
+            const exam = db.exams.find(e => e.id === downloadExamId);
+            if (!exam) return;
+
+            const layout = parseInt(document.getElementById('dlLayout').value);
+            const container = document.getElementById('sheet-generator-container');
+            container.innerHTML = '';
             
-            // Find contours in this small box
-            let cnts = new cv.MatVector();
-            cv.findContours(roiMat, cnts, new cv.Mat(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+            let gridCols = layout === 2 ? 1 : (layout === 4 ? 2 : 1);
+            let gridRows = layout === 2 ? 2 : (layout === 4 ? 2 : 1);
             
-            let found = false;
-            let center = { x: 0, y: 0 };
+            const wrapper = document.createElement('div');
+            wrapper.className = 'sheet-wrapper';
+            wrapper.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+            wrapper.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
+            container.appendChild(wrapper);
 
-            for(let i=0; i<cnts.size(); i++) {
-                let c = cnts.get(i);
-                let area = cv.contourArea(c);
-                // Expected marker size relative to ROI
-                if(area > 100 && area < (roi.w*roi.h)*0.8) {
-                    let rect = cv.boundingRect(c);
-                    let ar = rect.width / rect.height;
-                    // Is square-ish?
-                    if(ar > 0.7 && ar < 1.3) {
-                        found = true;
-                        // Save global center coordinate
-                        center.x = roi.x + rect.x + rect.width/2;
-                        center.y = roi.y + rect.y + rect.height/2;
-                        break; // Found the marker in this corner
+            const singleSheetHTML = (index) => `
+                <div class="single-exam-sheet ${layout === 1 ? 'single-layout' : 'multi-layout'}">
+                    <div class="sheet-content-container">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 3px double #333; padding-bottom: 10px; margin-bottom: 10px;">
+                            <div style="text-align: right; width: 70%;">
+                                <h1 style="margin: 0; font-size: ${layout === 4 ? '16px' : '22px'}; font-weight: 800; color: #000;">${exam.title}</h1>
+                                <h3 style="margin: 2px 0; font-size: ${layout === 4 ? '11px' : '14px'}; color: #555;">${exam.class}</h3>
+                            </div>
+                            <div style="width: 25%; display: flex; justify-content: center; align-items: center;">
+                                <div id="qrcode-${index}"></div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px; direction: rtl;">
+                            <div class="student-field" style="flex: 4;">
+                                <span style="font-size: 10px; font-weight: bold; color: #444; margin-left: 5px;">الاسم الكامل:</span>
+                                <span style="flex: 1; border-bottom: 1px dotted #ccc;"></span>
+                            </div>
+                            <div class="student-field" style="flex: 1.5;">
+                                <span style="font-size: 10px; font-weight: bold; color: #444; margin-left: 5px;">الرقم:</span>
+                                <span style="flex: 1; border-bottom: 1px dotted #ccc;"></span>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; font-size: 9px; color: #666; margin-bottom: 5px;">
+                            املأ الدائرة بالكامل | استخدم قلماً جافاً (أزرق أو أسود)
+                        </div>
+
+                        <div class="omr-anchor-frame">
+                            <div style="flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 0 20px; direction: rtl;">
+                                 ${generateQuestionsHTML(exam.qCount, exam.oCount)}
+                            </div>
+                        </div>
+
+                        <div style="margin-top: auto; border-top: 1px solid #ddd; padding-top: 5px; text-align: center;">
+                            <p style="font-size: 8px; font-weight: bold; margin: 0; color: #333;">&copy; SmartMark 2025</p>
+                        </div>
+                    </div>
+                    ${(layout === 2 && index === 0) ? '<div class="cut-line-h"></div>' : ''}
+                    ${(layout === 4 && (index === 0 || index === 2)) ? '<div class="cut-line-v"></div>' : ''}
+                    ${(layout === 4 && (index === 0 || index === 1)) ? '<div class="cut-line-h"></div>' : ''}
+                </div>
+            `;
+
+            for(let i=0; i<layout; i++) wrapper.innerHTML += singleSheetHTML(i);
+
+            const examCode = "SM-" + exam.id; 
+            for(let i=0; i<layout; i++) {
+                new QRCode(document.getElementById(`qrcode-${i}`), { text: examCode, width: layout === 4 ? 50 : 60, height: layout === 4 ? 50 : 60 });
+            }
+
+            await new Promise(r => setTimeout(r, 500)); // Wait for render
+
+            const canvas = await html2canvas(container, { scale: 2 });
+            if (type === 'png') {
+                const link = document.createElement('a'); link.download = `${exam.title}.png`; link.href = canvas.toDataURL(); link.click();
+            } else {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+                pdf.save(`${exam.title}.pdf`);
+            }
+            container.innerHTML = '';
+            document.getElementById('downloadModal').classList.add('hidden');
+        }
+
+        function generateQuestionsHTML(qCount, oCount) {
+            let html = '';
+            const colSize = 25; 
+            const cols = Math.ceil(qCount / colSize);
+            const widthPct = (100 / cols) - 2;
+
+            for(let c=0; c<cols; c++) {
+                html += `<div style="width: ${widthPct}%; margin-bottom: 10px;">`;
+                html += `<div class="omr-grid-row" style="margin-bottom: 8px;"><div class="omr-num-box" style="border:none;"></div><div class="omr-bubbles-group">`;
+                for(let j=0; j<oCount; j++) html += `<div class="omr-bubble-wrapper"><span class="omr-header-label">${ARABIC_OPTIONS[j]}</span></div>`;
+                html += `</div></div>`;
+
+                const start = c * colSize;
+                const end = Math.min(start + colSize, qCount);
+                for(let i=start; i<end; i++) {
+                    html += `<div class="omr-grid-row"><div class="omr-num-box">${i+1}</div><div class="omr-bubbles-group">`;
+                    for(let j=0; j<oCount; j++) html += `<div class="omr-bubble-wrapper"><div class="omr-bubble"></div></div>`;
+                    html += `</div></div>`;
+                }
+                html += `</div>`;
+            }
+            return html;
+        }
+
+        // --- Editing & Deletion ---
+
+        function openEditKey(id) {
+            const exam = db.exams.find(e => e.id === id);
+            editingExamId = id;
+            renderAnswerKeyGrid('edit', exam);
+            document.getElementById('editKeyModal').classList.remove('hidden');
+        }
+
+        function saveEditedKey() {
+            const examIndex = db.exams.findIndex(e => e.id === editingExamId);
+            if (examIndex > -1) {
+                db.exams[examIndex].key = JSON.parse(JSON.stringify(editKey));
+                saveData();
+                alert("تم تعديل عناصر الإجابة بنجاح!");
+                document.getElementById('editKeyModal').classList.add('hidden');
+            }
+        }
+
+        function deleteExam(id) {
+            if(confirm("هل أنت متأكد من حذف الامتحان وجميع نتائجه؟ لا يمكن التراجع.")) {
+                db.exams = db.exams.filter(e => e.id !== id);
+                db.results = db.results.filter(r => r.examId !== id);
+                saveData();
+            }
+        }
+
+        // --- Scanning Logic (OpenCV) ---
+
+        function startScanning(examId) {
+            currentExamId = examId;
+            if(!isCvLoaded) return alert("جاري تحميل نظام الرؤية الحاسوبية، يرجى الانتظار...");
+            document.getElementById('scannerModal').classList.add('scanner-active');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: {ideal: 1920} } })
+                .then(s => { stream = s; document.getElementById('videoInput').srcObject = stream; })
+                .catch(() => alert("تعذر الوصول للكاميرا."));
+        }
+
+        function closeScanner() {
+            document.getElementById('scannerModal').classList.remove('scanner-active');
+            if(stream) stream.getTracks().forEach(t => t.stop());
+            switchTab('results');
+        }
+
+        function processScan() {
+            const video = document.getElementById('videoInput');
+            const canvas = document.getElementById('processCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+
+            try {
+                let src = cv.imread(canvas);
+                let gray = new cv.Mat();
+                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
+                cv.Canny(gray, gray, 75, 200);
+
+                let contours = new cv.MatVector();
+                let hierarchy = new cv.Mat();
+                cv.findContours(gray, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+                let docContour = null, maxArea = 0;
+                for (let i = 0; i < contours.size(); ++i) {
+                    let cnt = contours.get(i);
+                    let area = cv.contourArea(cnt);
+                    if (area > 20000) { 
+                        let peri = cv.arcLength(cnt, true);
+                        let approx = new cv.Mat();
+                        cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+                        if (approx.rows === 4 && area > maxArea) {
+                            maxArea = area; if(docContour) docContour.delete(); docContour = approx;
+                        } else approx.delete();
                     }
                 }
-            }
-            
-            // Visual Feedback
-            const el = document.getElementById(roi.el);
-            if(found) {
-                el.classList.add('locked');
-                corners[idx] = center; // Store precise point
-                lockedCount++;
-            } else {
-                el.classList.remove('locked');
-            }
-            
-            roiMat.delete(); cnts.delete();
-        });
 
-        // Trigger Grading if all 4 found
-        if(lockedCount === 4) {
-            document.getElementById('scan-hint').innerText = "جاري المعالجة...";
-            document.getElementById('beepSound').play().catch(()=>{});
-            
-            // Perform Warp & Grade using the 'corners' array
-            performGrading(gray, corners);
-            app.isScanning = false; // Pause scanning
-        } else {
-            document.getElementById('scan-hint').innerText = "ضع العلامات داخل المربعات";
+                if (docContour) {
+                    let boundingRect = cv.boundingRect(docContour);
+                    let nameH = Math.floor(boundingRect.height * 0.3);
+                    let nameY = Math.max(0, boundingRect.y - nameH);
+                    let nameRect = new cv.Rect(boundingRect.x, nameY, boundingRect.width, nameH);
+                    let nameMat = src.roi(nameRect);
+                    cv.imshow('processCanvas', nameMat);
+                    let nameImgData = document.getElementById('processCanvas').toDataURL();
+                    nameMat.delete();
+
+                    let pts = [];
+                    for(let i=0; i<4; i++) pts.push(docContour.data32S[i*2], docContour.data32S[i*2+1]);
+                    let sorted = orderPoints(pts);
+                    let w = 600, h = 800;
+                    let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, sorted);
+                    let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0,0, w,0, w,h, 0,h]);
+                    let M = cv.getPerspectiveTransform(srcTri, dstTri);
+                    let warped = new cv.Mat();
+                    cv.warpPerspective(src, warped, M, new cv.Size(w, h));
+
+                    let exam = db.exams.find(e => e.id === currentExamId);
+                    let score = 0, detected = [];
+                    let warpedGray = new cv.Mat();
+                    cv.cvtColor(warped, warpedGray, cv.COLOR_RGBA2GRAY);
+                    cv.threshold(warpedGray, warpedGray, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU);
+                    
+                    let margin = 30;
+                    let availableH = h - (margin*2);
+                    let rowH = availableH / exam.qCount;
+                    let colW = (w - 100) / exam.oCount;
+                    
+                    for(let q=0; q<exam.qCount; q++) {
+                        let qSel = [];
+                        let y = margin + (q * rowH);
+                        
+                        for(let o=0; o<exam.oCount; o++) {
+                            let x = 60 + (o * colW);
+                            if(x > w || y > h) continue;
+
+                            let roi = warpedGray.roi(new cv.Rect(x+5, y+5, colW-15, rowH-10));
+                            if(cv.countNonZero(roi) > 120) qSel.push(o);
+                            roi.delete();
+                        }
+                        detected.push(qSel);
+                        
+                        let key = exam.key[q] || [];
+                        let qPoints = exam.pointsPerQ || 1;
+                        
+                        if (exam.partialCredit) {
+                            let correctPicks = qSel.filter(opt => key.includes(opt)).length;
+                            let wrongPicks = qSel.filter(opt => !key.includes(opt)).length;
+                            if (wrongPicks > 0) score += 0; // Wrong selection voids question
+                            else if (key.length > 0) score += (correctPicks / key.length) * qPoints;
+                        } else {
+                            // Exact match only
+                            let sortedSel = [...qSel].sort().toString();
+                            let sortedKey = [...key].sort().toString();
+                            if (sortedSel === sortedKey && key.length > 0) score += qPoints;
+                        }
+                    }
+
+                    let maxScore = exam.qCount * (exam.pointsPerQ || 1);
+
+                    db.results.push({
+                        id: Date.now(), examId: currentExamId,
+                        nameImg: nameImgData, answers: detected, score, total: maxScore,
+                        timestamp: new Date().toISOString()
+                    });
+                    saveData();
+                    
+                    src.delete(); gray.delete(); contours.delete(); hierarchy.delete(); docContour.delete();
+                    srcTri.delete(); dstTri.delete(); M.delete(); warped.delete(); warpedGray.delete();
+
+                    alert(`تم التصحيح بنجاح! النقطة: ${score.toFixed(2)} / ${maxScore}`);
+
+                } else {
+                    alert("لم يتم العثور على ورقة الإجابة. تأكد من ظهور الإطار الأسود كاملاً.");
+                    src.delete(); gray.delete(); contours.delete(); hierarchy.delete();
+                }
+            } catch(e) { console.error(e); alert("خطأ تقني أثناء المعالجة"); }
         }
 
-        src.delete(); gray.delete(); thresh.delete();
-    }
+        function orderPoints(pts) {
+            let p = [{x:pts[0],y:pts[1]}, {x:pts[2],y:pts[3]}, {x:pts[4],y:pts[5]}, {x:pts[6],y:pts[7]}];
+            p.sort((a,b) => (a.x+a.y)-(b.x+b.y));
+            let tl = p[0], br = p[3];
+            let rem = [p[1], p[2]].sort((a,b) => (a.y-a.x)-(b.y-b.x));
+            return [tl.x,tl.y, rem[0].x,rem[0].y, br.x,br.y, rem[1].x,rem[1].y];
+        }
 
-    function performGrading(grayMat, corners) {
-        // 1. Perspective Warp
-        // corners = [TL, TR, BL, BR] (based on ROI index order)
-        let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            corners[0].x, corners[0].y,
-            corners[1].x, corners[1].y,
-            corners[2].x, corners[2].y,
-            corners[3].x, corners[3].y
-        ]);
-        
-        // Target: Standard A4 Ratio (1000 x 1414)
-        // Markers are at 15mm from edge. 
-        // Paper width 210mm. Marker offset px = (15/210)*1000 = ~71px
-        const pad = 71;
-        const W = app.PAPER_W;
-        const H = app.PAPER_H;
-        
-        let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            pad, pad,
-            W-pad, pad,
-            pad, H-pad,
-            W-pad, H-pad
-        ]);
-        
-        let M = cv.getPerspectiveTransform(srcTri, dstTri);
-        let warped = new cv.Mat();
-        cv.warpPerspective(grayMat, warped, M, new cv.Size(W, H));
-        
-        // 2. Crop Name Header
-        let nameImgData = null;
-        try {
-            // HEADER_RECT defined in app state
-            let headerRoi = warped.roi(new cv.Rect(app.HEADER_RECT.x, app.HEADER_RECT.y, app.HEADER_RECT.w, app.HEADER_RECT.h));
-            let headerCanvas = document.createElement('canvas');
-            headerCanvas.width = app.HEADER_RECT.w;
-            headerCanvas.height = app.HEADER_RECT.h;
-            cv.imshow(headerCanvas, headerRoi);
-            nameImgData = headerCanvas.toDataURL('image/jpeg', 0.8);
-            headerRoi.delete();
-        } catch(e) { console.log("Header crop fail"); }
+        // --- Results Table & Actions ---
 
-        // 3. Grade Bubbles
-        // Threshold warped image for bubble detection
-        let bin = new cv.Mat();
-        cv.threshold(warped, bin, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU);
-        
-        const q = app.settings.q;
-        let score = 0;
-        // Grid logic: 2 columns in HTML. 
-        // Left col: x= ~150 to 450. Right col: x= ~550 to 850.
-        // Y starts approx 350px down.
-        const startY = 350;
-        const rowH = (1200 - startY) / Math.ceil(q/2);
-        
-        // Simple logic for single column for demo stability (adjust x coordinates for 2 cols)
-        // Let's assume 2 cols layout like the HTML generator
-        let answers = [];
-        
-        for(let i=0; i<q; i++) {
-            let col = (i < Math.ceil(q/2)) ? 0 : 1; // 0=Left, 1=Right
-            let idxInCol = (col===0) ? i : i - Math.ceil(q/2);
+        function getGrade(percentage) {
+            if (percentage >= 85) return 'A'; if (percentage >= 70) return 'B'; if (percentage >= 50) return 'C'; return 'D';
+        }
+        function getGradeColor(grade) {
+            const map = { 'A': 'bg-green-100 text-green-800', 'B': 'bg-blue-100 text-blue-800', 'C': 'bg-yellow-100 text-yellow-800', 'D': 'bg-red-100 text-red-800' };
+            return map[grade] || 'bg-gray-100';
+        }
+
+        function renderResultsTable() {
+            const tbody = document.getElementById('resultsTableBody');
+            const search = document.getElementById('resultSearch').value.toLowerCase();
+            const classFilter = document.getElementById('resultFilterClass');
+            const selectedClass = classFilter.value;
             
-            // Coordinates tuned for 1000px width
-            let xStart = (col===0) ? 180 : 600; 
-            let yPos = startY + (idxInCol * rowH);
-            let optW = 40; // distance between bubbles
+            const classes = [...new Set(db.exams.map(e => e.class))];
+            if (classFilter.options.length === 1) classes.forEach(c => classFilter.add(new Option(c, c)));
+
+            tbody.innerHTML = '';
             
-            let detected = -1;
-            let maxPix = 0;
+            let data = db.results.map(r => {
+                const exam = db.exams.find(e => e.id === r.examId);
+                return { ...r, examName: exam?.title || '?', examClass: exam?.class || '' };
+            }).filter(r => 
+                (selectedClass === '' || r.examClass === selectedClass) &&
+                (r.examName.toLowerCase().includes(search))
+            );
+
+            data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            data.forEach((row, idx) => {
+                const pct = (row.score / row.total) * 100;
+                const grade = getGrade(pct);
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 border-b";
+                tr.innerHTML = `
+                    <td class="p-3 font-mono text-gray-500">${idx + 1}</td>
+                    <td class="p-3 font-medium">
+                        <div class="font-bold text-gray-800">${row.examName}</div>
+                        <div class="text-xs text-gray-500">${row.examClass}</div>
+                    </td>
+                    <td class="p-3"><img src="${row.nameImg}" class="h-10 border border-gray-300 rounded bg-white shadow-sm object-contain cursor-zoom-in hover:scale-150 transition"></td>
+                    <td class="p-3 text-center font-bold text-indigo-900 dir-ltr">${row.score.toFixed(2)} / ${row.total}</td>
+                    <td class="p-3 text-center"><span class="${getGradeColor(grade)} px-2 py-1 rounded text-xs font-bold">${grade}</span></td>
+                    <td class="p-3 text-center">
+                        <div class="flex justify-center gap-2">
+                            <button onclick="viewPreview(${row.id})" title="معاينة" class="text-indigo-600 hover:bg-indigo-50 p-2 rounded transition"><i class="fa-solid fa-eye"></i></button>
+                            <button onclick="viewMastery(${row.id})" title="درجة التحكم" class="text-yellow-600 hover:bg-yellow-50 p-2 rounded transition"><i class="fa-solid fa-award"></i></button>
+                            <button onclick="deleteResult(${row.id})" title="حذف" class="text-red-600 hover:bg-red-50 p-2 rounded transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- Results: Preview Logic ---
+
+        function viewPreview(resultId) {
+            const result = db.results.find(r => r.id === resultId);
+            const exam = db.exams.find(e => e.id === result.examId);
+            if(!result || !exam) return;
+
+            document.getElementById('previewNameImg').src = result.nameImg;
+            document.getElementById('previewScore').innerText = `${result.score.toFixed(2)} / ${result.total}`;
             
-            for(let j=0; j<4; j++) {
-                let cx = xStart + (j * 50); // 50px gap
-                let cy = yPos + (rowH/2);
+            const container = document.getElementById('previewGrid');
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `40px repeat(${exam.oCount}, 1fr)`;
+
+            const headerRow = document.createElement('div');
+            headerRow.className = "contents";
+            headerRow.innerHTML = `<span></span>` + Array.from({length: exam.oCount}, (_, i) => 
+                `<span class="text-center font-bold text-gray-600 text-sm">${ARABIC_OPTIONS[i]}</span>`
+            ).join('');
+            container.appendChild(headerRow);
+
+            for(let q=0; q<exam.qCount; q++) {
+                const studentAns = result.answers[q] || [];
+                const correctKey = exam.key[q] || [];
                 
-                // ROI for bubble
-                let r = 12;
-                let roi = bin.roi(new cv.Rect(cx-r, cy-r, r*2, r*2));
-                let count = cv.countNonZero(roi);
-                roi.delete();
+                // Determine Row Status for Icon
+                let iconHtml = '';
+                const sortedStud = [...studentAns].sort().toString();
+                const sortedKey = [...correctKey].sort().toString();
                 
-                if(count > 150 && count > maxPix) { // Threshold
-                    maxPix = count;
-                    detected = j;
+                if (studentAns.length === 0) iconHtml = '<i class="fa-solid fa-circle text-[8px] text-blue-500"></i>';
+                else if (exam.partialCredit) {
+                     const wrongPicks = studentAns.filter(x => !correctKey.includes(x)).length;
+                     if(wrongPicks > 0) iconHtml = '<i class="fa-solid fa-xmark text-red-500"></i>';
+                     else if(sortedStud === sortedKey) iconHtml = '<i class="fa-solid fa-check text-green-500"></i>';
+                     else iconHtml = '<i class="fa-solid fa-check text-orange-500"></i>';
+                } else {
+                    iconHtml = (sortedStud === sortedKey) ? '<i class="fa-solid fa-check text-green-500"></i>' : '<i class="fa-solid fa-xmark text-red-500"></i>';
+                }
+
+                const num = document.createElement('div');
+                num.className = "flex items-center justify-between px-1 font-bold bg-gray-50 text-gray-700 rounded h-8 text-sm border";
+                num.innerHTML = `<span>${q+1}</span> ${iconHtml}`;
+                container.appendChild(num);
+
+                for (let o = 0; o < exam.oCount; o++) {
+                    const bubble = document.createElement('div');
+                    let classes = "bubble-select mx-auto cursor-default ";
+                    
+                    const isSelected = studentAns.includes(o);
+                    const isCorrect = correctKey.includes(o);
+                    
+                    if (isSelected) {
+                        if (isCorrect) classes += "bubble-correct"; // Green
+                        else classes += "bubble-wrong"; // Red
+                        // Override for Partial logic visualization if needed, but Prompt says Green=Correct, Red=Wrong
+                        // If partial credit is ON and it's a correct pick but partial answer, still green.
+                        // If partial credit ON and it's a WRONG pick, it's red.
+                    } else {
+                        // Not selected
+                         if(studentAns.length === 0) classes += "bubble-empty"; // Outline Blue
+                         // Optional: Highlight missed correct answers?
+                         // Prompt says "Empty circles in blue".
+                    }
+                    
+                    // Logic refinement for "Partial in Orange":
+                    // If the student selected this bubble, AND it is correct, AND it's a partial answer overall?
+                    // Usually individual bubbles are either Right or Wrong. Partial applies to the Question score.
+                    // Interpretation: If the user selected a correct option, make it Green. If they selected a wrong option, Red.
+                    // "Orange circles for partial answers" -> This might mean if the *Question* is partially correct, color the correct bubbles Orange?
+                    // Let's stick to: Selected & Correct = Green. Selected & Wrong = Red.
+                    // Special case: If user selected Correct bubble but got partial score (missed others), maybe Orange?
+                    if (isSelected && isCorrect && exam.partialCredit && sortedStud !== sortedKey) {
+                        classes = classes.replace('bubble-correct', 'bubble-partial');
+                    }
+                    
+                    // "Leave empty circle in Blue" -> Interpreted as Blue Outline for empty selection or empty question?
+                    // If the question is empty, all bubbles are normal.
+                    // Let's apply Blue Outline style if the bubble is NOT selected.
+                    if (!isSelected) {
+                        if(studentAns.length === 0) classes += " border-blue-300";
+                    }
+
+                    bubble.className = classes;
+                    bubble.textContent = ARABIC_OPTIONS[o];
+                    container.appendChild(bubble);
                 }
             }
-            
-            // Grading
-            const key = app.settings.keys[i];
-            if(detected === key.ans) score += key.pts;
-            answers.push(detected);
+
+            document.getElementById('previewModal').classList.remove('hidden');
         }
 
-        // 4. Save & Show Result
-        const res = {
-            id: Date.now(),
-            score: score,
-            total: app.settings.keys.reduce((a,b)=>a+b.pts,0),
-            nameImg: nameImgData, // The handwritten snapshot
-            date: new Date().toLocaleTimeString('ar-MA')
-        };
-        app.results.push(res);
-        saveData();
+        // --- Results: Mastery Logic ---
 
-        // UI Update
-        document.getElementById('successSound').play().catch(()=>{});
-        document.getElementById('popup-score').innerText = res.score;
-        document.getElementById('popup-name-img').src = res.nameImg;
-        document.getElementById('result-popup').classList.remove('hidden');
-        document.getElementById('result-popup').classList.add('flex');
+        function viewMastery(resultId) {
+            const result = db.results.find(r => r.id === resultId);
+            const exam = db.exams.find(e => e.id === result.examId);
+            if(!result || !exam) return;
+
+            const tbody = document.getElementById('masteryTableBody');
+            tbody.innerHTML = '';
+
+            for(let q=0; q<exam.qCount; q++) {
+                const studentAns = result.answers[q] || [];
+                const correctKey = exam.key[q] || [];
+                const qPoints = exam.pointsPerQ || 1;
+                
+                let score = 0;
+                if (exam.partialCredit) {
+                    let correctPicks = studentAns.filter(opt => correctKey.includes(opt)).length;
+                    let wrongPicks = studentAns.filter(opt => !correctKey.includes(opt)).length;
+                    if (wrongPicks === 0 && correctKey.length > 0) score = (correctPicks / correctKey.length) * qPoints;
+                } else {
+                    const s1 = [...studentAns].sort().toString();
+                    const k1 = [...correctKey].sort().toString();
+                    if(s1 === k1 && correctKey.length > 0) score = qPoints;
+                }
+
+                const pct = (score / qPoints) * 100;
+                const grade = getGrade(pct); // A, B, C, D per question
+                
+                const tr = document.createElement('tr');
+                tr.className = "border-b";
+                tr.innerHTML = `
+                    <td class="p-2 font-bold text-gray-700">${q+1}</td>
+                    <td class="p-2">${score.toFixed(2)} / ${qPoints}</td>
+                    <td class="p-2"><span class="${getGradeColor(grade)} px-2 py-1 rounded text-xs font-bold shadow-sm w-8 inline-block">${grade}</span></td>
+                `;
+                tbody.appendChild(tr);
+            }
+            document.getElementById('masteryModal').classList.remove('hidden');
+        }
+
+        function deleteResult(id) {
+            if(confirm("حذف هذه النتيجة نهائياً؟")) {
+                db.results = db.results.filter(r => r.id !== id);
+                saveData();
+            }
+        }
+
+        // --- Dashboard & Charts ---
+
+        let gradeChart = null, perfChart = null;
         
-        updateRecentList();
+        function updateDashboard() {
+            const filter = document.getElementById('statsFilter');
+            
+            // Populate Filter options (Exams and Classes)
+            if (filter.options.length === 1) {
+                const classes = [...new Set(db.exams.map(e => e.class))];
+                classes.forEach(c => filter.add(new Option(`فصل: ${c}`, `CLASS:${c}`)));
+                
+                db.exams.forEach(e => {
+                    filter.add(new Option(`امتحان: ${e.title}`, `EXAM:${e.id}`));
+                });
+            }
 
-        // Cleanup
-        srcTri.delete(); dstTri.delete(); M.delete(); warped.delete(); bin.delete();
-    }
+            let filteredResults = db.results;
+            let filterType = 'ALL';
+            let filterValue = '';
 
-    function updateRecentList() {
-        const list = document.getElementById('recent-list');
-        list.innerHTML = '';
-        [...app.results].reverse().forEach(r => {
-            list.innerHTML += `
-            <div class="flex items-center gap-3 p-2 bg-gray-50 rounded border-r-4 border-primary">
-                <img src="${r.nameImg}" class="w-16 h-10 object-cover border bg-white rounded">
-                <div class="flex-1">
-                    <div class="font-bold text-lg">${r.score} / ${r.total}</div>
-                    <div class="text-xs text-gray-400">${r.date}</div>
-                </div>
-            </div>`;
-        });
-    }
+            if (filter.value.includes(':')) {
+                [filterType, filterValue] = filter.value.split(':');
+            }
 
-    function nextScan() {
-        document.getElementById('result-popup').classList.add('hidden');
-        document.getElementById('result-popup').classList.remove('flex');
-        app.isScanning = true;
-        requestAnimationFrame(scanLoop);
-    }
+            if (filterType === 'CLASS') {
+                const validExamIds = db.exams.filter(e => e.class === filterValue).map(e => e.id);
+                filteredResults = db.results.filter(r => validExamIds.includes(r.examId));
+            } else if (filterType === 'EXAM') {
+                filteredResults = db.results.filter(r => r.examId == filterValue);
+            }
 
-    function discardResult() {
-        app.results.pop();
-        saveData();
-        updateRecentList();
-        nextScan();
-    }
-    
-    /* --- RESULTS TAB --- */
-    function renderResults() {
-        const tbody = document.getElementById('results-table-body');
-        tbody.innerHTML = '';
-        app.results.forEach((r, idx) => {
-            const pct = Math.round((r.score/r.total)*100);
-            tbody.innerHTML += `
-            <tr class="hover:bg-gray-50">
-                <td class="p-3"><img src="${r.nameImg}" class="name-snapshot hover:scale-150 transition cursor-zoom-in bg-white"></td>
-                <td class="p-3 font-bold text-primary">${r.score}</td>
-                <td class="p-3"><span class="px-2 py-1 rounded text-xs ${pct>=50?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${pct}%</span></td>
-                <td class="p-3 text-gray-500">${r.date}</td>
-                <td class="p-3"><button onclick="deleteRes(${idx})" class="text-red-500 hover:bg-red-50 p-2 rounded"><i class="fa-solid fa-trash"></i></button></td>
-            </tr>`;
-        });
-    }
+            // Cards Stats
+            document.getElementById('stat-exams').innerText = db.exams.length;
+            document.getElementById('stat-papers').innerText = filteredResults.length;
+            
+            let totalPct = 0, gradesCount = { A:0, B:0, C:0, D:0 };
+            filteredResults.forEach(r => {
+                const pct = (r.score / r.total) * 100;
+                totalPct += pct;
+                gradesCount[getGrade(pct)]++;
+            });
+            document.getElementById('stat-average').innerText = (filteredResults.length ? Math.round(totalPct / filteredResults.length) : 0) + "%";
 
-    function deleteRes(idx) {
-        if(confirm("حذف النتيجة؟")) {
-            app.results.splice(idx, 1);
-            saveData();
-            renderResults();
+            // Best Class logic
+            let classScores = {};
+            db.results.forEach(r => {
+                const e = db.exams.find(ex => ex.id === r.examId);
+                if(e) {
+                    if(!classScores[e.class]) classScores[e.class] = {sum:0, count:0};
+                    classScores[e.class].sum += (r.score/r.total);
+                    classScores[e.class].count++;
+                }
+            });
+            let best = Object.entries(classScores).sort((a,b) => (b[1].sum/b[1].count) - (a[1].sum/a[1].count))[0];
+            document.getElementById('stat-best-class').innerText = best ? best[0] : '-';
+
+            // Chart 1: Grades
+            renderGradeChart(gradesCount);
+
+            // Chart 2: Performance (Class vs Exam Item Analysis)
+            if (filterType === 'EXAM') {
+                const exam = db.exams.find(e => e.id == filterValue);
+                renderItemAnalysisChart(exam, filteredResults);
+            } else {
+                renderClassPerformanceChart(classScores);
+            }
         }
-    }
 
-    function exportCSV() {
-        // Since we don't have text names, we export ID and Score
-        let csv = "\uFEFFID,Score,Total,Date\n";
-        app.results.forEach(r => { csv += `${r.id},${r.score},${r.total},${r.date}\n`; });
-        const a = document.createElement('a');
-        a.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
-        a.download = 'results.csv';
-        a.click();
-    }
+        function renderGradeChart(grades) {
+            const ctx = document.getElementById('chartGrades').getContext('2d');
+            if(gradeChart) gradeChart.destroy();
+            gradeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['متميز (A)', 'جيد (B)', 'متوسط (C)', 'ضعيف (D)'],
+                    datasets: [{ 
+                        data: [grades.A, grades.B, grades.C, grades.D], 
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'right' } } }
+            });
+        }
 
-    /* --- STORAGE --- */
-    function saveData() { localStorage.setItem('mw_results', JSON.stringify(app.results)); }
-    function loadData() {
-        if(localStorage.getItem('mw_settings')) app.settings = JSON.parse(localStorage.getItem('mw_settings'));
-        if(localStorage.getItem('mw_results')) app.results = JSON.parse(localStorage.getItem('mw_results'));
-        updateRecentList();
-    }
-    function resetApp() { localStorage.clear(); location.reload(); }
-    
-    // Manual file upload fallback
-    function handleFileUpload(e) {
-        const f = e.target.files[0];
-        if(!f) return;
-        stopCamera();
-        const img = new Image();
-        img.src = URL.createObjectURL(f);
-        img.onload = () => {
-            // Process manually by drawing to procCanvas and calling detect
-            const canvas = document.getElementById('procCanvas');
-            canvas.width = img.width; canvas.height = img.height;
-            canvas.getContext('2d').drawImage(img,0,0);
-            // We skip the UI ROI check for uploads and try to find markers globally (simplified) or just tell user to use camera
-            alert("يرجى استخدام الكاميرا للحصول على أفضل النتائج مع ميزة ZipGrade");
-            // For code brevity, sticking to camera loop logic
-        };
-    }
-</script>
+        function renderClassPerformanceChart(classData) {
+            document.getElementById('performanceChartTitle').innerText = "الأداء حسب الفصول";
+            const ctx = document.getElementById('chartPerformance').getContext('2d');
+            if(perfChart) perfChart.destroy();
+            perfChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(classData),
+                    datasets: [{ 
+                        label: 'معدل الأداء %', 
+                        data: Object.values(classData).map(v => Math.round((v.sum/v.count)*100)), 
+                        backgroundColor: '#6366f1', 
+                        borderRadius: 6 
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+        }
+
+        function renderItemAnalysisChart(exam, results) {
+            document.getElementById('performanceChartTitle').innerText = `تحليل الأسئلة: ${exam.title}`;
+            
+            // Calculate stats per question
+            let stats = Array(exam.qCount).fill().map(() => ({ correct:0, wrong:0, partial:0 }));
+            
+            results.forEach(res => {
+                for(let q=0; q<exam.qCount; q++) {
+                    const studAns = res.answers[q] || [];
+                    const key = exam.key[q] || [];
+                    const sStr = [...studAns].sort().toString();
+                    const kStr = [...key].sort().toString();
+
+                    if (sStr === kStr && key.length > 0) {
+                        stats[q].correct++;
+                    } else if (exam.partialCredit && studAns.some(x => key.includes(x)) && !studAns.some(x => !key.includes(x))) {
+                        // Strict partial: has some correct, no wrong
+                        stats[q].partial++;
+                    } else {
+                        stats[q].wrong++;
+                    }
+                }
+            });
+
+            const labels = stats.map((_, i) => `س${i+1}`);
+            const ctx = document.getElementById('chartPerformance').getContext('2d');
+            if(perfChart) perfChart.destroy();
+            
+            perfChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'صحيح', data: stats.map(s => s.correct), backgroundColor: '#10b981' },
+                        { label: 'جزئي', data: stats.map(s => s.partial), backgroundColor: '#f97316' },
+                        { label: 'خطأ', data: stats.map(s => s.wrong), backgroundColor: '#ef4444' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: { x: { stacked: true }, y: { stacked: true } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+
+        function backupData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const dl = document.createElement('a');
+            dl.href = dataStr;
+            dl.download = "smartmark_backup_" + new Date().toLocaleDateString('en-GB').replace(/\//g, '-') + ".json";
+            dl.click();
+        }
+
+        function restoreData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const r = new FileReader();
+            r.onload = e => {
+                try {
+                    db = JSON.parse(e.target.result);
+                    saveData();
+                    alert("تم استعادة البيانات بنجاح!");
+                    location.reload();
+                } catch(err) { alert("ملف غير صالح"); }
+            };
+            r.readAsText(file);
+        }
+
+        window.onload = initApp;
+    </script>
 </body>
 </html>
