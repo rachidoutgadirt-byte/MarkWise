@@ -18,10 +18,29 @@
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
         body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; overflow: hidden; }
         
-        /* تأثيرات القائمة الجانبية */
-        aside { transition: transform 0.3s ease-in-out; z-index: 50; }
-        .sidebar-open #sidebar-overlay { display: block; }
+        /* --- نظام القائمة الجانبية المتجاوب --- */
         #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
+        .sidebar-open #sidebar-overlay { display: block; }
+
+        aside { 
+            transition: transform 0.3s ease-in-out; 
+            z-index: 50; 
+        }
+
+        /* في الشاشات الصغيرة: القائمة تكون مخفية لليمين */
+        @media (max-width: 767px) {
+            aside {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                transform: translateX(100%);
+                width: 280px;
+            }
+            .sidebar-open aside {
+                transform: translateX(0);
+            }
+        }
 
         /* فقاعات الاختيار في الواجهة */
         .bubble-select { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; }
@@ -34,10 +53,9 @@
         /* --- تصميم ورقة الإجابة (Professional OMR Design) --- */
         #sheet-gen-container { position: fixed; left: -9999px; top: 0; background: #eee; padding: 20px; }
         .a4-page { width: 210mm; min-height: 297mm; background: white; margin: 0 auto; box-sizing: border-box; position: relative; display: flex; flex-wrap: wrap; align-content: flex-start; padding: 5mm; }
-        
         .omr-sheet { background: white; border: 1px solid #eee; position: relative; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column; color: black; }
         
-        /* العلامات المرجعية (Anchors) */
+        /* العلامات المرجعية */
         .anchor { position: absolute; width: 7mm; height: 7mm; background: black; }
         .t-r { top: 3mm; right: 3mm; } .t-l { top: 3mm; left: 3mm; }
         .b-r { bottom: 3mm; right: 3mm; } .b-l { bottom: 3mm; left: 3mm; }
@@ -55,7 +73,6 @@
         .q-num { width: 30px; font-weight: bold; font-size: 13px; border-left: 1px solid #ccc; margin-left: 5px; text-align: left; padding-left: 3px; }
         .q-bubble { width: 20px; height: 20px; border: 1.5px solid black; border-radius: 50%; margin: 0 2.5px; }
 
-        /* أحجام التخطيطات */
         .layout-1 .omr-sheet { width: 100%; height: 100%; padding: 5mm; }
         .layout-2 .omr-sheet { width: 100%; height: 49%; margin-bottom: 1%; border: 1px dashed #ccc; }
         .layout-4 .omr-sheet { width: 49%; height: 49%; margin: 0.5%; border: 1px dashed #ccc; }
@@ -63,14 +80,19 @@
 </head>
 <body class="text-slate-900">
 
+    <!-- طبقة التعتيم عند فتح القائمة في الهاتف -->
     <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <div class="flex h-screen overflow-hidden">
         <!-- القائمة الجانبية -->
         <aside class="w-64 bg-slate-900 text-white flex flex-col shadow-2xl shrink-0">
-            <div class="p-6 border-b border-slate-800 text-center">
+            <div class="p-6 border-b border-slate-800 text-center relative">
                 <h1 class="text-2xl font-black text-indigo-400">SMART MARK</h1>
                 <p class="text-[10px] text-slate-400 mt-1 uppercase">Pro Version 2.0</p>
+                <!-- زر إغلاق للقائمة في الهواتف فقط -->
+                <button onclick="toggleSidebar()" class="md:hidden absolute top-4 left-4 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
             </div>
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <button onclick="switchTab('dashboard')" class="nav-btn w-full text-right px-4 py-3 rounded-xl hover:bg-slate-800 transition flex items-center gap-3 bg-indigo-600" id="btn-dashboard">
@@ -89,12 +111,15 @@
         </aside>
 
         <!-- المحتوى الرئيسي -->
-        <main class="flex-1 flex flex-col min-w-0 bg-slate-50">
+        <main class="flex-1 flex flex-col min-w-0 bg-slate-50 w-full">
             <header class="bg-white border-b p-4 flex justify-between items-center shadow-sm">
-                <button onclick="toggleSidebar()" class="md:hidden text-slate-600 p-2"><i class="fa-solid fa-bars"></i></button>
-                <h2 id="current-tab-title" class="font-extrabold text-slate-800">لوحة التحكم</h2>
-                <div id="cv-status" class="flex items-center gap-2 text-xs font-bold text-red-500">
-                    <span class="w-2 h-2 bg-current rounded-full"></span> النظام يتحمل...
+                <!-- زر فتح القائمة يظهر في الهواتف فقط -->
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-600 p-2 hover:bg-slate-100 rounded-lg">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <h2 id="current-tab-title" class="font-extrabold text-slate-800 truncate px-2">لوحة التحكم</h2>
+                <div id="cv-status" class="flex items-center gap-2 text-[10px] md:text-xs font-bold text-red-500">
+                    <span class="w-2 h-2 bg-current rounded-full"></span> <span class="hidden sm:inline">النظام يتحمل...</span>
                 </div>
             </header>
 
@@ -102,7 +127,7 @@
                 
                 <!-- 1. Dashboard -->
                 <section id="tab-dashboard" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold">الامتحانات</p><h3 class="text-3xl font-black text-indigo-600" id="stat-exams">0</h3></div>
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold">أوراق مصححة</p><h3 class="text-3xl font-black text-emerald-600" id="stat-papers">0</h3></div>
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold">متوسط النجاح</p><h3 class="text-3xl font-black text-amber-500" id="stat-average">0%</h3></div>
@@ -111,44 +136,46 @@
 
                 <!-- 2. Create Exam -->
                 <section id="tab-create" class="hidden max-w-4xl mx-auto">
-                    <div class="bg-white rounded-3xl shadow-xl p-8 space-y-8 border">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-3xl shadow-xl p-5 md:p-8 space-y-6 border">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="space-y-2">
                                 <label class="text-sm font-bold text-slate-600">اسم الامتحان</label>
-                                <input type="text" id="examTitle" placeholder="مثلاً: مادة الرياضيات" class="w-full border-2 border-slate-100 rounded-2xl px-5 py-4 focus:border-indigo-500 outline-none transition">
+                                <input type="text" id="examTitle" placeholder="مثلاً: مادة الرياضيات" class="w-full border-2 border-slate-100 rounded-2xl px-5 py-3 focus:border-indigo-500 outline-none transition">
                             </div>
                             <div class="space-y-2">
                                 <label class="text-sm font-bold text-slate-600">القسم / الفصل</label>
-                                <input type="text" id="examClass" placeholder="مثلاً: أولى باك علوم" class="w-full border-2 border-slate-100 rounded-2xl px-5 py-4 focus:border-indigo-500 outline-none transition">
+                                <input type="text" id="examClass" placeholder="مثلاً: أولى باك علوم" class="w-full border-2 border-slate-100 rounded-2xl px-5 py-3 focus:border-indigo-500 outline-none transition">
                             </div>
                         </div>
-                        <div class="grid grid-cols-3 gap-6 bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100">
-                            <div><label class="text-xs font-black text-indigo-400">عدد الأسئلة</label><input type="number" id="qCount" value="20" onchange="renderKeyGrid('create')" class="w-full mt-1 p-3 rounded-xl border-none font-bold"></div>
-                            <div><label class="text-xs font-black text-indigo-400">الخيارات</label><input type="number" id="oCount" value="4" onchange="renderKeyGrid('create')" class="w-full mt-1 p-3 rounded-xl border-none font-bold"></div>
-                            <div><label class="text-xs font-black text-indigo-400">النقطة لكل سؤال</label><input type="number" id="pointsPerQ" value="1" step="0.25" class="w-full mt-1 p-3 rounded-xl border-none font-bold"></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
+                            <div><label class="text-xs font-black text-indigo-400 uppercase">عدد الأسئلة</label><input type="number" id="qCount" value="20" onchange="renderKeyGrid('create')" class="w-full mt-1 p-2 rounded-xl border-none font-bold"></div>
+                            <div><label class="text-xs font-black text-indigo-400 uppercase">الخيارات</label><input type="number" id="oCount" value="4" onchange="renderKeyGrid('create')" class="w-full mt-1 p-2 rounded-xl border-none font-bold"></div>
+                            <div><label class="text-xs font-black text-indigo-400 uppercase">النقطة</label><input type="number" id="pointsPerQ" value="1" step="0.25" class="w-full mt-1 p-2 rounded-xl border-none font-bold"></div>
                         </div>
                         <div class="space-y-4">
                             <p class="font-black text-indigo-600 flex items-center gap-2"><i class="fa-solid fa-key"></i> حدد الأجوبة الصحيحة:</p>
                             <div id="answerKeyGrid" class="grid gap-2 overflow-x-auto pb-4 custom-scrollbar"></div>
                         </div>
-                        <button onclick="saveExam()" class="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl hover:scale-[1.01] transition-all">حفظ الامتحان وتوليد النموذج</button>
+                        <button onclick="saveExam()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:scale-[1.01] transition-all">حفظ الامتحان وتوليد النموذج</button>
                     </div>
                 </section>
 
                 <!-- 3. Manage -->
                 <section id="tab-manage" class="hidden">
-                    <div id="manageGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    <div id="manageGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"></div>
                 </section>
 
                 <!-- 4. Results -->
                 <section id="tab-results" class="hidden">
-                    <div class="bg-white rounded-3xl shadow-sm border overflow-hidden">
-                        <table class="w-full text-right">
-                            <thead class="bg-slate-50 text-slate-400 text-[11px] font-black uppercase">
-                                <tr><th class="p-5">اسم التلميذ</th><th class="p-5">الامتحان</th><th class="p-5 text-center">النتيجة</th><th class="p-5 text-center">إجراءات</th></tr>
-                            </thead>
-                            <tbody id="resultsTableBody" class="divide-y divide-slate-100"></tbody>
-                        </table>
+                    <div class="bg-white rounded-2xl md:rounded-3xl shadow-sm border overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right min-w-[500px]">
+                                <thead class="bg-slate-50 text-slate-400 text-[11px] font-black uppercase">
+                                    <tr><th class="p-5">اسم التلميذ</th><th class="p-5">الامتحان</th><th class="p-5 text-center">النتيجة</th><th class="p-5 text-center">إجراءات</th></tr>
+                                </thead>
+                                <tbody id="resultsTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -157,8 +184,8 @@
 
     <!-- نافذة تحميل النموذج (Download Options Modal) -->
     <div id="downloadModal" class="fixed inset-0 bg-slate-900/80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl space-y-6">
-            <h3 class="text-2xl font-black text-slate-800 flex items-center gap-2"><i class="fa-solid fa-print"></i> خيارات تحميل النموذج</h3>
+        <div class="bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 overflow-y-auto max-h-[90vh]">
+            <h3 class="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2"><i class="fa-solid fa-print"></i> خيارات الطباعة</h3>
             <div class="space-y-4">
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-slate-400">تخطيط الصفحة</label>
@@ -168,28 +195,28 @@
                         <option value="4">4 ورقات في الصفحة (ربع A4 لكل ورقة)</option>
                     </select>
                 </div>
-                <div class="flex gap-4">
-                    <button onclick="previewSheet()" class="flex-1 bg-slate-100 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-200">معاينة</button>
-                    <button onclick="processDownload('pdf')" class="flex-1 bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200">تحميل PDF</button>
-                    <button onclick="processDownload('png')" class="flex-1 bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200">تحميل PNG</button>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button onclick="previewSheet()" class="bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200">معاينة</button>
+                    <button onclick="processDownload('pdf')" class="bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200">PDF</button>
+                    <button onclick="processDownload('png')" class="bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-200">PNG</button>
                 </div>
             </div>
-            <button onclick="closeDownloadModal()" class="w-full text-slate-400 font-bold py-2">إغلاق</button>
+            <button onclick="closeDownloadModal()" class="w-full text-slate-400 font-bold py-2">إلغاء</button>
         </div>
     </div>
 
-    <!-- نافذة المعاينة (Preview Modal) -->
+    <!-- نافذة المعاينة -->
     <div id="previewModal" class="fixed inset-0 bg-black/90 hidden z-[110] flex items-center justify-center p-4 overflow-y-auto">
         <div class="relative bg-white p-2 rounded shadow-2xl max-w-full">
-            <button onclick="closePreview()" class="absolute -top-12 right-0 text-white text-3xl font-bold">&times; إغلاق المعاينة</button>
-            <div id="preview-area"></div>
+            <button onclick="closePreview()" class="absolute -top-10 left-0 text-white text-3xl font-bold">&times;</button>
+            <div id="preview-area" class="max-w-full overflow-hidden"></div>
         </div>
     </div>
 
     <!-- نافذة تعديل المفتاح -->
-    <div id="editKeyModal" class="fixed inset-0 bg-slate-900/80 hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-3xl rounded-3xl p-8 shadow-2xl flex flex-col max-h-[90vh]">
-            <h3 class="text-xl font-bold mb-6 border-b pb-4">تعديل مفتاح الإجابة</h3>
+    <div id="editKeyModal" class="fixed inset-0 bg-slate-900/80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-3xl rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col max-h-[90vh]">
+            <h3 class="text-xl font-bold mb-4 border-b pb-4">تعديل مفتاح الإجابة</h3>
             <div id="editKeyGrid" class="flex-1 overflow-y-auto grid gap-2 pb-6 custom-scrollbar"></div>
             <div class="flex gap-4 pt-4 border-t">
                 <button onclick="saveEditedKey()" class="flex-1 bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg">حفظ التغييرات</button>
@@ -200,18 +227,17 @@
 
     <!-- نافذة الكاميرا -->
     <div id="scannerModal" class="fixed inset-0 bg-black z-[100] hidden flex-col">
-        <div class="absolute top-8 left-8 z-50">
-            <button onclick="closeScanner()" class="bg-white/20 backdrop-blur text-white px-8 py-3 rounded-full font-black">إغلاق</button>
+        <div class="absolute top-6 left-6 z-50">
+            <button onclick="closeScanner()" class="bg-white/20 backdrop-blur text-white px-6 py-2 rounded-full font-black">إغلاق</button>
         </div>
         <div class="relative flex-1 flex items-center justify-center">
             <video id="videoInput" playsinline autoplay muted class="w-full h-full object-cover"></video>
             <div class="guide-box"></div>
-            <div class="absolute bottom-12"><button onclick="processScan()" class="w-24 h-24 bg-white rounded-full border-[10px] border-indigo-500 shadow-2xl flex items-center justify-center active:scale-90 transition"><i class="fa-solid fa-camera text-4xl text-indigo-600"></i></button></div>
+            <div class="absolute bottom-10"><button onclick="processScan()" class="w-20 h-20 bg-white rounded-full border-[8px] border-indigo-500 shadow-2xl flex items-center justify-center active:scale-90 transition"><i class="fa-solid fa-camera text-3xl text-indigo-600"></i></button></div>
         </div>
         <canvas id="processCanvas" class="hidden"></canvas>
     </div>
 
-    <!-- حاوية توليد الأوراق (مخفية) -->
     <div id="sheet-gen-container"></div>
 
     <script>
@@ -240,7 +266,10 @@
 
         function saveData() { localStorage.setItem('sm_pro_v2_db', JSON.stringify(db)); updateStats(); }
 
-        function toggleSidebar() { document.body.classList.toggle('sidebar-open'); }
+        // إصلاح القائمة الجانبية للهواتف
+        function toggleSidebar() { 
+            document.body.classList.toggle('sidebar-open'); 
+        }
 
         function switchTab(tabId) {
             ['dashboard', 'create', 'manage', 'results'].forEach(t => {
@@ -249,10 +278,16 @@
             });
             document.getElementById('tab-' + tabId).classList.remove('hidden');
             document.getElementById('btn-' + tabId).classList.replace('text-slate-300', 'bg-indigo-600');
+            
+            const titles = { 'dashboard': 'لوحة القيادة', 'create': 'إنشاء امتحان', 'manage': 'إدارة الامتحانات', 'results': 'سجل النتائج' };
+            document.getElementById('current-tab-title').innerText = titles[tabId];
+
             if(tabId === 'manage') renderManageGrid();
             if(tabId === 'results') renderResultsTable();
             if(tabId === 'dashboard') updateStats();
-            if(window.innerWidth < 768) toggleSidebar();
+            
+            // إغلاق القائمة تلقائياً في الهواتف بعد اختيار التبويب
+            if(document.body.classList.contains('sidebar-open')) toggleSidebar();
         }
 
         // --- إدارة الامتحانات ---
@@ -318,16 +353,16 @@
                     <h4 class="font-bold text-lg mb-1">${exam.title}</h4>
                     <p class="text-xs text-slate-400 mb-6">${exam.class} | ${exam.qCount} سؤال</p>
                     <div class="grid grid-cols-2 gap-3 mt-auto">
-                        <button onclick="startScanning(${exam.id})" class="bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold shadow-lg shadow-indigo-100">بدء التصحيح</button>
-                        <button onclick="openDownloadModal(${exam.id})" class="bg-slate-100 text-slate-600 py-3 rounded-xl text-xs font-bold">توليد النموذج</button>
-                        <button onclick="openEditModal(${exam.id})" class="bg-amber-50 text-amber-700 py-3 rounded-xl text-xs font-bold col-span-2 border border-amber-100">تعديل مفتاح الإجابة</button>
+                        <button onclick="startScanning(${exam.id})" class="bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-100">تصحيح</button>
+                        <button onclick="openDownloadModal(${exam.id})" class="bg-slate-100 text-slate-600 py-2 rounded-xl text-xs font-bold">النموذج</button>
+                        <button onclick="openEditModal(${exam.id})" class="bg-amber-50 text-amber-700 py-2 rounded-xl text-xs font-bold col-span-2 border border-amber-100">تعديل المفتاح</button>
                     </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        // --- توليد الأوراق (Sheet Generation Engine) ---
+        // --- توليد الأوراق ---
         function openDownloadModal(id) { downloadExamId = id; document.getElementById('downloadModal').classList.remove('hidden'); }
         function closeDownloadModal() { document.getElementById('downloadModal').classList.add('hidden'); }
 
@@ -372,15 +407,15 @@
                     <div class="anchor t-r"></div><div class="anchor t-l"></div>
                     <div class="anchor b-r"></div><div class="anchor b-l"></div>
                     <div class="sheet-header flex justify-between items-center">
-                        <div><h1 class="text-xl font-black">${exam.title}</h1><p class="text-[10px] font-bold text-slate-500">نظام SMARTMARK للتصحيح الآلي</p></div>
+                        <div><h1 class="text-xl font-black">${exam.title}</h1><p class="text-[10px] font-bold text-slate-500">SMARTMARK AI System</p></div>
                         <div id="qr-${i}"></div>
                     </div>
                     <div class="info-grid">
-                        <div class="info-item">اسم التلميذ: ...........................................</div>
+                        <div class="info-item">اسم التلميذ: ...................................</div>
                         <div class="info-item">القسم: ${exam.class}</div>
                     </div>
                     <div class="questions-container">${renderSheetColumns(exam.qCount, exam.oCount)}</div>
-                    <div class="p-4 text-[8px] text-center font-bold text-slate-300 uppercase">SMARTMARK AI Standardized Sheet - Do Not Fold or Bend</div>
+                    <div class="p-4 text-[8px] text-center font-bold text-slate-300 uppercase">Standardized Sheet - Do Not Fold</div>
                 `;
                 page.appendChild(sheet);
                 new QRCode(sheet.querySelector(`#qr-${i}`), { text: `SM-${exam.id}`, width: 50, height: 50 });
@@ -431,19 +466,18 @@
             let contours = new cv.MatVector(); let hierarchy = new cv.Mat();
             cv.findContours(thresh, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-            let maxArea = 0; let approx = new cv.Mat(); let found = false;
+            let found = false; let approx = new cv.Mat();
             for (let i = 0; i < contours.size(); ++i) {
                 let cnt = contours.get(i); let area = cv.contourArea(cnt);
                 if (area > 50000) {
                     let peri = cv.arcLength(cnt, true); let tmp = new cv.Mat();
                     cv.approxPolyDP(cnt, tmp, 0.02 * peri, true);
-                    if (tmp.rows === 4) { maxArea = area; approx = tmp; found = true; }
+                    if (tmp.rows === 4) { approx = tmp; found = true; break; }
                 }
             }
 
             if (found) {
                 let warped = transformPerspective(src, approx);
-                // قص منطقة الاسم (الآن أصبحت أكثر دقة)
                 let nameROI = warped.roi(new cv.Rect(40, 70, warped.cols - 80, 70));
                 cv.imshow(canvas, nameROI);
                 let nameImg = canvas.toDataURL();
@@ -482,7 +516,7 @@
             let gray = new cv.Mat(); cv.cvtColor(warped, gray, cv.COLOR_RGBA2GRAY);
             let thresh = new cv.Mat(); cv.threshold(gray, thresh, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU);
             let results = [];
-            let startY = 230; // بعد الرأس والمعلومات
+            let startY = 230; 
             let rowH = (warped.rows - startY - 50) / 25;
 
             for (let i = 0; i < exam.qCount; i++) {
@@ -514,14 +548,14 @@
                 const exam = db.exams.find(e => e.id === res.examId);
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td class="p-5"><img src="${res.nameImg}" class="h-10 rounded border bg-white"></td>
-                    <td class="p-5 font-bold">${exam?.title || 'امتحان محذوف'}</td>
+                    <td class="p-5 font-bold">${exam?.title || '؟'}</td>
                     <td class="p-5 text-center font-black text-indigo-600">${res.score} / ${res.total}</td>
                     <td class="p-5 text-center"><button onclick="deleteResult(${res.id})" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button></td>`;
                 body.appendChild(tr);
             });
         }
 
-        function deleteExam(id) { if(confirm('حذف الامتحان ونتائجه؟')) { db.exams = db.exams.filter(e => e.id !== id); db.results = db.results.filter(r => r.examId !== id); saveData(); renderManageGrid(); } }
+        function deleteExam(id) { if(confirm('حذف الامتحان؟')) { db.exams = db.exams.filter(e => e.id !== id); db.results = db.results.filter(r => r.examId !== id); saveData(); renderManageGrid(); } }
         function deleteResult(id) { if(confirm('حذف النتيجة؟')) { db.results = db.results.filter(r => r.id !== id); saveData(); renderResultsTable(); } }
         
         function openEditModal(id) { editingExamId = id; const exam = db.exams.find(e => e.id === id); renderKeyGrid('edit', exam); document.getElementById('editKeyModal').classList.remove('hidden'); }
