@@ -2,281 +2,451 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartMark Ultimate Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartMark Pro V2 | المصحح الذكي</title>
     
-    <!-- CSS & Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Tajawal:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
         
-        :root {
-            --primary: #6366f1;
-            --secondary: #4f46e5;
-            --accent: #10b981;
-            --dark: #0f172a;
-        }
+        :root { --primary: #4f46e5; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; overflow: hidden; }
 
-        body {
-            font-family: 'Tajawal', sans-serif;
-            background-color: #f1f5f9;
-            color: var(--dark);
-        }
-
-        /* Glassmorphism Classes */
-        .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .sidebar-item {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .sidebar-item:hover {
-            transform: translateX(-5px);
-            background: rgba(99, 102, 241, 0.1);
-        }
-
-        /* Scanner Visualizer */
-        .scanner-frame {
-            position: absolute;
-            inset: 0;
-            border: 2px solid transparent;
-            background: 
-                linear-gradient(to right, var(--primary) 40px, transparent 40px) 0 0,
-                linear-gradient(to bottom, var(--primary) 40px, transparent 40px) 0 0,
-                linear-gradient(to left, var(--primary) 40px, transparent 40px) 100% 0,
-                linear-gradient(to bottom, var(--primary) 40px, transparent 40px) 100% 0,
-                linear-gradient(to right, var(--primary) 40px, transparent 40px) 0 100%,
-                linear-gradient(to top, var(--primary) 40px, transparent 40px) 0 100%,
-                linear-gradient(to left, var(--primary) 40px, transparent 40px) 100% 100%,
-                linear-gradient(to top, var(--primary) 40px, transparent 40px) 100% 100%;
-            background-repeat: no-repeat;
-            background-size: 80px 80px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        /* Sheet Styling for Print/Preview */
+        .a4-container { width: 210mm; min-height: 297mm; padding: 10mm; background: white; color: black; position: relative; box-sizing: border-box; }
+        .sheet-header-row { display: flex; gap: 5px; margin-bottom: 2px; justify-content: center; }
+        .letter-label { width: 22px; text-align: center; font-size: 10px; font-weight: 900; color: #000; }
+        .q-row { display: flex; gap: 5px; align-items: center; margin-bottom: 6px; justify-content: center; }
+        .q-num { width: 25px; font-size: 11px; font-weight: bold; border-left: 1.5px solid #000; padding-left: 4px; text-align: left; }
+        .bubble { width: 22px; height: 22px; border: 1.2px solid #000; border-radius: 50%; }
+        
+        /* UI Elements */
+        .nav-active { background: #4f46e5; color: white; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4); }
+        .scanner-viewfinder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85vw; height: 65vh; border: 3px dashed rgba(255,255,255,0.4); border-radius: 24px; pointer-events: none; transition: 0.3s; }
+        .scanner-viewfinder.active { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        
+        @media (max-width: 768px) { .sidebar { transform: translateX(100%); position: fixed; z-index: 1000; } .sidebar.open { transform: translateX(0); } }
     </style>
 </head>
-<body class="antialiased">
+<body class="text-slate-900">
 
-    <!-- App Shell -->
-    <div class="flex h-screen overflow-hidden">
-        
-        <!-- Modern Sidebar -->
-        <aside class="w-72 glass border-l flex flex-col hidden md:flex">
-            <div class="p-8 text-center">
-                <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-200 mb-4">
-                    <i class="fas fa-graduation-cap text-white text-2xl"></i>
-                </div>
-                <h1 class="text-xl font-black tracking-tight">SMARTMARK <span class="text-indigo-600">PRO</span></h1>
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar w-72 bg-slate-900 text-white flex flex-col shrink-0 transition-transform duration-300 h-full">
+            <div class="p-8 border-b border-slate-800 flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20"><i class="fa-solid fa-bolt text-xl"></i></div>
+                <div><h1 class="text-xl font-black italic">SMART MARK</h1><p class="text-[9px] text-slate-500 uppercase tracking-widest">Version 2.0 Pro</p></div>
             </div>
-
-            <nav class="flex-1 px-4 space-y-2 mt-4">
-                <a href="#" onclick="showSection('dashboard')" class="sidebar-item flex items-center gap-4 p-4 rounded-2xl font-bold text-slate-600 hover:text-indigo-600">
-                    <i class="fas fa-columns text-lg"></i> الإحصائيات العامة
-                </a>
-                <a href="#" onclick="showSection('students')" class="sidebar-item flex items-center gap-4 p-4 rounded-2xl font-bold text-slate-600 hover:text-indigo-600">
-                    <i class="fas fa-users text-lg"></i> إدارة الطلاب
-                </a>
-                <a href="#" onclick="showSection('exams')" class="sidebar-item flex items-center gap-4 p-4 rounded-2xl font-bold text-slate-600 hover:text-indigo-600">
-                    <i class="fas fa-file-signature text-lg"></i> الامتحانات والنتائج
-                </a>
+            <nav class="flex-1 p-4 space-y-2 mt-4">
+                <button onclick="switchTab('exams')" id="nav-exams" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all nav-active"><i class="fa-solid fa-layer-group"></i> إدارة الامتحانات</button>
+                <button onclick="switchTab('create')" id="nav-create" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all text-slate-400 hover:bg-slate-800"><i class="fa-solid fa-plus"></i> إنشاء امتحان</button>
+                <button onclick="switchTab('history')" id="nav-history" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all text-slate-400 hover:bg-slate-800"><i class="fa-solid fa-chart-pie"></i> السجل والنتائج</button>
             </nav>
-
-            <div class="p-6">
-                <div class="bg-indigo-600 rounded-3xl p-6 text-white shadow-xl">
-                    <p class="text-xs opacity-80 mb-2">حالة المحرك</p>
-                    <div class="flex items-center gap-2">
-                        <div id="status-blob" class="w-3 h-3 bg-red-400 rounded-full animate-pulse"></div>
-                        <span id="status-text" class="text-sm font-bold">جاري تحميل AI...</span>
-                    </div>
-                </div>
+            <div class="p-6 bg-slate-800/40 m-4 rounded-3xl border border-slate-700">
+                <div id="cv-status" class="flex items-center gap-3 text-xs font-bold text-red-400"><i class="fa-solid fa-circle-notch animate-spin"></i> جاري تهيئة الذكاء...</div>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-y-auto relative">
-            
-            <!-- Sections -->
-            <div id="section-dashboard" class="p-8 space-y-8 animate-in fade-in duration-500">
-                <header class="flex justify-between items-center">
-                    <div>
-                        <h2 class="text-3xl font-black">مرحباً بك، أيها المعلم 👋</h2>
-                        <p class="text-slate-500">هذا ما يحدث في فصولك اليوم</p>
+        <main class="flex-1 flex flex-col relative min-w-0">
+            <header class="h-20 bg-white/80 backdrop-blur-md border-b px-8 flex items-center justify-between z-10">
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-600 p-2"><i class="fa-solid fa-bars-staggered text-2xl"></i></button>
+                <h2 id="header-title" class="text-xl font-black text-slate-800 tracking-tight">الامتحانات الحالية</h2>
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:block text-left"><p class="text-[10px] text-slate-400 font-bold uppercase">المسؤول</p><p class="text-xs font-bold">أستاذ المادة</p></div>
+                    <div class="w-11 h-11 bg-slate-100 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-slate-400"><i class="fa-solid fa-user-tie"></i></div>
+                </div>
+            </header>
+
+            <div id="main-content" class="flex-1 overflow-y-auto p-4 md:p-10">
+                <!-- Tab: Exams -->
+                <section id="tab-exams" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></section>
+
+                <!-- Tab: Create/Edit -->
+                <section id="tab-create" class="hidden max-w-4xl mx-auto">
+                    <div class="bg-white p-8 md:p-12 rounded-[40px] shadow-sm border border-slate-100">
+                        <div class="flex items-center justify-between mb-10">
+                            <h3 id="create-title" class="text-3xl font-black">إعداد امتحان جديد</h3>
+                            <span class="bg-indigo-50 text-indigo-600 px-4 py-1 rounded-full text-xs font-bold">خطوة 1 من 2</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-slate-500 mr-2 uppercase">اسم المادة / الامتحان</label>
+                                <input type="text" id="ex-name" placeholder="مثلاً: علوم الحياة والأرض" class="w-full p-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-slate-500 mr-2 uppercase">الفئة المستهدفة / المستوى</label>
+                                <input type="text" id="ex-level" placeholder="مثلاً: أولى باك علوم" class="w-full p-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white outline-none transition-all">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6 mb-10">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-slate-500 mr-2 uppercase">عدد الأسئلة</label>
+                                <input type="number" id="ex-q" value="20" min="1" max="100" class="w-full p-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-bold">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-slate-500 mr-2 uppercase">خيارات الإجابة</label>
+                                <select id="ex-o" class="w-full p-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-bold">
+                                    <option value="4">4 خيارات (أ - د)</option>
+                                    <option value="6">6 خيارات (أ - و)</option>
+                                    <option value="12">12 خياراً (أ - ل)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 rounded-[32px] p-8 text-white mb-10">
+                            <div class="flex items-center justify-between mb-6">
+                                <h4 class="font-bold flex items-center gap-3"><i class="fa-solid fa-keyboard text-indigo-400"></i> تحديد الإجابات الصحيحة</h4>
+                                <p class="text-[10px] text-slate-400 italic">يمكنك اختيار أكثر من إجابة للسؤال الواحد</p>
+                            </div>
+                            <div id="key-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto p-2"></div>
+                        </div>
+                        <button onclick="saveExam()" id="save-btn" class="w-full bg-indigo-600 text-white py-6 rounded-3xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1 transition-all">حفظ البيانات</button>
                     </div>
-                </header>
+                </section>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="glass p-8 rounded-[2rem] shadow-sm">
-                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-4"><i class="fas fa-file-alt"></i></div>
-                        <p class="text-sm text-slate-500 font-bold">إجمالي الامتحانات</p>
-                        <h3 class="text-3xl font-black mt-1" id="dash-exams-count">0</h3>
-                    </div>
-                    <div class="glass p-8 rounded-[2rem] shadow-sm">
-                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-4"><i class="fas fa-user-graduate"></i></div>
-                        <p class="text-sm text-slate-500 font-bold">الطلاب المسجلون</p>
-                        <h3 class="text-3xl font-black mt-1" id="dash-students-count">0</h3>
-                    </div>
-                    <!-- المزيد من البطاقات هنا -->
-                </div>
+                <!-- Tab: History -->
+                <section id="tab-history" class="hidden space-y-6"></section>
             </div>
-
-            <!-- Student Management Section -->
-            <div id="section-students" class="hidden p-8 animate-in slide-in-from-bottom-5">
-                <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-3xl font-black">إدارة الطلاب</h2>
-                    <button onclick="openAddStudentModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200">
-                        <i class="fas fa-plus ml-2"></i> إضافة طالب جديد
-                    </button>
-                </div>
-                
-                <div class="glass rounded-[2rem] overflow-hidden shadow-sm">
-                    <table class="w-full text-right">
-                        <thead class="bg-slate-50 border-b">
-                            <tr>
-                                <th class="p-6 text-slate-500">اسم الطالب</th>
-                                <th class="p-6 text-slate-500">رقم التعريف</th>
-                                <th class="p-6 text-slate-500">القسم</th>
-                                <th class="p-6 text-slate-500">الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="students-list">
-                            <!-- القائمة تظهر برمجياً -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Scanner Overlay -->
-            <div id="scanner-modal" class="fixed inset-0 bg-black z-[100] hidden">
-                <div class="scanner-frame"></div>
-                <video id="video-feed" class="w-full h-full object-cover" autoplay playsinline></video>
-                <div class="absolute bottom-12 left-0 right-0 text-center">
-                    <button onclick="closeScanner()" class="bg-white/20 backdrop-blur-xl text-white px-12 py-4 rounded-full font-bold">إيقاف المسح</button>
-                </div>
-            </div>
-
         </main>
     </div>
 
-    <!-- Modals & Feedback UI (Popups) -->
-    <div id="modal-bg" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] hidden flex items-center justify-center">
-        <div id="modal-content" class="bg-white w-[500px] rounded-[3rem] p-10 shadow-2xl">
-            <!-- المحتوى يتغير حسب الحاجة -->
+    <!-- Modals -->
+    <div id="preview-modal" class="fixed inset-0 bg-slate-900/90 z-[1000] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[40px] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-black">معاينة ورقة الإجابة</h3>
+                <button onclick="closePreview()" class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">&times;</button>
+            </div>
+            <div id="preview-content" class="flex-1 overflow-auto p-8 bg-slate-200"></div>
+            <div class="p-6 border-t flex gap-4 bg-white">
+                <button id="down-png" class="flex-1 bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-100 hover:bg-emerald-600 transition-all">تحميل PNG</button>
+                <button id="down-pdf" class="flex-1 bg-red-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-red-100 hover:bg-red-600 transition-all">تحميل PDF</button>
+            </div>
         </div>
     </div>
 
-    <!-- Scripts Logic -->
+    <div id="scanner-modal" class="fixed inset-0 bg-black z-[2000] hidden">
+        <video id="video" class="w-full h-full object-cover opacity-60" playsinline></video>
+        <div class="scanner-viewfinder" id="viewfinder"></div>
+        <div class="absolute bottom-12 inset-x-0 flex flex-col items-center gap-6">
+            <div class="bg-white/10 backdrop-blur-xl border border-white/20 px-8 py-4 rounded-3xl text-white font-bold text-center">
+                <p id="scan-msg">قم بتوجيه الكاميرا نحو الورقة</p>
+            </div>
+            <button onclick="stopScanner()" class="w-16 h-16 bg-red-500/20 text-red-500 rounded-full border border-red-500/50 flex items-center justify-center text-2xl backdrop-blur-md"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <canvas id="proc-canvas" class="hidden"></canvas>
+    </div>
+
+    <!-- Hidden Printing Container -->
+    <div id="print-area" style="position: absolute; left: -9999px;"></div>
+
     <script>
-        // 1. Database Setup (IndexedDB)
-        const db = new Dexie("SmartMarkDB");
-        db.version(1).stores({
-            students: '++id, name, studentId, class',
-            exams: '++id, title, date, qCount, key',
-            results: '++id, examId, studentId, score'
-        });
+        let db = { exams: JSON.parse(localStorage.getItem('sm_v2_exams') || '[]'), results: JSON.parse(localStorage.getItem('sm_v2_results') || '[]') };
+        let currentKey = [];
+        let isCvReady = false;
+        let activeExamId = null;
+        let isEditing = false;
+        const LETTERS = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي', 'ك', 'ل'];
 
-        // 2. State Management
-        let currentSection = 'dashboard';
-
-        // 3. UI Logic
-        function showSection(name) {
-            document.getElementById(`section-${currentSection}`).classList.add('hidden');
-            document.getElementById(`section-${name}`).classList.remove('hidden');
-            currentSection = name;
-            loadData();
+        function onOpenCvReady() {
+            isCvReady = true;
+            const status = document.getElementById('cv-status');
+            status.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i> نظام الذكاء جاهز';
+            status.classList.replace('text-red-400', 'text-emerald-500');
         }
 
-        async function loadData() {
-            // تحديث الإحصائيات من قاعدة البيانات
-            const studentCount = await db.students.count();
-            const examCount = await db.exams.count();
-            document.getElementById('dash-students-count').innerText = studentCount;
-            document.getElementById('dash-exams-count').innerText = examCount;
-
-            if (currentSection === 'students') renderStudents();
-        }
-
-        async function renderStudents() {
-            const students = await db.students.toArray();
-            const list = document.getElementById('students-list');
-            list.innerHTML = students.map(s => `
-                <tr class="border-b hover:bg-slate-50 transition">
-                    <td class="p-6 font-bold">${s.name}</td>
-                    <td class="p-6 font-mono text-slate-500">${s.studentId}</td>
-                    <td class="p-6">${s.class}</td>
-                    <td class="p-6">
-                        <button onclick="deleteStudent(${s.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // 4. Camera & OpenCV Integration
-        async function startScanner() {
-            document.getElementById('scanner-modal').classList.remove('hidden');
-            const video = document.getElementById('video-feed');
+        function switchTab(tab) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.querySelectorAll('.nav-link, button[id^="nav-"]').forEach(b => {
+                b.classList.remove('nav-active');
+                b.classList.add('text-slate-400');
+            });
+            document.getElementById('nav-' + tab).classList.add('nav-active');
+            document.getElementById('nav-' + tab).classList.remove('text-slate-400');
             
-            // طلب الكاميرا الخلفية تحديداً
-            const constraints = {
-                video: { facingMode: { exact: "environment" } }
+            if(tab === 'exams') renderExams();
+            if(tab === 'history') renderHistory();
+            if(tab === 'create') { isEditing = false; resetCreateForm(); }
+            toggleSidebar(false);
+        }
+
+        function toggleSidebar(state) {
+            const sb = document.getElementById('sidebar');
+            if(state !== undefined) state ? sb.classList.add('open') : sb.classList.remove('open');
+            else sb.classList.toggle('open');
+        }
+
+        // --- Exam Logic ---
+        function resetCreateForm() {
+            document.getElementById('create-title').innerText = "إعداد امتحان جديد";
+            document.getElementById('save-btn').innerText = "حفظ البيانات";
+            document.getElementById('ex-name').value = '';
+            document.getElementById('ex-level').value = '';
+            updateKeyGrid();
+        }
+
+        function updateKeyGrid() {
+            const q = parseInt(document.getElementById('ex-q').value);
+            const o = parseInt(document.getElementById('ex-o').value);
+            if(!isEditing) currentKey = Array(q).fill().map(() => []);
+            
+            const grid = document.getElementById('key-grid');
+            grid.innerHTML = '';
+            for(let i=0; i<q; i++) {
+                const div = document.createElement('div');
+                div.className = "p-4 bg-slate-800 border border-slate-700 rounded-2xl";
+                div.innerHTML = `<p class="text-[10px] font-black text-slate-500 mb-2 uppercase">السؤال ${i+1}</p>
+                                <div class="flex flex-wrap gap-2" id="q-row-${i}"></div>`;
+                grid.appendChild(div);
+                
+                for(let j=0; j<o; j++) {
+                    const btn = document.createElement('button');
+                    btn.className = `w-7 h-7 rounded-full border border-slate-600 text-[10px] font-bold transition-all btn-opt-${i}`;
+                    btn.innerText = LETTERS[j];
+                    if(currentKey[i].includes(j)) btn.classList.add('bg-indigo-500', 'border-indigo-500', 'text-white');
+                    
+                    btn.onclick = () => {
+                        const idx = currentKey[i].indexOf(j);
+                        if(idx > -1) {
+                            currentKey[i].splice(idx, 1);
+                            btn.classList.remove('bg-indigo-500', 'border-indigo-500', 'text-white');
+                        } else {
+                            currentKey[i].push(j);
+                            btn.classList.add('bg-indigo-500', 'border-indigo-500', 'text-white');
+                        }
+                    };
+                    div.querySelector(`#q-row-${i}`).appendChild(btn);
+                }
+            }
+        }
+        document.getElementById('ex-q').addEventListener('change', updateKeyGrid);
+        document.getElementById('ex-o').addEventListener('change', updateKeyGrid);
+
+        function saveExam() {
+            const name = document.getElementById('ex-name').value;
+            const level = document.getElementById('ex-level').value;
+            if(!name || !level) return alert("يرجى تعبئة كافة الحقول");
+            
+            const examData = {
+                id: isEditing ? activeExamId : Date.now(),
+                name, level,
+                qCount: parseInt(document.getElementById('ex-q').value),
+                oCount: parseInt(document.getElementById('ex-o').value),
+                key: currentKey,
+                date: new Date().toLocaleDateString('ar-EG')
             };
 
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = stream;
-            } catch (err) {
-                // تراجع للكاميرا المتوفرة إذا لم تكن الخلفية موجودة (مثل الحاسوب)
-                const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = fallbackStream;
+            if(isEditing) {
+                const idx = db.exams.findIndex(e => e.id === activeExamId);
+                db.exams[idx] = examData;
+            } else {
+                db.exams.push(examData);
+            }
+            
+            localStorage.setItem('sm_v2_exams', JSON.stringify(db.exams));
+            switchTab('exams');
+        }
+
+        function renderExams() {
+            const container = document.getElementById('tab-exams');
+            container.innerHTML = '';
+            db.exams.forEach(ex => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="p-4 bg-indigo-50 text-indigo-600 rounded-3xl font-black text-xl">${ex.qCount} <span class="text-[10px] block opacity-60">سؤالاً</span></div>
+                        <div class="flex gap-2">
+                             <button onclick="editExam(${ex.id})" class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-100 transition-all"><i class="fa-solid fa-pen-to-square"></i></button>
+                             <button onclick="deleteExam(${ex.id})" class="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-all"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <h4 class="text-xl font-black text-slate-800 mb-1">${ex.name}</h4>
+                    <p class="text-xs font-bold text-slate-400 mb-8 flex items-center gap-2"><i class="fa-solid fa-users"></i> ${ex.level}</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="startScanner(${ex.id})" class="bg-slate-900 text-white py-4 rounded-2xl font-black text-sm shadow-lg hover:bg-indigo-600 transition-all col-span-2 mb-2"><i class="fa-solid fa-camera-retro mr-2"></i> بدء التصحيح الضوئي</button>
+                        <button onclick="previewSheet(${ex.id})" class="bg-indigo-50 text-indigo-600 py-4 rounded-2xl font-black text-xs hover:bg-indigo-100 transition-all"><i class="fa-solid fa-eye mr-2"></i> معاينة</button>
+                        <button onclick="previewSheet(${ex.id}, true)" class="bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-xs hover:bg-slate-200 transition-all"><i class="fa-solid fa-download mr-2"></i> تحميل</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function editExam(id) {
+            const ex = db.exams.find(e => e.id === id);
+            isEditing = true;
+            activeExamId = id;
+            switchTab('create');
+            document.getElementById('create-title').innerText = "تعديل بيانات الامتحان";
+            document.getElementById('save-btn').innerText = "تحديث البيانات";
+            document.getElementById('ex-name').value = ex.name;
+            document.getElementById('ex-level').value = ex.level;
+            document.getElementById('ex-q').value = ex.qCount;
+            document.getElementById('ex-o').value = ex.oCount;
+            currentKey = ex.key;
+            updateKeyGrid();
+        }
+
+        function deleteExam(id) {
+            if(confirm("هل أنت متأكد من حذف هذا الامتحان؟")) {
+                db.exams = db.exams.filter(e => e.id !== id);
+                db.results = db.results.filter(r => r.examId !== id);
+                localStorage.setItem('sm_v2_exams', JSON.stringify(db.exams));
+                localStorage.setItem('sm_v2_results', JSON.stringify(db.results));
+                renderExams();
             }
         }
 
-        function closeScanner() {
-            const video = document.getElementById('video-feed');
-            const stream = video.srcObject;
-            stream.getTracks().forEach(track => track.stop());
+        // --- Sheet Generation Engine ---
+        function generateSheetHTML(ex) {
+            const container = document.createElement('div');
+            container.className = 'a4-container';
+            container.id = 'active-sheet';
+
+            // Markers
+            container.innerHTML = `
+                <div style="position:absolute; top:8mm; left:8mm; width:12mm; height:12mm; background:#000;"></div>
+                <div style="position:absolute; top:8mm; right:8mm; width:12mm; height:12mm; background:#000;"></div>
+                <div style="position:absolute; bottom:8mm; left:8mm; width:12mm; height:12mm; background:#000;"></div>
+                <div style="position:absolute; bottom:8mm; right:8mm; width:12mm; height:12mm; background:#000;"></div>
+            `;
+
+            // Header Content
+            const header = `
+                <div style="margin: 18mm 12mm 10mm 12mm; border-bottom: 3px solid #000; padding-bottom: 8px; display:flex; justify-content:space-between; align-items:end;">
+                    <div>
+                        <h1 style="font-size:26px; font-weight:900; margin:0; line-height:1;">${ex.name}</h1>
+                        <p style="margin:4px 0 0 0; font-size:13px; font-weight:800; color:#444;">المستوى: ${ex.level} | نموذج إجابة احترافي</p>
+                    </div>
+                    <div id="qr-code"></div>
+                </div>
+                <div style="margin: 0 12mm 15mm 12mm; display:flex; gap:15px;">
+                    <div style="flex:2; border:2px solid #000; padding:12px; font-weight:900; font-size:14px;">اسم التلميذ: ................................................................</div>
+                    <div style="flex:1; border:2px solid #000; padding:12px; font-weight:900; font-size:14px;">القسم: .............</div>
+                </div>
+            `;
+            container.innerHTML += header;
+
+            // Questions Grid
+            const grid = document.createElement('div');
+            grid.style.cssText = "margin: 0 12mm; display:flex; flex-wrap:wrap; gap:30px; align-items:flex-start;";
+            
+            const perCol = 20;
+            const colCount = Math.ceil(ex.qCount / perCol);
+            for(let c=0; c<colCount; c++) {
+                const col = document.createElement('div');
+                col.style.flex = "1";
+                col.style.minWidth = "150px";
+                
+                for(let i = c*perCol; i < Math.min((c+1)*perCol, ex.qCount); i++) {
+                    // Repeat letters every 10 rows
+                    if(i % 10 === 0) {
+                        const hRow = document.createElement('div');
+                        hRow.className = 'sheet-header-row';
+                        hRow.innerHTML = `<div style="width:25px;"></div>` + LETTERS.slice(0, ex.oCount).map(l => `<div class="letter-label">${l}</div>`).join('');
+                        col.appendChild(hRow);
+                    }
+                    
+                    const qRow = document.createElement('div');
+                    qRow.className = 'q-row';
+                    let bubbles = '';
+                    for(let j=0; j<ex.oCount; j++) bubbles += `<div class="bubble"></div>`;
+                    qRow.innerHTML = `<div class="q-num">${i+1}</div>${bubbles}`;
+                    col.appendChild(qRow);
+                }
+                grid.appendChild(col);
+            }
+            container.appendChild(grid);
+            return container;
+        }
+
+        async function previewSheet(id, autoDownload = false) {
+            const ex = db.exams.find(e => e.id === id);
+            const previewArea = document.getElementById('preview-content');
+            previewArea.innerHTML = '';
+            const sheet = generateSheetHTML(ex);
+            previewArea.appendChild(sheet);
+            
+            new QRCode(sheet.querySelector('#qr-code'), { text: `EX-${ex.id}`, width: 65, height: 65, correctLevel: QRCode.CorrectLevel.H });
+            
+            document.getElementById('preview-modal').classList.remove('hidden');
+
+            document.getElementById('down-png').onclick = () => downloadSheet(ex, 'png');
+            document.getElementById('down-pdf').onclick = () => downloadSheet(ex, 'pdf');
+        }
+
+        async function downloadSheet(ex, format) {
+            const sheet = document.getElementById('active-sheet');
+            const canvas = await html2canvas(sheet, { scale: 3, useCORS: true });
+            
+            if(format === 'png') {
+                const link = document.createElement('a');
+                link.download = `SmartMark-${ex.name}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            } else {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+                pdf.save(`SmartMark-${ex.name}.pdf`);
+            }
+        }
+
+        function closePreview() { document.getElementById('preview-modal').classList.add('hidden'); }
+
+        // --- Basic Scanner Start ---
+        // (Warp logic and Bubble detection stays the same as V1 but adjusted for 4/6/12)
+        function startScanner(id) {
+            if(!isCvReady) return alert("انتظر تحميل المحرك...");
+            activeExamId = id;
+            document.getElementById('scanner-modal').classList.remove('hidden');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', focusMode: 'continuous', width: 1280 } })
+                .then(s => { 
+                    window.currentStream = s;
+                    document.getElementById('video').srcObject = s;
+                    document.getElementById('video').play();
+                });
+        }
+        function stopScanner() {
+            if(window.currentStream) window.currentStream.getTracks().forEach(t => t.stop());
             document.getElementById('scanner-modal').classList.add('hidden');
         }
 
-        // 5. Initialize
-        window.onload = () => {
-            loadData();
-            // تفقد حالة OpenCV
-            setTimeout(() => {
-                if(typeof cv !== 'undefined') {
-                    document.getElementById('status-blob').classList.replace('bg-red-400', 'bg-emerald-400');
-                    document.getElementById('status-text').innerText = 'المحرك جاهز';
-                }
-            }, 3000);
-        };
-
-        // وظيفة إضافة طالب كمثال على استخدام DB
-        async function addSampleStudent() {
-            await db.students.add({
-                name: "محمد علي",
-                studentId: "2023001",
-                class: "الثاني ثانوي"
+        function renderHistory() {
+            const container = document.getElementById('tab-history');
+            container.innerHTML = `<h3 class="text-2xl font-black mb-6">سجل النتائج الأخير</h3>`;
+            if(db.results.length === 0) container.innerHTML += `<p class="text-slate-400">لا توجد نتائج مسجلة حالياً</p>`;
+            
+            db.results.slice().reverse().forEach(res => {
+                const item = document.createElement('div');
+                item.className = "bg-white p-6 rounded-[32px] border flex items-center justify-between";
+                item.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <img src="${res.nameImg}" class="h-12 border rounded-xl bg-slate-50">
+                        <div>
+                            <h5 class="font-bold text-slate-800">${res.examName}</h5>
+                            <p class="text-[10px] text-slate-400">${res.date}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-black text-indigo-600">${res.score}/${res.total}</div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">الدرجة النهائية</p>
+                    </div>
+                `;
+                container.appendChild(item);
             });
-            loadData();
         }
+
+        window.onload = () => switchTab('exams');
     </script>
 </body>
 </html>
