@@ -1,13 +1,13 @@
+--- START OF FILE index10.html ---
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SmartMark Pro | النسخة المستقرة</title>
+    <title>SmartMark Pro | المصحح الذكي</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
@@ -16,36 +16,30 @@
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
         body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; overflow: hidden; touch-action: manipulation; }
         
-        /* تحسين مظهر الفقاعات عند الاختيار */
         .bubble-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; transition: 0.2s; cursor: pointer; background: white; color: #64748b; }
         .bubble-btn.selected { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; transform: scale(1.1); box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3); }
 
-        /* إطارات الكاميرا (ZipGrade Style) */
-        .target-frame { position: absolute; width: 70px; height: 70px; border: 5px solid rgba(255,255,255,0.3); border-radius: 15px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* إطارات الاستهداف */
+        .target-frame { position: absolute; width: 70px; height: 70px; border: 5px solid rgba(255,255,255,0.3); border-radius: 15px; transition: all 0.3s; }
         .target-frame.detected { border-color: #10b981; background: rgba(16, 185, 129, 0.2); border-width: 8px; transform: scale(1.1); }
         .tf-tl { top: 15%; left: 8%; } .tf-tr { top: 15%; right: 8%; }
         .tf-bl { bottom: 18%; left: 8%; } .tf-br { bottom: 18%; right: 8%; }
 
-        /* ورقة الإجابة للتحميل */
         .sheet-page { width: 210mm; min-height: 297mm; padding: 10mm; background: white; position: relative; box-sizing: border-box; color: black; }
-        .black-corner { position: absolute; width: 14mm; height: 14mm; background: black; }
+        .black-corner { position: absolute; width: 14mm; height: 14mm; background: black; border-radius: 4px; }
         .c-tl { top: 8mm; left: 8mm; } .c-tr { top: 8mm; right: 8mm; }
         .c-bl { bottom: 8mm; left: 8mm; } .c-br { bottom: 8mm; right: 8mm; }
-
-        .sidebar-transition { transition: transform 0.3s ease-in-out; }
-        .overlay-fade { transition: opacity 0.3s ease; }
     </style>
 </head>
 <body class="text-slate-900 bg-slate-50">
 
-    <!-- Overlay & Sidebar -->
-    <div id="sidebar-overlay" onclick="toggleSidebar(false)" class="fixed inset-0 bg-slate-900/60 z-40 md:hidden opacity-0 pointer-events-none overlay-fade"></div>
+    <div id="sidebar-overlay" onclick="toggleSidebar(false)" class="fixed inset-0 bg-slate-900/60 z-40 md:hidden opacity-0 pointer-events-none transition-opacity"></div>
     
     <div class="flex h-screen overflow-hidden">
-        <aside id="sidebar" class="fixed md:relative inset-y-0 right-0 w-72 bg-slate-900 text-white flex flex-col z-50 transform translate-x-full md:translate-x-0 sidebar-transition">
+        <aside id="sidebar" class="fixed md:relative inset-y-0 right-0 w-72 bg-slate-900 text-white flex flex-col z-50 transform translate-x-full md:translate-x-0 transition-transform">
             <div class="p-8 border-b border-slate-800">
                 <h1 class="text-2xl font-black text-indigo-400">SmartMark</h1>
-                <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">المصحح الضوئي الاحترافي</p>
+                <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">النسخة الاحترافية v6.2</p>
             </div>
             <nav class="flex-1 p-4 space-y-2 mt-4">
                 <button onclick="switchTab('exams')" id="btn-exams" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-indigo-600 transition-all"><i class="fa-solid fa-layer-group"></i> إدارة الامتحانات</button>
@@ -53,16 +47,14 @@
                 <button onclick="switchTab('history')" id="btn-history" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-slate-400 hover:bg-slate-800 transition-all"><i class="fa-solid fa-history"></i> سجل النتائج</button>
             </nav>
             <div class="p-4 m-4 bg-slate-800/50 rounded-2xl border border-slate-700/50">
-                <div id="cv-status" class="text-[10px] font-bold text-red-400 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> جاري تحميل المحرك...</div>
+                <div id="cv-status" class="text-[10px] font-bold text-red-400 flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل OpenCV...</div>
             </div>
         </aside>
 
-        <!-- Main Area -->
         <main class="flex-1 flex flex-col min-w-0 bg-white relative">
             <header class="h-16 border-b px-6 flex items-center justify-between bg-white z-30">
                 <button onclick="toggleSidebar(true)" class="md:hidden p-2 text-slate-600"><i class="fa-solid fa-bars-staggered text-xl"></i></button>
-                <h2 id="tab-title" class="font-bold text-slate-800">الامتحانات الحالية</h2>
-                <div class="w-10 h-10 bg-slate-100 rounded-full border flex items-center justify-center text-slate-400"><i class="fa-solid fa-user"></i></div>
+                <h2 id="tab-title" class="font-bold text-slate-800">لوحة التحكم</h2>
             </header>
 
             <div class="flex-1 overflow-y-auto p-4 md:p-8">
@@ -71,37 +63,18 @@
                 <section id="view-create" class="hidden max-w-4xl mx-auto space-y-6 pb-20">
                     <div class="bg-white p-6 md:p-10 rounded-[40px] border shadow-sm space-y-8">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="space-y-2">
-                                <label class="text-xs font-black text-slate-400 uppercase pr-2">اسم المادة</label>
-                                <input type="text" id="in-name" placeholder="مثلاً: الرياضيات" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none transition-all">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-xs font-black text-slate-400 uppercase pr-2">المستوى</label>
-                                <input type="text" id="in-level" placeholder="مثلاً: ثانية باك" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none transition-all">
-                            </div>
+                            <input type="text" id="in-name" placeholder="اسم المادة" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none">
+                            <input type="text" id="in-level" placeholder="المستوى" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none">
                         </div>
                         <div class="grid grid-cols-2 gap-6">
-                            <div class="space-y-2">
-                                <label class="text-xs font-black text-slate-400 uppercase pr-2">عدد الأسئلة</label>
-                                <input type="number" id="in-q" value="20" class="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-indigo-500 outline-none">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-xs font-black text-slate-400 uppercase pr-2">عدد الخيارات</label>
-                                <select id="in-o" class="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-indigo-500 outline-none">
-                                    <option value="4">4 خيارات (أ-د)</option>
-                                    <option value="6">6 خيارات (أ-و)</option>
-                                    <option value="12">12 خياراً (أ-ل)</option>
-                                </select>
-                            </div>
+                            <input type="number" id="in-q" value="20" class="w-full p-4 bg-slate-50 rounded-2xl font-bold">
+                            <select id="in-o" class="w-full p-4 bg-slate-50 rounded-2xl font-bold">
+                                <option value="4">4 خيارات</option>
+                                <option value="5">5 خيارات</option>
+                            </select>
                         </div>
-                        <div class="bg-slate-900 rounded-[32px] p-6 text-white">
-                            <div class="flex items-center justify-between mb-6">
-                                <h4 class="font-bold">مفتاح الإجابة الصحيحة</h4>
-                                <p class="text-[10px] text-slate-400 italic">اضغط على الدائرة لتحديدها كإجابة صحيحة</p>
-                            </div>
-                            <div id="key-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto pr-2"></div>
-                        </div>
-                        <button onclick="saveExam()" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-indigo-100 transition-all active:scale-95">حفظ وإضافة الامتحان</button>
+                        <div id="key-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto bg-slate-900 p-6 rounded-3xl"></div>
+                        <button onclick="saveExam()" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-lg transition-all active:scale-95">حفظ الامتحان</button>
                     </div>
                 </section>
 
@@ -110,43 +83,42 @@
         </main>
     </div>
 
-    <!-- Scanner (ZipGrade Logic) -->
+    <!-- الكاميرا -->
     <div id="scanner-modal" class="fixed inset-0 bg-black z-[100] hidden overflow-hidden">
-        <video id="video" class="w-full h-full object-cover opacity-60" playsinline muted></video>
-        
-        <!-- Viewfinders -->
+        <video id="video" class="w-full h-full object-cover" playsinline muted></video>
         <div id="f-tl" class="target-frame tf-tl"></div>
         <div id="f-tr" class="target-frame tf-tr"></div>
         <div id="f-bl" class="target-frame tf-bl"></div>
         <div id="f-br" class="target-frame tf-br"></div>
-
         <div class="absolute bottom-12 inset-x-0 flex flex-col items-center gap-6">
-            <div id="status-msg" class="bg-black/60 backdrop-blur-xl border border-white/10 text-white px-8 py-3 rounded-full text-xs font-bold transition-all">وجه المربعات الأربعة داخل الأطر...</div>
-            <button onclick="stopScanner()" class="w-16 h-16 bg-white/10 rounded-full border border-white/20 text-white flex items-center justify-center text-xl backdrop-blur-md"><i class="fa-solid fa-xmark"></i></button>
+            <div id="status-msg" class="bg-black/60 backdrop-blur-xl text-white px-8 py-3 rounded-full text-xs font-bold">وجه الكاميرا نحو ورقة الإجابة</div>
+            <button onclick="stopScanner()" class="w-16 h-16 bg-white/20 rounded-full border border-white/40 text-white"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <canvas id="proc-canvas" class="hidden"></canvas>
     </div>
 
-    <!-- Result Popup -->
+    <!-- النتيجة -->
     <div id="res-popup" class="fixed inset-0 bg-slate-900/90 z-[200] hidden flex items-center justify-center p-6">
-        <div class="bg-white rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl border-4 border-indigo-600">
-            <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fa-solid fa-check-double text-4xl"></i></div>
-            <h3 class="font-black text-2xl text-slate-800">تم التصحيح بنجاح!</h3>
-            <div id="res-score" class="text-7xl font-black text-indigo-600 my-8 italic">0 / 0</div>
-            <button onclick="closeResult()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold shadow-lg">حسناً، التالي</button>
+        <div class="bg-white rounded-[40px] p-10 max-w-sm w-full text-center">
+            <h3 class="font-black text-2xl text-slate-800">نتيجة التصحيح</h3>
+            <div id="res-score" class="text-7xl font-black text-indigo-600 my-8">0 / 0</div>
+            <button onclick="closeResult()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold">إغلاق</button>
         </div>
     </div>
 
     <div id="hidden-print-area" style="position:fixed; left:-9999px;"></div>
 
     <script>
-        let db = { exams: JSON.parse(localStorage.getItem('sm_v6_exams') || '[]'), results: JSON.parse(localStorage.getItem('sm_v6_results') || '[]') };
-        let isCvReady = false, scanActive = false, activeExam = null, stableFrames = 0;
-        const LETTERS = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي', 'ك', 'ل'];
+        let db = { 
+            exams: JSON.parse(localStorage.getItem('sm_v7_exams') || '[]'), 
+            results: JSON.parse(localStorage.getItem('sm_v7_results') || '[]') 
+        };
+        let isCvReady = false, scanActive = false, activeExam = null;
+        const LETTERS = ['أ', 'ب', 'ج', 'د', 'هـ'];
 
         function onOpenCvReady() {
             isCvReady = true;
-            document.getElementById('cv-status').innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i> نظام الذكاء جاهز';
+            document.getElementById('cv-status').innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i> النظام جاهز';
             document.getElementById('cv-status').className = "text-[10px] font-bold text-emerald-500 flex items-center gap-2";
         }
 
@@ -160,57 +132,52 @@
         function switchTab(tab) {
             document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
             document.getElementById('view-' + tab).classList.remove('hidden');
-            document.querySelectorAll('nav button').forEach(b => b.classList.replace('bg-indigo-600', 'text-slate-400'));
-            document.getElementById('btn-' + tab).classList.replace('text-slate-400', 'bg-indigo-600');
             if(tab === 'exams') renderExams();
             if(tab === 'history') renderHistory();
             if(tab === 'create') updateKeyGrid();
-            if(window.innerWidth < 768) toggleSidebar(false);
         }
 
-        // --- Exam Creation & Bubble Fix ---
         function updateKeyGrid() {
             const q = parseInt(document.getElementById('in-q').value), o = parseInt(document.getElementById('in-o').value);
             const grid = document.getElementById('key-container'); grid.innerHTML = '';
             for(let i=0; i<q; i++) {
                 const row = document.createElement('div');
-                row.className = "p-4 bg-slate-800 rounded-2xl flex items-center justify-between";
-                row.innerHTML = `<span class="text-xs font-black text-slate-500">س ${i+1}</span><div class="flex gap-2" id="q-row-${i}"></div>`;
+                row.className = "flex items-center justify-between bg-slate-800 p-3 rounded-xl";
+                row.innerHTML = `<span class="text-white font-bold text-xs">${i+1}</span><div class="flex gap-1" id="q-row-${i}"></div>`;
                 grid.appendChild(row);
                 for(let j=0; j<o; j++) {
                     const b = document.createElement('div');
                     b.className = `bubble-btn opt-${i}`;
                     b.innerText = LETTERS[j];
-                    b.onclick = function() { this.classList.toggle('selected'); }; // Fix: Explicit function context
+                    b.onclick = () => b.classList.toggle('selected');
                     row.querySelector(`#q-row-${i}`).appendChild(b);
                 }
             }
         }
-        document.getElementById('in-q').onchange = updateKeyGrid;
-        document.getElementById('in-o').onchange = updateKeyGrid;
 
         function saveExam() {
             const name = document.getElementById('in-name').value;
-            if(!name) return alert("المرجو كتابة اسم الامتحان");
+            if(!name) return alert("المرجو إدخال الاسم");
             const qCount = parseInt(document.getElementById('in-q').value);
             let key = [];
             for(let i=0; i<qCount; i++) {
-                let ans = [];
-                document.querySelectorAll(`.opt-${i}`).forEach((b, idx) => { if(b.classList.contains('selected')) ans.push(idx); });
+                let ans = -1;
+                document.querySelectorAll(`.opt-${i}`).forEach((b, idx) => { if(b.classList.contains('selected')) ans = idx; });
                 key.push(ans);
             }
-            db.exams.push({ id: Date.now(), name, level: document.getElementById('in-level').value, qCount, oCount: parseInt(document.getElementById('in-o').value), key, date: new Date().toLocaleDateString('ar-MA') });
-            localStorage.setItem('sm_v6_exams', JSON.stringify(db.exams));
+            db.exams.push({ id: Date.now(), name, level: document.getElementById('in-level').value, qCount, oCount: parseInt(document.getElementById('in-o').value), key, date: new Date().toLocaleDateString() });
+            localStorage.setItem('sm_v7_exams', JSON.stringify(db.exams));
             switchTab('exams');
         }
 
-        // --- SCANNER LOGIC (STABILIZATION ENGINE) ---
+        // --- محرك التصحيح الحقيقي (COMPUTER VISION ENGINE) ---
+
         async function startScanner(id) {
-            if(!isCvReady) return alert("المحرك قيد التحميل...");
+            if(!isCvReady) return alert("انتظر تحميل محرك الذكاء...");
             activeExam = db.exams.find(e => e.id === id);
-            scanActive = true; stableFrames = 0;
+            scanActive = true;
             document.getElementById('scanner-modal').classList.remove('hidden');
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', focusMode: 'continuous', width: {ideal: 1280} } });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', focusMode: 'continuous', width: 1280 } });
             document.getElementById('video').srcObject = stream;
             document.getElementById('video').play();
             requestAnimationFrame(scanLoop);
@@ -236,78 +203,114 @@
                 let src = cv.imread(canvas);
                 let gray = new cv.Mat();
                 cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
                 cv.adaptiveThreshold(gray, gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 11, 2);
 
                 let contours = new cv.MatVector();
                 let hierarchy = new cv.Mat();
                 cv.findContours(gray, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-                let anchors = [];
+                let foundAnchors = [];
                 for(let i=0; i<contours.size(); i++) {
                     let cnt = contours.get(i);
                     let area = cv.contourArea(cnt);
-                    if(area > 200 && area < 2500) {
-                        let rect = cv.boundingRect(cnt);
-                        let ratio = rect.width / rect.height;
-                        if(ratio > 0.8 && ratio < 1.2) anchors.push(rect);
+                    let rect = cv.boundingRect(cnt);
+                    let ratio = rect.width / rect.height;
+                    
+                    if(area > 300 && area < 3000 && ratio > 0.8 && ratio < 1.2) {
+                        foundAnchors.push(rect);
                     }
                 }
 
-                // Update UI Feedback
-                updateFramesUI(anchors);
-
-                // Stabilization Logic (ZipGrade Style)
-                if(anchors.length === 4) {
-                    stableFrames++;
-                    document.getElementById('status-msg').innerText = "تم التثبيت! جاري التصحيح...";
-                    document.getElementById('status-msg').className = "bg-emerald-500 text-white px-8 py-3 rounded-full text-xs font-bold";
+                if(foundAnchors.length >= 4) {
+                    // نأخذ أكبر 4 مساحات لضمان أنها العلامات السوداء
+                    foundAnchors.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+                    let anchors = foundAnchors.slice(0, 4);
                     
-                    if(stableFrames > 15) { // Require stability for 15 frames
-                        performCorrection(src, anchors);
-                        scanActive = false;
-                    } else {
-                        requestAnimationFrame(scanLoop);
-                    }
+                    // تحويل مراكز المربعات إلى نقاط
+                    let points = anchors.map(r => ({ x: r.x + r.width/2, y: r.y + r.height/2 }));
+                    
+                    // ترتيب النقاط: TL, TR, BL, BR
+                    points.sort((a, b) => a.y - b.y);
+                    let top = points.slice(0, 2).sort((a, b) => a.x - b.x);
+                    let bottom = points.slice(2, 4).sort((a, b) => a.x - b.x);
+                    let sortedPts = [top[0], top[1], bottom[0], bottom[1]];
+
+                    updateFramesUI(true);
+                    
+                    // بدء التصحيح الفعلي
+                    performRealCorrection(src, sortedPts);
+                    src.delete(); gray.delete(); contours.delete(); hierarchy.delete();
+                    return; // نوقف الحلقة بعد النجاح
                 } else {
-                    stableFrames = 0;
-                    document.getElementById('status-msg').innerText = "وجه المربعات الأربعة داخل الأطر...";
-                    document.getElementById('status-msg').className = "bg-black/60 text-white px-8 py-3 rounded-full text-xs font-bold";
-                    requestAnimationFrame(scanLoop);
+                    updateFramesUI(false);
                 }
 
                 src.delete(); gray.delete(); contours.delete(); hierarchy.delete();
-            } else {
-                requestAnimationFrame(scanLoop);
             }
+            requestAnimationFrame(scanLoop);
         }
 
-        function updateFramesUI(anchors) {
+        function updateFramesUI(detected) {
             const frames = ['f-tl', 'f-tr', 'f-bl', 'f-br'];
-            frames.forEach(f => document.getElementById(f).classList.remove('detected'));
-            // Simplified logic: If 4 are found, light all green. In real ZipGrade, each lights individually.
-            if(anchors.length === 4) frames.forEach(f => document.getElementById(f).classList.add('detected'));
+            frames.forEach(f => document.getElementById(f).classList.toggle('detected', detected));
+            document.getElementById('status-msg').innerText = detected ? "جاري المعالجة..." : "وجه المربعات داخل الأطر";
         }
 
-        function performCorrection(src, anchors) {
-            // Perspective Warp & Bubble Analysis
-            // (Simulated high-speed analysis for this build)
+        function performRealCorrection(src, pts) {
+            // 1. Perspective Warp (تحويل الورقة لمستطيل 500x800)
+            let dstSize = new cv.Size(500, 800);
+            let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 500, 0, 0, 800, 500, 800]);
+            let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y]);
+            
+            let M = cv.getPerspectiveTransform(srcTri, dstTri);
+            let warped = new cv.Mat();
+            cv.warpPerspective(src, warped, M, dstSize);
+
+            // 2. التحويل لأسود وأبيض للتحليل
+            cv.cvtColor(warped, warped, cv.COLOR_RGBA2GRAY);
+            cv.threshold(warped, warped, 150, 255, cv.THRESH_BINARY_INV);
+
+            // 3. تحليل الفقاعات
             let score = 0;
-            activeExam.key.forEach((ans, idx) => {
-                // In production, we analyze the warped 'src' image darkness at bubble coordinates
-                if(Math.random() > 0.5) score++; 
+            const startY = 180; // بداية منطقة الأسئلة في الورقة
+            const rowH = 26;   // مسافة السؤال
+            const colW = 35;   // مسافة الخيار
+
+            activeExam.key.forEach((correctIdx, qIdx) => {
+                let detectedAns = -1;
+                let maxDarkness = 0;
+
+                for(let oIdx = 0; oIdx < activeExam.oCount; oIdx++) {
+                    // حساب إحداثيات كل فقاعة بناءً على تخطيط الورقة
+                    let x = 110 + (oIdx * colW);
+                    let y = startY + (qIdx * rowH);
+                    
+                    // استخراج منطقة الفقاعة (Region of Interest)
+                    let rect = new cv.Rect(x - 8, y - 8, 16, 16);
+                    let roi = warped.roi(rect);
+                    let darkness = cv.countNonZero(roi); // حساب عدد البكسلات المظللة
+                    roi.delete();
+
+                    if(darkness > 80 && darkness > maxDarkness) {
+                        maxDarkness = darkness;
+                        detectedAns = oIdx;
+                    }
+                }
+
+                if(detectedAns === correctIdx) score++;
             });
 
-            // Capture Name Image
-            const nameCanvas = document.createElement('canvas');
-            nameCanvas.width = 300; nameCanvas.height = 70;
-            // Real capture from warped image here...
-
-            const res = { id: Date.now(), examId: activeExam.id, examName: activeExam.name, score, total: activeExam.qCount, date: new Date().toLocaleString(), nameImg: nameCanvas.toDataURL() };
+            // حفظ النتيجة
+            const res = { id: Date.now(), examName: activeExam.name, score, total: activeExam.qCount, date: new Date().toLocaleString() };
             db.results.push(res);
-            localStorage.setItem('sm_v6_results', JSON.stringify(db.results));
+            localStorage.setItem('sm_v7_results', JSON.stringify(db.results));
 
+            // عرض النتيجة
             document.getElementById('res-score').innerText = `${score} / ${activeExam.qCount}`;
             document.getElementById('res-popup').classList.remove('hidden');
+            
+            warped.delete(); M.delete(); srcTri.delete(); dstTri.delete();
             stopScanner();
         }
 
@@ -316,18 +319,20 @@
             switchTab('history');
         }
 
-        // --- Sheet Generation & UI ---
+        // --- وظائف العرض المساعدة ---
+
         function renderExams() {
             const container = document.getElementById('view-exams'); container.innerHTML = '';
             db.exams.forEach(ex => {
                 const d = document.createElement('div');
-                d.className = "bg-white p-6 rounded-[32px] border shadow-sm space-y-5";
+                d.className = "bg-white p-6 rounded-[32px] border shadow-sm space-y-4";
                 d.innerHTML = `
-                    <div class="flex items-center gap-4"><div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-black">${ex.qCount}</div>
-                    <div><h3 class="font-black text-slate-800">${ex.name}</h3><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${ex.level}</p></div></div>
-                    <div class="grid grid-cols-1 gap-2"><button onclick="startScanner(${ex.id})" class="bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-indigo-100"><i class="fa-solid fa-camera mr-2"></i> بدء التصحيح</button>
-                    <div class="grid grid-cols-2 gap-2"><button onclick="downloadSheet(${ex.id})" class="bg-slate-50 text-slate-700 py-3 rounded-2xl font-bold text-xs hover:bg-slate-100">تحميل الورقة</button>
-                    <button onclick="deleteExam(${ex.id})" class="bg-red-50 text-red-500 py-3 rounded-2xl font-bold text-xs">حذف</button></div></div>`;
+                    <h3 class="font-black text-slate-800">${ex.name} (${ex.qCount} س)</h3>
+                    <button onclick="startScanner(${ex.id})" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-indigo-100">بدء التصحيح</button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="downloadSheet(${ex.id})" class="bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-xs">تحميل الورقة</button>
+                        <button onclick="deleteExam(${ex.id})" class="bg-red-50 text-red-500 py-3 rounded-xl font-bold text-xs">حذف</button>
+                    </div>`;
                 container.appendChild(d);
             });
         }
@@ -336,66 +341,57 @@
             const ex = db.exams.find(e => e.id === id);
             const container = document.getElementById('hidden-print-area');
             container.innerHTML = '';
-            
             const page = document.createElement('div');
             page.className = 'sheet-page';
             page.innerHTML = `
                 <div class="black-corner c-tl"></div><div class="black-corner c-tr"></div>
                 <div class="black-corner c-bl"></div><div class="black-corner c-br"></div>
-                <div style="margin:20mm 10mm 10mm 10mm; border-bottom:4px solid #000; padding-bottom:12px; display:flex; justify-content:space-between; align-items:end;">
-                    <div><h1 style="font-size:28px; font-weight:900; margin:0; line-height:1;">${ex.name}</h1><p style="margin:4px 0 0 0; font-weight:900; font-size:14px; color:#555;">${ex.level}</p></div>
+                <div style="margin:20mm 10mm 10mm 10mm; border-bottom:4px solid #000; padding-bottom:10px; display:flex; justify-content:space-between;">
+                    <h1 style="font-size:24px; font-weight:900;">${ex.name} - ${ex.level}</h1>
                     <div id="qr"></div>
                 </div>
-                <div style="margin:0 10mm 15mm 10mm; display:flex; gap:15px;">
-                    <div style="flex:2; border:2px solid #000; padding:15px; font-weight:900; font-size:16px;">اسم التلميذ: ................................................................</div>
-                    <div style="flex:1; border:2px solid #000; padding:15px; font-weight:900; font-size:16px;">القسم: ............</div>
+                <div style="margin:10mm; display:flex; gap:10px;">
+                    <div style="flex:1; border:2px solid #000; padding:10px; font-weight:bold;">الاسم: .................................</div>
+                    <div style="width:100px; border:2px solid #000; padding:10px; font-weight:bold;">القسم: .......</div>
                 </div>
+                <div id="bubbles-grid" style="margin:10mm; display:flex; flex-wrap:wrap; gap:30px;"></div>
             `;
             
-            const grid = document.createElement('div');
-            grid.style.cssText = "display:flex; flex-wrap:wrap; gap:40px; margin:0 10mm;";
-            const perCol = 20;
-            for(let c=0; c < Math.ceil(ex.qCount/perCol); c++) {
-                const col = document.createElement('div');
-                for(let i = c*perCol; i < Math.min((c+1)*perCol, ex.qCount); i++) {
-                    if(i % 10 === 0) {
-                        const h = document.createElement('div');
-                        h.style.cssText = "display:flex; gap:6px; margin-bottom:4px; padding-right:24px; justify-content:center;";
-                        h.innerHTML = LETTERS.slice(0, ex.oCount).map(l => `<div style="width:20px; text-align:center; font-size:10px; font-weight:900;">${l}</div>`).join('');
-                        col.appendChild(h);
-                    }
-                    const row = document.createElement('div');
-                    row.style.cssText = "display:flex; gap:6px; align-items:center; margin-bottom:6px; justify-content:center;";
-                    let bubbles = '';
-                    for(let j=0; j<ex.oCount; j++) bubbles += `<div style="width:20px; height:20px; border:1.5px solid #000; border-radius:50%;"></div>`;
-                    row.innerHTML = `<div style="width:22px; font-size:11px; font-weight:bold; border-left:2px solid #000; padding-left:4px;">${i+1}</div>${bubbles}`;
-                    col.appendChild(row);
-                }
-                grid.appendChild(col);
+            const grid = page.querySelector('#bubbles-grid');
+            for(let i=0; i<ex.qCount; i++) {
+                const row = document.createElement('div');
+                row.style.cssText = "display:flex; gap:10px; align-items:center; margin-bottom:5px; width:45%";
+                let b = `<span style="width:25px; font-weight:900;">${i+1}</span>`;
+                for(let j=0; j<ex.oCount; j++) b += `<div style="width:18px; height:18px; border:2px solid #000; border-radius:50%; position:relative;"><span style="position:absolute; font-size:8px; top:-1px; left:4px;">${LETTERS[j]}</span></div>`;
+                row.innerHTML = b;
+                grid.appendChild(row);
             }
-            page.appendChild(grid);
+            
             container.appendChild(page);
-            new QRCode(page.querySelector('#qr'), { text: `EX-${ex.id}`, width: 70, height: 70 });
+            new QRCode(page.querySelector('#qr'), { text: `EXID-${ex.id}`, width: 60, height: 60 });
             
             setTimeout(async () => {
-                const canvas = await html2canvas(page, { scale: 3 });
-                const link = document.createElement('a'); link.download = `${ex.name}.png`; link.href = canvas.toDataURL(); link.click();
-            }, 600);
+                const canvas = await html2canvas(page, { scale: 2 });
+                const link = document.createElement('a'); 
+                link.download = `Sheet-${ex.name}.png`; 
+                link.href = canvas.toDataURL(); 
+                link.click();
+            }, 500);
         }
 
         function renderHistory() {
-            const container = document.getElementById('view-history'); container.innerHTML = '<h3 class="text-xl font-black mb-6">سجل النتائج الأخير</h3>';
+            const container = document.getElementById('view-history'); 
+            container.innerHTML = '<h3 class="font-black mb-4">آخر النتائج</h3>';
             db.results.slice().reverse().forEach(r => {
                 const d = document.createElement('div');
-                d.className = "bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center shadow-sm";
-                d.innerHTML = `<div class="flex items-center gap-4"><div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300"><i class="fa-solid fa-user"></i></div>
-                    <div><p class="font-bold text-slate-800">${r.examName}</p><p class="text-[9px] text-slate-400 font-bold uppercase">${r.date}</p></div></div>
-                    <div class="text-2xl font-black text-indigo-600">${r.score}/${r.total}</div>`;
+                d.className = "bg-white p-4 rounded-2xl border flex justify-between items-center";
+                d.innerHTML = `<div><p class="font-bold">${r.examName}</p><small class="text-slate-400">${r.date}</small></div>
+                               <div class="text-xl font-black text-indigo-600">${r.score}/${r.total}</div>`;
                 container.appendChild(d);
             });
         }
 
-        function deleteExam(id) { if(confirm("حذف الامتحان؟")) { db.exams = db.exams.filter(e => e.id !== id); localStorage.setItem('sm_v6_exams', JSON.stringify(db.exams)); renderExams(); } }
+        function deleteExam(id) { if(confirm("حذف؟")) { db.exams = db.exams.filter(e => e.id !== id); localStorage.setItem('sm_v7_exams', JSON.stringify(db.exams)); renderExams(); } }
 
         window.onload = () => switchTab('exams');
     </script>
