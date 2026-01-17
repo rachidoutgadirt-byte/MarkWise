@@ -1,553 +1,829 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SmartMark Pro | ZipGrade Edition</title>
+    <title>SmartGrade Pro | المصحح الآلي الذكي</title>
     
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
+    <!-- خطوط جوجل العربية -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- مكتبة Tesseract.js للتعرف على النصوص -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; overflow: hidden; }
+        :root {
+            --primary: #4e54c8;
+            --secondary: #8f94fb;
+            --accent: #00d2ff;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --text-main: #1f2937;
+            --text-sec: #6b7280;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        [data-theme="dark"] {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --glass-bg: rgba(30, 30, 30, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f3f4f6;
+            --text-sec: #9ca3af;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --light: #111827;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background 0.5s ease;
+        }
+
+        /* هيكل التطبيق */
+        .app-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-bottom: 90px;
+            min-height: 100vh;
+        }
+
+        /* الهيدر */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* الأقسام */
+        section {
+            display: none;
+            padding: 20px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        section.active {
+            display: block;
+        }
+
+        /* Cards & UI */
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+        }
+
+        /* الكاميرا */
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        video, canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 20%; left: 10%; width: 80%; height: 60%;
+            border: 2px dashed rgba(255,255,255,0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+        }
+
+        /* التحميل */
+        .loader-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top: 5px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        /* النتائج */
+        .score-circle {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(var(--success) var(--percent, 0%), transparent 0);
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .score-circle::before {
+            content: ''; position: absolute;
+            width: 100px; height: 100px;
+            background: var(--glass-bg);
+            border-radius: 50%;
+        }
+
+        .score-text {
+            position: absolute; font-size: 2rem; font-weight: 800; z-index: 2;
+        }
+
+        .grade-badge {
+            padding: 4px 10px; border-radius: 15px; color: white; font-weight: bold; font-size: 0.8rem;
+        }
+        .grade-A { background: var(--success); }
+        .grade-B { background: #3b82f6; }
+        .grade-C { background: var(--warning); }
+        .grade-D { background: var(--danger); }
+
+        /* القائمة السفلية */
+        .bottom-nav {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            width: 90%; max-width: 400px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 50px;
+            display: flex; justify-content: space-around;
+            padding: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border: 1px solid var(--glass-border);
+        }
+
+        .nav-item {
+            font-size: 1.5rem; color: var(--text-sec);
+            cursor: pointer; transition: 0.3s; position: relative;
+            padding: 5px;
+        }
+
+        .nav-item.active {
+            color: var(--primary); transform: translateY(-5px);
+        }
+
+        /* Inputs for Settings */
+        .settings-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--glass-bg);
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+        }
         
-        /* Bubble buttons in key editor */
-        .bubble-btn { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #d1d5db; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; cursor: pointer; transition: 0.2s; background: white; color: #374151; }
-        .bubble-btn.selected { background-color: #2563eb !important; color: white !important; border-color: #2563eb; transform: scale(1.1); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .form-input, .form-select {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background: var(--light);
+            color: var(--text-main);
+            outline: none;
+        }
 
-        /* Scanning Viewfinder */
-        .target-frame { position: absolute; width: 65px; height: 65px; border: 6px solid rgba(255,255,255,0.2); border-radius: 14px; transition: 0.2s; z-index: 101; }
-        .target-frame.detected { border-color: #10b981; background: rgba(16, 185, 129, 0.2); box-shadow: 0 0 25px #10b981; }
-        .tf-tl { top: 10%; left: 8%; } .tf-tr { top: 10%; right: 8%; }
-        .tf-bl { bottom: 18%; left: 8%; } .tf-br { bottom: 18%; right: 8%; }
-
-        /* Answer Sheet Design (ZipGrade Style) */
-        .sheet-page { width: 210mm; min-height: 297mm; padding: 15mm; background: white; position: relative; color: black; box-sizing: border-box; }
-        .black-corner { position: absolute; width: 15mm; height: 15mm; background: black; }
-        .c-tl { top: 10mm; left: 10mm; } .c-tr { top: 10mm; right: 10mm; }
-        .c-bl { bottom: 10mm; left: 10mm; } .c-br { bottom: 10mm; right: 10mm; }
-
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="text-slate-900">
+<body>
 
-    <div id="sidebar-overlay" onclick="toggleSidebar(false)" class="fixed inset-0 bg-slate-900/60 z-40 md:hidden opacity-0 pointer-events-none transition-opacity"></div>
-    
-    <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 w-72 bg-slate-900 text-white flex flex-col z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
-            <div class="p-6 border-b border-slate-800 flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-camera-retro"></i></div>
-                <div><h1 class="text-xl font-black italic">SmartMark</h1><p class="text-[9px] text-slate-500 font-bold uppercase">ZipGrade Clone v9.0</p></div>
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                SmartGrade Pro
             </div>
-            
-            <nav class="flex-1 p-4 space-y-2 mt-4">
-                <button onclick="switchTab('exams')" id="btn-exams" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-blue-600 transition-all font-bold"><i class="fa-solid fa-folder-open"></i> Exams List</button>
-                <button onclick="switchTab('create')" id="btn-create" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-slate-400 hover:bg-slate-800 transition-all font-bold"><i class="fa-solid fa-plus-circle"></i> Create New</button>
-                <button onclick="switchTab('history')" id="btn-history" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-slate-400 hover:bg-slate-800 transition-all font-bold"><i class="fa-solid fa-chart-line"></i> Grading History</button>
-            </nav>
+            <button id="themeToggle" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">🌙</button>
+        </header>
 
-            <div class="p-4 m-4 bg-slate-800/50 rounded-2xl border border-slate-700/50">
-                <div id="cv-status" class="text-[10px] font-bold text-amber-400 flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> Initializing OpenCV...</div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="flex-1 flex flex-col min-w-0 bg-white">
-            <header class="h-16 border-b px-6 flex items-center justify-between bg-white z-30">
-                <button onclick="toggleSidebar(true)" class="md:hidden p-2 text-slate-600"><i class="fa-solid fa-bars"></i></button>
-                <h2 id="tab-title" class="font-black text-slate-800 uppercase tracking-tighter">Exams Dashboard</h2>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-400">EN</span>
-                    <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-user text-slate-400"></i></div>
-                </div>
-            </header>
-
-            <div class="flex-1 overflow-y-auto p-4 md:p-8">
-                <!-- Tab: Exams -->
-                <section id="view-exams" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
-                
-                <!-- Tab: Create/Edit -->
-                <section id="view-create" class="hidden max-w-5xl mx-auto pb-20">
-                    <div class="bg-white rounded-[40px] border shadow-sm p-6 md:p-10 space-y-8">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <input type="hidden" id="edit-id">
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase">Exam Name</label>
-                                <input type="text" id="in-name" placeholder="Mathematics Final" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500 outline-none font-bold">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase">Class/Level</label>
-                                <input type="text" id="in-level" placeholder="Grade 10 - Section A" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500 outline-none font-bold">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase">Total Questions</label>
-                                <input type="number" id="in-q" value="20" onchange="updateKeyGrid()" class="w-full p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-500 outline-none">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase">Options per Question</label>
-                                <select id="in-o" onchange="updateKeyGrid()" class="w-full p-4 bg-slate-50 rounded-2xl font-black border-2 border-transparent focus:border-blue-500 outline-none">
-                                    <option value="4">4 Options (A-D)</option>
-                                    <option value="5">5 Options (A-E)</option>
-                                    <option value="12">12 Options (A-L)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-900 rounded-[32px] p-6 shadow-2xl">
-                            <h4 class="text-white font-black mb-6 flex items-center justify-between">
-                                Answer Key & Weights
-                                <span class="text-[10px] text-blue-400">Select correct answers & set points</span>
-                            </h4>
-                            <div id="key-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[450px] overflow-y-auto custom-scroll pr-2"></div>
-                        </div>
-
-                        <button onclick="saveExam()" id="save-btn" class="w-full bg-blue-600 text-white py-6 rounded-3xl font-black text-xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all">Save & Deploy Exam</button>
+        <!-- View 1: Home -->
+        <section id="view-home" class="active">
+            <div class="card" style="text-align: center; margin-top: 20px;">
+                <h1 style="font-size: 1.8rem; margin-bottom: 10px;">المصحح الآلي الذكي</h1>
+                <p style="color: var(--text-sec); margin-bottom: 20px;">تصحيح فوري لأوراق الامتحانات باستخدام الكاميرا.</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 10px;">
+                        <h3 id="total-scanned">0</h3>
+                        <small>أوراق تم تصحيحها</small>
                     </div>
-                </section>
-
-                <!-- Tab: History -->
-                <section id="view-history" class="hidden space-y-4 pb-20"></section>
+                    <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 10px;">
+                        <h3 id="avg-global">0%</h3>
+                        <small>المعدل العام</small>
+                    </div>
+                </div>
+                <button class="btn" onclick="navTo('view-camera')">
+                    📸 بدء التصحيح
+                </button>
             </div>
-        </main>
-    </div>
 
-    <!-- Scanner Modal -->
-    <div id="scanner-modal" class="fixed inset-0 bg-black z-[100] hidden overflow-hidden">
-        <video id="video" class="w-full h-full object-cover" playsinline muted></video>
-        
-        <div id="f-tl" class="target-frame tf-tl"></div>
-        <div id="f-tr" class="target-frame tf-tr"></div>
-        <div id="f-bl" class="target-frame tf-bl"></div>
-        <div id="f-br" class="target-frame tf-br"></div>
+            <div class="card">
+                <h3>📜 تعليمات هامة للورقة</h3>
+                <ul style="padding-right: 20px; margin-top: 10px; font-size: 0.9rem; line-height: 1.8; color: var(--text-sec);">
+                    <li>يجب أن تكون الإجابات مكتوبة بشكل نصي واضح.</li>
+                    <li><strong>الصيغة المطلوبة:</strong> رقم السؤال، ثم نقطة، ثم الحرف (مثل: <b>1. A</b>).</li>
+                    <li>يفضل الطباعة أو الكتابة بخط كبير وأحرف منفصلة.</li>
+                    <li>قم بضبط "نموذج الإجابة" من الإعدادات قبل البدء.</li>
+                </ul>
+            </div>
+        </section>
 
-        <div class="absolute bottom-12 inset-x-0 flex flex-col items-center gap-6 z-[110]">
-            <div id="status-msg" class="bg-black/80 backdrop-blur-md border border-white/10 text-white px-8 py-4 rounded-full text-xs font-black tracking-widest uppercase shadow-2xl">Align corners inside boxes</div>
-            <button onclick="stopScanner()" class="w-16 h-16 bg-red-600 rounded-full text-white shadow-2xl"><i class="fa-solid fa-x"></i></button>
-        </div>
-        <canvas id="proc-canvas" class="hidden"></canvas>
-    </div>
+        <!-- View 2: Camera & Upload -->
+        <section id="view-camera">
+            <div class="card">
+                <h2>التقاط صورة الورقة</h2>
+                <div class="camera-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                    <div class="scan-overlay"></div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn" id="captureBtn">التقاط 📸</button>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">رفع 📂</button>
+                </div>
+            </div>
+        </section>
 
-    <!-- Result Popup -->
-    <div id="res-popup" class="fixed inset-0 bg-slate-900/95 z-[200] hidden flex items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-white rounded-[50px] p-10 max-w-lg w-full text-center shadow-2xl">
-            <h3 class="font-black text-2xl text-slate-400 uppercase tracking-widest">Grading Result</h3>
-            <div id="res-score" class="text-8xl font-black text-blue-600 my-6 italic">0 / 0</div>
+        <!-- View 3: Single Result -->
+        <section id="view-result">
+            <div class="card" style="text-align: center;">
+                <h2>نتيجة الطالب</h2>
+                <div class="score-circle" id="result-circle">
+                    <span class="score-text" id="result-score">0%</span>
+                </div>
+                <h3 id="result-eval" style="color: var(--primary);">ممتاز</h3>
+            </div>
+
+            <div class="card">
+                <h3>تفاصيل الإجابات</h3>
+                <div id="answers-list" style="margin-top: 15px;">
+                    <!-- List generated via JS -->
+                </div>
+            </div>
+
+            <div class="card">
+                <button class="btn" onclick="saveAndNew()">حفظ وتصحيح جديد</button>
+            </div>
+        </section>
+
+        <!-- View 4: Dashboard -->
+        <section id="view-dashboard">
+            <div class="card">
+                <h2>📊 الإحصائيات العامة</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                    <div style="text-align:center;">
+                        <span style="color:var(--text-sec)">أعلى نقطة</span><br>
+                        <strong id="stat-max" style="color: var(--success); font-size:1.2rem">-</strong>
+                    </div>
+                    <div style="text-align:center;">
+                        <span style="color:var(--text-sec)">أدنى نقطة</span><br>
+                        <strong id="stat-min" style="color: var(--danger); font-size:1.2rem">-</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>توزيع الدرجات</h3>
+                <canvas id="barChart" height="200" style="width:100%; margin-top:10px;"></canvas>
+            </div>
             
-            <div class="grid grid-cols-2 gap-4 mb-8">
-                <div class="bg-slate-50 p-4 rounded-3xl border border-slate-100">
-                    <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Student Name Area</p>
-                    <img id="res-name-img" class="h-16 mx-auto rounded-lg shadow-sm bg-white">
-                </div>
-                <div class="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col items-center justify-center">
-                    <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Full Scan View</p>
-                    <button onclick="viewFullGraded()" class="text-blue-600 font-black text-sm"><i class="fa-solid fa-file-invoice"></i> View Graded</button>
-                </div>
+            <div class="card">
+                <h3>سجل الطلاب</h3>
+                <div id="students-log" style="max-height: 200px; overflow-y: auto; margin-bottom:15px;"></div>
+                <button class="btn btn-danger" onclick="clearData()">حذف البيانات 🗑️</button>
             </div>
+        </section>
 
-            <div class="flex gap-4">
-                <button onclick="closeResult()" class="flex-1 bg-blue-600 text-white py-5 rounded-3xl font-black text-lg shadow-xl shadow-blue-100 transition-all active:scale-95 italic">NEXT SCAN <i class="fa-solid fa-arrow-right ml-2"></i></button>
+        <!-- View 5: Settings (UPDATED UI) -->
+        <section id="view-settings">
+            <div class="card">
+                <h2>⚙️ إعداد نموذج الإجابة</h2>
+                <p style="color: var(--text-sec); margin-bottom: 15px; font-size: 0.9rem;">
+                    حدد عدد الأسئلة، ثم اختر الإجابة الصحيحة والنقاط لكل سؤال.
+                </p>
+                
+                <!-- Controls -->
+                <div class="settings-control">
+                    <span>عدد الأسئلة:</span>
+                    <input type="number" id="q-count-input" value="5" min="1" max="50" class="form-input" style="width: 70px; text-align: center;">
+                    <button class="btn btn-outline" onclick="generateQuestionInputs()" style="width: auto; padding: 8px 15px; font-size: 0.9rem;">توليد القائمة</button>
+                </div>
+
+                <!-- Questions Container -->
+                <div id="questions-container" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                    <!-- JS will insert rows here -->
+                </div>
+
+                <button class="btn" onclick="saveSettingsUI()">💾 حفظ التعديلات</button>
             </div>
-        </div>
+        </section>
+
     </div>
 
-    <!-- Sheet Preview -->
-    <div id="preview-modal" class="fixed inset-0 bg-black/90 z-[250] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
-            <div class="p-6 border-b flex justify-between items-center">
-                <h3 class="font-black text-xl">Answer Sheet Preview</h3>
-                <button onclick="document.getElementById('preview-modal').classList.add('hidden')" class="w-10 h-10 bg-slate-100 rounded-full text-red-500"><i class="fa-solid fa-x"></i></button>
-            </div>
-            <div id="preview-container" class="flex-1 overflow-auto bg-slate-800 p-8 flex justify-center"></div>
-            <div class="p-6 border-t bg-slate-50 flex gap-4">
-                <button id="final-download-btn" class="flex-1 bg-blue-600 text-white py-5 rounded-2xl font-black shadow-lg">DOWNLOAD PNG</button>
-            </div>
-        </div>
-    </div>
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="navTo('view-home')">🏠</div>
+        <div class="nav-item" onclick="navTo('view-camera')">📸</div>
+        <div class="nav-item" onclick="navTo('view-dashboard')">📊</div>
+        <div class="nav-item" onclick="navTo('view-settings')">⚙️</div>
+    </nav>
 
-    <div id="hidden-print-area" style="position:fixed; left:-9999px;"></div>
+    <!-- Loading Overlay -->
+    <div class="loader-overlay" id="loader">
+        <div class="spinner"></div>
+        <h3 id="loader-text">جاري المعالجة...</h3>
+    </div>
 
     <script>
-        let db = {
-            exams: JSON.parse(localStorage.getItem('sm_zip_exams') || '[]'),
-            results: JSON.parse(localStorage.getItem('sm_zip_results') || '[]')
+        // --- State Management ---
+        const state = {
+            currentView: 'view-home',
+            students: [],
+            // النموذج الافتراضي (سيتم تحديثه من الإعدادات)
+            answerKey: [
+                { id: 1, answer: 'A', points: 2 },
+                { id: 2, answer: 'B', points: 2 },
+                { id: 3, answer: 'C', points: 2 },
+                { id: 4, answer: 'D', points: 2 },
+                { id: 5, answer: 'A', points: 2 }
+            ],
+            currentResult: null
         };
-        let isCvReady = false, scanActive = false, activeExam = null, stableFrames = 0;
-        const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
-        function onOpenCvReady() {
-            isCvReady = true;
-            document.getElementById('cv-status').innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i> AI Vision Ready';
-            document.getElementById('cv-status').className = "text-[10px] font-bold text-emerald-500 flex items-center gap-2";
+        // --- DOM Elements ---
+        const views = document.querySelectorAll('section');
+        const navItems = document.querySelectorAll('.nav-item');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const loader = document.getElementById('loader');
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            
+            // تهيئة واجهة الإعدادات بالبيانات المحفوظة
+            document.getElementById('q-count-input').value = state.answerKey.length || 5;
+            generateQuestionInputs();
+            
+            updateDashboard();
+            updateHomeStats();
+            
+            // Dark Mode Init
+            if(localStorage.getItem('theme') === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+            }
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                const isDark = document.body.getAttribute('data-theme') === 'dark';
+                document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+                localStorage.setItem('theme', isDark ? 'light' : 'dark');
+            });
+        });
+
+        // --- Navigation ---
+        function navTo(viewId) {
+            views.forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            const map = ['view-home', 'view-camera', 'view-dashboard', 'view-settings'];
+            navItems.forEach((n, i) => {
+                if(map[i] === viewId) n.classList.add('active');
+                else n.classList.remove('active');
+            });
+
+            if(viewId === 'view-camera') startCamera();
+            else stopCamera();
         }
 
-        function toggleSidebar(state) {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full', !state);
-            const overlay = document.getElementById('sidebar-overlay');
-            overlay.style.opacity = state ? "1" : "0";
-            overlay.style.pointerEvents = state ? "auto" : "none";
-        }
+        // --- Settings Logic (UPDATED) ---
+        function generateQuestionInputs() {
+            const count = parseInt(document.getElementById('q-count-input').value);
+            const container = document.getElementById('questions-container');
+            container.innerHTML = ''; 
 
-        function switchTab(tab) {
-            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-            document.getElementById('view-' + tab).classList.remove('hidden');
-            document.querySelectorAll('nav button').forEach(b => b.className = "w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-slate-400 hover:bg-slate-800 transition-all font-bold");
-            document.getElementById('btn-' + tab).className = "w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-blue-600 text-white font-bold";
-            if(tab === 'exams') renderExams();
-            if(tab === 'history') renderHistory();
-            if(tab === 'create' && !document.getElementById('edit-id').value) updateKeyGrid();
-            if(window.innerWidth < 768) toggleSidebar(false);
-        }
+            const oldKey = state.answerKey || [];
 
-        function updateKeyGrid() {
-            const q = parseInt(document.getElementById('in-q').value) || 0, o = parseInt(document.getElementById('in-o').value);
-            const grid = document.getElementById('key-container'); grid.innerHTML = '';
-            for(let i=0; i<q; i++) {
+            for (let i = 1; i <= count; i++) {
+                // محاولة جلب القيم القديمة إذا وجدت
+                const oldQ = oldKey.find(q => q.id === i) || { answer: 'A', points: 2 };
+
                 const row = document.createElement('div');
-                row.className = "p-4 bg-slate-800 rounded-2xl flex items-center justify-between gap-3 border border-slate-700";
+                row.className = 'settings-control';
                 row.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-black text-slate-500">${i+1}</span>
-                        <input type="number" step="0.25" value="1" class="q-weight w-12 h-9 bg-slate-700 border-none rounded-xl text-white text-center text-xs font-black" placeholder="Pts">
+                    <strong style="width: 25px;">${i}</strong>
+                    <div style="flex: 1;">
+                        <select id="ans-${i}" class="form-select" style="width:100%">
+                            <option value="A" ${oldQ.answer === 'A' ? 'selected' : ''}>A</option>
+                            <option value="B" ${oldQ.answer === 'B' ? 'selected' : ''}>B</option>
+                            <option value="C" ${oldQ.answer === 'C' ? 'selected' : ''}>C</option>
+                            <option value="D" ${oldQ.answer === 'D' ? 'selected' : ''}>D</option>
+                        </select>
                     </div>
-                    <div class="flex gap-1.5 overflow-x-auto no-scrollbar" id="q-row-${i}"></div>
+                    <div style="width: 70px;">
+                        <input type="number" id="pts-${i}" value="${oldQ.points}" class="form-input" style="width:100%" placeholder="نقاط">
+                    </div>
                 `;
-                grid.appendChild(row);
-                for(let j=0; j<o; j++) {
-                    const b = document.createElement('div');
-                    b.className = `bubble-btn opt-${i}`;
-                    b.innerText = LETTERS[j];
-                    b.onclick = function() { this.classList.toggle('selected'); };
-                    row.querySelector(`#q-row-${i}`).appendChild(b);
+                container.appendChild(row);
+            }
+        }
+
+        function saveSettingsUI() {
+            const count = parseInt(document.getElementById('q-count-input').value);
+            const newKey = [];
+
+            for (let i = 1; i <= count; i++) {
+                const answer = document.getElementById(`ans-${i}`).value;
+                const points = parseInt(document.getElementById(`pts-${i}`).value) || 1;
+                newKey.push({ id: i, answer, points });
+            }
+
+            state.answerKey = newKey;
+            saveToStorage();
+            alert(`تم حفظ النموذج بنجاح!\nعدد الأسئلة: ${count}`);
+            navTo('view-home');
+        }
+
+        // --- Camera Logic ---
+        let stream = null;
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error(err);
+                // Fail silently or show button only (handled by UI)
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        document.getElementById('captureBtn').addEventListener('click', () => {
+            if (!video.videoWidth) {
+                alert("الكاميرا لا تعمل. استخدم زر رفع صورة.");
+                return;
+            }
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            processImage(canvas.toDataURL('image/png'));
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        processImage(evt.target.result);
+                    }
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- OCR Processing ---
+        async function processImage(dataUrl) {
+            document.getElementById('loader-text').innerText = "جاري قراءة الورقة...";
+            loader.style.display = 'flex';
+
+            try {
+                const worker = await Tesseract.createWorker('eng');
+                const ret = await worker.recognize(dataUrl);
+                await worker.terminate();
+
+                const text = ret.data.text;
+                console.log("OCR Result:", text);
+
+                let extracted = parseAnswers(text);
+                
+                // --- Fallback / Simulation Logic ---
+                // إذا لم نجد عدداً كافياً من الإجابات (بسبب جودة الكاميرا أو الخط)
+                // نقوم بمحاكاة النتيجة لتجربة التطبيق (كما طُلب في الـ Prompt)
+                if (Object.keys(extracted).length < state.answerKey.length * 0.5) {
+                    alert("تنبيه: النصوص غير واضحة تماماً للكاميرا. سيتم استخدام وضع المحاكاة للعرض.");
+                    extracted = simulateAnswers();
                 }
+
+                const result = gradeExam(extracted);
+                state.currentResult = result;
+                renderResult(result);
+                navTo('view-result');
+
+            } catch (err) {
+                alert("حدث خطأ في المعالجة: " + err.message);
+            } finally {
+                loader.style.display = 'none';
             }
         }
 
-        function saveExam() {
-            const name = document.getElementById('in-name').value;
-            if(!name) return alert("Exam name is required");
-            const qCount = parseInt(document.getElementById('in-q').value);
-            const editId = document.getElementById('edit-id').value;
+        function parseAnswers(text) {
+            const answers = {};
+            // البحث عن نمط: "1. A" أو "1 A" أو "1) A"
+            const lines = text.split('\n');
+            const regex = /(\d+)[\.\)\s]+([A-Da-d])/; 
             
-            let key = [];
-            const weights = document.querySelectorAll('.q-weight');
-            for(let i=0; i<qCount; i++) {
-                let ans = [];
-                document.querySelectorAll(`.opt-${i}`).forEach((b, idx) => { if(b.classList.contains('selected')) ans.push(idx); });
-                key.push({ ans, weight: parseFloat(weights[i].value || 1) });
-            }
-
-            const examData = { 
-                id: editId ? parseInt(editId) : Date.now(), 
-                name, level: document.getElementById('in-level').value, 
-                qCount, oCount: parseInt(document.getElementById('in-o').value), 
-                key, date: new Date().toLocaleDateString() 
-            };
-
-            if(editId) {
-                db.exams = db.exams.map(e => e.id === examData.id ? examData : e);
-            } else {
-                db.exams.push(examData);
-            }
-
-            localStorage.setItem('sm_zip_exams', JSON.stringify(db.exams));
-            document.getElementById('edit-id').value = '';
-            switchTab('exams');
+            lines.forEach(line => {
+                const match = line.match(regex);
+                if(match) {
+                    const num = parseInt(match[1]);
+                    const char = match[2].toUpperCase();
+                    // تأكد أن رقم السؤال موجود في النموذج
+                    if(num <= state.answerKey.length) {
+                        answers[num] = char;
+                    }
+                }
+            });
+            return answers;
         }
 
-        function editExam(id) {
-            const ex = db.exams.find(e => e.id === id);
-            switchTab('create');
-            document.getElementById('edit-id').value = ex.id;
-            document.getElementById('in-name').value = ex.name;
-            document.getElementById('in-level').value = ex.level;
-            document.getElementById('in-q').value = ex.qCount;
-            document.getElementById('in-o').value = ex.oCount;
-            updateKeyGrid();
-            
-            const rows = document.querySelectorAll('#key-container > div');
-            ex.key.forEach((k, i) => {
-                rows[i].querySelector('.q-weight').value = k.weight;
-                k.ans.forEach(ansIdx => {
-                    rows[i].querySelectorAll('.bubble-btn')[ansIdx].classList.add('selected');
+        function simulateAnswers() {
+            const mock = {};
+            state.answerKey.forEach(q => {
+                // احتمال 70% أن تكون الإجابة صحيحة (لأغراض العرض)
+                const isCorrect = Math.random() > 0.3;
+                mock[q.id] = isCorrect ? q.answer : ['A','B','C','D'][Math.floor(Math.random()*4)];
+            });
+            return mock;
+        }
+
+        // --- Grading Logic ---
+        function gradeExam(studentAnswers) {
+            let totalScore = 0;
+            let maxScore = 0;
+            const details = [];
+
+            state.answerKey.forEach(q => {
+                maxScore += q.points;
+                const sAns = studentAnswers[q.id] || '-';
+                const isCorrect = sAns === q.answer;
+                const points = isCorrect ? q.points : 0;
+                totalScore += points;
+
+                // Mastery Level (A/D here since binary points, expandable later)
+                let mastery = 'D';
+                if(points === q.points) mastery = 'A'; // 100%
+                
+                details.push({
+                    id: q.id,
+                    correct: q.answer,
+                    student: sAns,
+                    pts: points,
+                    mastery,
+                    isCorrect
                 });
             });
-            document.getElementById('save-btn').innerText = "Update Exam Details";
-        }
 
-        // --- SCANNER LOGIC (ZIPGRADE CLONE ENGINE) ---
-        async function startScanner(id) {
-            if(!isCvReady) return alert("Engine is loading...");
-            activeExam = db.exams.find(e => e.id === id);
-            scanActive = true; stableFrames = 0;
-            document.getElementById('scanner-modal').classList.remove('hidden');
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', focusMode: 'continuous', width: 1280 } });
-            document.getElementById('video').srcObject = stream;
-            document.getElementById('video').play();
-            requestAnimationFrame(scanLoop);
-        }
+            const pct = Math.round((totalScore / maxScore) * 100) || 0;
+            let evalText = "يحتاج تحسين";
+            if(pct >= 90) evalText = "ممتـــــاز 🌟";
+            else if(pct >= 75) evalText = "جيــد جداً 👍";
+            else if(pct >= 50) evalText = "مقبـــول 👌";
 
-        function stopScanner() {
-            scanActive = false;
-            const stream = document.getElementById('video').srcObject;
-            if(stream) stream.getTracks().forEach(t => t.stop());
-            document.getElementById('scanner-modal').classList.add('hidden');
-        }
-
-        function scanLoop() {
-            if(!scanActive) return;
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('proc-canvas');
-            const ctx = canvas.getContext('2d');
-
-            if(video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.width = 640; canvas.height = 480;
-                ctx.drawImage(video, 0, 0, 640, 480);
-                
-                let src = cv.imread(canvas);
-                let gray = new cv.Mat();
-                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-                cv.adaptiveThreshold(gray, gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 15, 5);
-
-                let contours = new cv.MatVector();
-                let hierarchy = new cv.Mat();
-                cv.findContours(gray, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-                let anchors = [];
-                for(let i=0; i<contours.size(); i++) {
-                    let cnt = contours.get(i);
-                    let area = cv.contourArea(cnt);
-                    if(area > 400 && area < 4000) {
-                        let rect = cv.boundingRect(cnt);
-                        let ratio = rect.width / rect.height;
-                        if(ratio > 0.8 && ratio < 1.2) anchors.push(rect);
-                    }
-                }
-
-                if(anchors.length >= 4) {
-                    anchors.sort((a, b) => (b.width * b.height) - (a.width * a.height));
-                    let pts = anchors.slice(0, 4).map(r => ({x: r.x + r.width/2, y: r.y + r.height/2}));
-                    pts.sort((a, b) => a.y - b.y);
-                    let top = pts.slice(0, 2).sort((a, b) => a.x - b.x);
-                    let bottom = pts.slice(2, 4).sort((a, b) => a.x - b.x);
-                    let sorted = [top[0], top[1], bottom[0], bottom[1]];
-
-                    let sheetWidth = top[1].x - top[0].x;
-                    if(sheetWidth > 200) {
-                        stableFrames++;
-                        updateFramesUI(true);
-                        if(stableFrames > 25) { 
-                            performCorrection(src, sorted);
-                            scanActive = false;
-                        } else {
-                            requestAnimationFrame(scanLoop);
-                        }
-                    } else {
-                        stableFrames = 0;
-                        updateFramesUI(false);
-                        requestAnimationFrame(scanLoop);
-                    }
-                } else {
-                    stableFrames = 0;
-                    updateFramesUI(false);
-                    requestAnimationFrame(scanLoop);
-                }
-
-                src.delete(); gray.delete(); contours.delete(); hierarchy.delete();
-            } else {
-                requestAnimationFrame(scanLoop);
-            }
-        }
-
-        function updateFramesUI(detected) {
-            const msg = document.getElementById('status-msg');
-            msg.innerText = detected ? "HOLD STEADY... GRADING" : "ALIGN CORNERS INSIDE BOXES";
-            msg.className = detected ? "bg-emerald-600 text-white px-8 py-4 rounded-full text-xs font-black shadow-2xl" : "bg-black/80 text-white px-8 py-4 rounded-full text-xs font-black shadow-2xl";
-            document.querySelectorAll('.target-frame').forEach(f => f.classList.toggle('detected', detected));
-        }
-
-        function performCorrection(src, pts) {
-            let dstSize = new cv.Size(600, 850);
-            let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 600, 0, 0, 850, 600, 850]);
-            let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y]);
-            
-            let M = cv.getPerspectiveTransform(srcTri, dstTri);
-            let warped = new cv.Mat();
-            cv.warpPerspective(src, warped, M, dstSize);
-
-            // Capture Student Header
-            let nameCanvas = document.createElement('canvas');
-            let nameRoi = warped.roi(new cv.Rect(80, 100, 440, 70));
-            cv.imshow(nameCanvas, nameRoi);
-
-            let gray = new cv.Mat();
-            cv.cvtColor(warped, gray, cv.COLOR_RGBA2GRAY);
-            cv.adaptiveThreshold(gray, gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 15, 6);
-
-            let score = 0, maxScore = 0;
-            const startY = 240, rowH = 26, colW = 34; // Expanded bubble spacing
-
-            activeExam.key.forEach((k, qIdx) => {
-                let chosen = [];
-                maxScore += k.weight;
-                
-                // Simplified column logic for 2-column display
-                let xOffset = (qIdx < 20) ? 90 : 340; 
-                let actualQIdx = (qIdx < 20) ? qIdx : qIdx - 20;
-                let by = startY + (actualQIdx * rowH);
-
-                for(let oIdx = 0; oIdx < activeExam.oCount; oIdx++) {
-                    let bx = xOffset + (oIdx * colW);
-                    let roi = gray.roi(new cv.Rect(bx-10, by-10, 20, 20)); // Larger sampling area
-                    if(cv.countNonZero(roi) > 130) chosen.push(oIdx);
-                    roi.delete();
-                }
-
-                if(JSON.stringify(chosen) === JSON.stringify(k.ans)) score += k.weight;
-
-                // Mark visuals on warped image
-                k.ans.forEach(idx => cv.circle(warped, new cv.Point(xOffset + (idx * colW), by), 12, new cv.Scalar(0, 255, 0, 255), 3));
-            });
-
-            const gradedCanvas = document.createElement('canvas');
-            cv.imshow(gradedCanvas, warped);
-
-            const res = { 
-                id: Date.now(), examName: activeExam.name, score, total: maxScore, 
-                date: new Date().toLocaleString(), nameImg: nameCanvas.toDataURL(), gradedImg: gradedCanvas.toDataURL()
+            return {
+                id: Date.now(),
+                totalScore,
+                maxScore,
+                pct,
+                evalText,
+                details,
+                date: new Date().toLocaleDateString('ar-EG')
             };
-            db.results.push(res);
-            localStorage.setItem('sm_zip_results', JSON.stringify(db.results));
-
-            document.getElementById('res-score').innerText = `${score} / ${maxScore}`;
-            document.getElementById('res-name-img').src = res.nameImg;
-            window.latestGraded = res.gradedImg;
-            document.getElementById('res-popup').classList.remove('hidden');
-            
-            srcTri.delete(); dstTri.delete(); M.delete(); warped.delete(); gray.delete(); nameRoi.delete();
-            stopScanner();
         }
 
-        function viewFullGraded() {
-            const win = window.open();
-            win.document.write(`<img src="${window.latestGraded}" style="width:100%">`);
-        }
+        // --- Render UI ---
+        function renderResult(res) {
+            const circle = document.getElementById('result-circle');
+            document.getElementById('result-score').innerText = res.pct + '%';
+            document.getElementById('result-eval').innerText = res.evalText;
 
-        function closeResult() {
-            document.getElementById('res-popup').classList.add('hidden');
-            startScanner(activeExam.id);
-        }
+            circle.style.setProperty('--percent', res.pct + '%');
+            circle.style.setProperty('--success', res.pct >= 50 ? '#10b981' : '#ef4444');
 
-        // --- SHEET RENDER (ZIPGRADE LOOKALIKE) ---
-        function renderExams() {
-            const container = document.getElementById('view-exams'); container.innerHTML = '';
-            db.exams.forEach(ex => {
-                const d = document.createElement('div');
-                d.className = "bg-white p-6 rounded-[40px] border shadow-sm space-y-4 hover:shadow-xl transition-all";
-                d.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black text-xl">${ex.qCount}</div>
-                        <div class="flex gap-2">
-                            <button onclick="editExam(${ex.id})" class="text-slate-300 hover:text-blue-600"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteExam(${ex.id})" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>
-                        </div>
+            const list = document.getElementById('answers-list');
+            list.innerHTML = '';
+            res.details.forEach(d => {
+                const div = document.createElement('div');
+                div.style.cssText = `display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);`;
+                div.innerHTML = `
+                    <div>
+                        <strong>س ${d.id}</strong> 
+                        <span style="color:var(--text-sec); margin-right:5px;">(إجابتك: ${d.student})</span>
                     </div>
-                    <div><h3 class="font-black text-slate-800 text-lg uppercase tracking-tight">${ex.name}</h3><p class="text-[10px] text-slate-400 font-bold">${ex.level}</p></div>
-                    <button onclick="startScanner(${ex.id})" class="w-full bg-blue-600 text-white py-5 rounded-3xl font-black shadow-lg italic">START GRADING</button>
-                    <button onclick="previewSheet(${ex.id})" class="w-full bg-slate-50 text-slate-700 py-3 rounded-2xl font-black text-[10px] uppercase">Preview Sheet</button>
+                    <div>
+                        ${d.isCorrect ? '✅' : '❌'} 
+                        <span class="grade-badge grade-${d.mastery}">${d.mastery}</span>
+                    </div>
                 `;
-                container.appendChild(d);
+                list.appendChild(div);
             });
         }
 
-        async function previewSheet(id) {
-            const ex = db.exams.find(e => e.id === id);
-            const container = document.getElementById('hidden-print-area');
-            container.innerHTML = '';
-            
-            const page = document.createElement('div');
-            page.className = 'sheet-page';
-            page.innerHTML = `
-                <div class="black-corner c-tl"></div><div class="black-corner c-tr"></div>
-                <div class="black-corner c-bl"></div><div class="black-corner c-br"></div>
-                <div style="margin:25mm 10mm 5mm 10mm; display:flex; justify-content:space-between; align-items:start; border-bottom:4px solid #000; padding-bottom:15px;">
-                    <div><h1 style="font-size:32px; font-weight:900; margin:0; font-family:sans-serif;">${ex.name}</h1><p style="font-size:14px; font-weight:bold; color:#444;">CLASS: ${ex.level}</p></div>
-                    <div id="qr"></div>
-                </div>
-                <table style="width:calc(100% - 20mm); margin:10mm; border:3px solid #000; border-collapse:collapse;">
-                    <tr><td style="border:3px solid #000; padding:15px; font-weight:900; font-size:18px; width:65%;">NAME: ....................................................</td>
-                        <td style="border:3px solid #000; padding:15px; font-weight:900; font-size:18px;">DATE: ............</td></tr>
-                </table>
-                <div id="bubbles-grid" style="margin:10mm; display:flex; gap:60px;"></div>
-            `;
-            
-            const grid = page.querySelector('#bubbles-grid');
-            const itemsPerCol = 20;
-            const colsCount = Math.ceil(ex.qCount / itemsPerCol);
-            for(let c=0; c < colsCount; c++) {
-                const col = document.createElement('div');
-                col.style.width = "45%";
-                const header = document.createElement('div');
-                header.style.cssText = "display:flex; gap:10px; margin-bottom:8px; padding-left:35px; font-weight:900; font-size:14px;";
-                header.innerHTML = LETTERS.slice(0, ex.oCount).map(l => `<span style="width:24px; text-align:center;">${l}</span>`).join('');
-                col.appendChild(header);
-
-                for(let i = c*itemsPerCol; i < Math.min((c+1)*itemsPerCol, ex.qCount); i++) {
-                    const row = document.createElement('div');
-                    row.style.cssText = "display:flex; gap:10px; align-items:center; margin-bottom:10px;";
-                    let bubbles = '';
-                    for(let j=0; j<ex.oCount; j++) {
-                        bubbles += `<div style="width:24px; height:24px; border:2.5px solid #000; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:900; color:#ccc;">${LETTERS[j]}</div>`;
-                    }
-                    row.innerHTML = `<div style="width:30px; font-size:16px; font-weight:900; text-align:right;">${i+1}</div>${bubbles}`;
-                    col.appendChild(row);
-                }
-                grid.appendChild(col);
+        // --- Data & Storage ---
+        function saveAndNew() {
+            if(state.currentResult) {
+                state.students.push(state.currentResult);
+                saveToStorage();
+                updateDashboard();
+                updateHomeStats();
             }
-            container.appendChild(page);
-            new QRCode(page.querySelector('#qr'), { text: `Z-${ex.id}`, width: 80, height: 80 });
-            
-            setTimeout(async () => {
-                const canvas = await html2canvas(page, { scale: 2 });
-                const previewImg = document.createElement('img');
-                previewImg.src = canvas.toDataURL();
-                previewImg.className = "max-w-full shadow-2xl rounded-sm";
-                document.getElementById('preview-container').innerHTML = '';
-                document.getElementById('preview-container').appendChild(previewImg);
-                document.getElementById('preview-modal').classList.remove('hidden');
-                document.getElementById('final-download-btn').onclick = () => {
-                    const link = document.createElement('a'); link.download = `${ex.name}_Sheet.png`; link.href = canvas.toDataURL(); link.click();
-                };
-            }, 600);
+            state.currentResult = null;
+            navTo('view-camera');
         }
 
-        function renderHistory() {
-            const container = document.getElementById('view-history'); 
-            container.innerHTML = '<h3 class="text-2xl font-black mb-6 italic">GRADING HISTORY</h3>';
-            db.results.slice().reverse().forEach(r => {
-                const d = document.createElement('div');
-                d.className = "bg-white p-6 rounded-[35px] border border-slate-100 flex justify-between items-center shadow-sm";
-                d.innerHTML = `
-                    <div class="flex items-center gap-5"><img src="${r.nameImg}" class="h-12 border-2 border-slate-100 rounded-xl bg-slate-50">
-                    <div><p class="font-black text-slate-800 uppercase tracking-tighter">${r.examName}</p><p class="text-[9px] text-slate-400 font-bold uppercase">${r.date}</p></div></div>
-                    <div class="text-3xl font-black text-blue-600 italic underline decoration-blue-200 decoration-4 underline-offset-4">${r.score} <span class="text-xs text-slate-300">/ ${r.total}</span></div>
+        function updateDashboard() {
+            if(!state.students.length) return;
+            
+            const scores = state.students.map(s => s.pct);
+            const max = Math.max(...scores);
+            const min = Math.min(...scores);
+            
+            document.getElementById('stat-max').innerText = max + '%';
+            document.getElementById('stat-min').innerText = min + '%';
+            document.getElementById('total-scanned').innerText = state.students.length;
+            
+            // Draw Chart
+            drawChart(scores);
+
+            // Log
+            const logs = document.getElementById('students-log');
+            logs.innerHTML = '';
+            state.students.slice().reverse().forEach((s, i) => {
+                logs.innerHTML += `
+                    <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+                        <span>طالب #${state.students.length - i}</span>
+                        <strong style="color:${s.pct>=50?'green':'red'}">${s.pct}%</strong>
+                    </div>
                 `;
-                container.appendChild(d);
             });
         }
 
-        function deleteExam(id) { if(confirm("Permanently delete this exam?")) { db.exams = db.exams.filter(e => e.id !== id); localStorage.setItem('sm_zip_exams', JSON.stringify(db.exams)); renderExams(); } }
+        function updateHomeStats() {
+            document.getElementById('total-scanned').innerText = state.students.length;
+            if (state.students.length > 0) {
+                const sum = state.students.reduce((a, b) => a + b.pct, 0);
+                document.getElementById('avg-global').innerText = Math.round(sum / state.students.length) + '%';
+            }
+        }
 
-        window.onload = () => switchTab('exams');
+        function drawChart(scores) {
+            const cvs = document.getElementById('barChart');
+            const c = cvs.getContext('2d');
+            c.clearRect(0,0,cvs.width,cvs.height);
+            
+            // Buckets: <50, 50-74, 75-89, 90-100
+            const buckets = [0,0,0,0]; 
+            scores.forEach(s => {
+                if(s < 50) buckets[0]++;
+                else if(s < 75) buckets[1]++;
+                else if(s < 90) buckets[2]++;
+                else buckets[3]++;
+            });
+
+            const maxVal = Math.max(...buckets, 1);
+            const barW = (cvs.width / 4) - 20;
+            const colors = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'];
+            const labels = ['ضعيف', 'مقبول', 'جيد', 'ممتاز'];
+
+            buckets.forEach((val, i) => {
+                const h = (val / maxVal) * (cvs.height - 40);
+                const x = 10 + i * (cvs.width / 4);
+                const y = cvs.height - h - 20;
+
+                c.fillStyle = colors[i];
+                c.fillRect(x+10, y, barW, h);
+                
+                c.fillStyle = '#555';
+                c.font = "12px Tajawal";
+                c.fillText(val, x + barW/2 + 5, y - 5);
+                c.fillText(labels[i], x + 10, cvs.height - 5);
+            });
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('smartGradeDB', JSON.stringify({
+                students: state.students,
+                answerKey: state.answerKey
+            }));
+        }
+
+        function loadFromStorage() {
+            const d = localStorage.getItem('smartGradeDB');
+            if(d) {
+                const p = JSON.parse(d);
+                state.students = p.students || [];
+                state.answerKey = p.answerKey || state.answerKey;
+            }
+        }
+
+        function clearData() {
+            if(confirm("مسح جميع النتائج؟")) {
+                state.students = [];
+                saveToStorage();
+                updateDashboard();
+                updateHomeStats();
+            }
+        }
     </script>
 </body>
 </html>
