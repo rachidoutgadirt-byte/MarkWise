@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SmartGrade Pro | المصحح الآلي الذكي</title>
+    <title>SmartGrade Pro | المصحح الآلي</title>
     
     <!-- خطوط جوجل العربية -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
     
-    <!-- مكتبة Tesseract.js للتعرف على النصوص -->
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
+    <!-- مكتبة Tesseract.js (النسخة 4 المستقرة) -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@4.0.3/dist/tesseract.min.js'></script>
 
     <style>
         :root {
@@ -20,7 +20,7 @@
             --accent: #00d2ff;
             --dark: #1f2937;
             --light: #f3f4f6;
-            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-bg: rgba(255, 255, 255, 0.85);
             --glass-border: rgba(255, 255, 255, 0.5);
             --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
             --text-main: #1f2937;
@@ -34,7 +34,7 @@
         [data-theme="dark"] {
             --primary: #667eea;
             --secondary: #764ba2;
-            --glass-bg: rgba(30, 30, 30, 0.7);
+            --glass-bg: rgba(30, 30, 30, 0.8);
             --glass-border: rgba(255, 255, 255, 0.1);
             --text-main: #f3f4f6;
             --text-sec: #9ca3af;
@@ -58,11 +58,11 @@
             transition: background 0.5s ease;
         }
 
-        /* هيكل التطبيق */
+        /* حاوية التطبيق */
         .app-container {
             max-width: 800px;
             margin: 0 auto;
-            padding-bottom: 90px;
+            padding-bottom: 100px;
             min-height: 100vh;
         }
 
@@ -71,24 +71,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 15px 20px;
             position: sticky;
             top: 0;
             z-index: 100;
             background: var(--glass-bg);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--glass-border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
         .logo {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: 800;
             background: linear-gradient(to right, var(--primary), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         /* الأقسام */
@@ -102,7 +100,7 @@
             display: block;
         }
 
-        /* Cards & UI */
+        /* البطاقات UI */
         .card {
             background: var(--glass-bg);
             backdrop-filter: blur(12px);
@@ -114,17 +112,18 @@
             transition: transform 0.2s;
         }
 
+        /* الأزرار */
         .btn {
             background: linear-gradient(45deg, var(--primary), var(--secondary));
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 12px 20px;
             border-radius: 12px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
             width: 100%;
             display: flex;
             justify-content: center;
@@ -134,7 +133,7 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            opacity: 0.95;
         }
 
         .btn-outline {
@@ -148,15 +147,16 @@
             background: linear-gradient(45deg, #ff416c, #ff4b2b);
         }
 
-        /* الكاميرا */
+        /* منطقة الكاميرا */
         .camera-container {
             position: relative;
             width: 100%;
-            height: 400px;
+            height: 350px; /* ارتفاع مناسب للهاتف */
             background: #000;
             border-radius: 20px;
             overflow: hidden;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         }
 
         video, canvas {
@@ -167,110 +167,125 @@
 
         .scan-overlay {
             position: absolute;
-            top: 20%; left: 10%; width: 80%; height: 60%;
+            top: 15%; left: 10%; width: 80%; height: 70%;
             border: 2px dashed rgba(255,255,255,0.8);
-            border-radius: 10px;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+            border-radius: 15px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+            pointer-events: none;
         }
 
-        /* التحميل */
+        .scan-text {
+            position: absolute;
+            top: 5%; left: 0; width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 0.9rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        /* شاشة التحميل */
         .loader-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.9);
             z-index: 2000;
             display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             color: white;
+            text-align: center;
+            padding: 20px;
         }
 
         .spinner {
             width: 50px; height: 50px;
-            border: 5px solid rgba(255,255,255,0.3);
+            border: 5px solid rgba(255,255,255,0.2);
             border-top: 5px solid var(--accent);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
 
-        /* النتائج */
+        /* عرض النتائج */
         .score-circle {
-            width: 120px; height: 120px;
+            width: 140px; height: 140px;
             border-radius: 50%;
-            background: conic-gradient(var(--success) var(--percent, 0%), transparent 0);
+            background: conic-gradient(var(--success) var(--percent, 0%), rgba(0,0,0,0.1) 0);
             display: flex; justify-content: center; align-items: center;
             margin: 0 auto 20px;
             position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .score-circle::before {
             content: ''; position: absolute;
-            width: 100px; height: 100px;
+            width: 115px; height: 115px;
             background: var(--glass-bg);
             border-radius: 50%;
         }
 
         .score-text {
-            position: absolute; font-size: 2rem; font-weight: 800; z-index: 2;
+            position: absolute; font-size: 2.5rem; font-weight: 800; z-index: 2;
         }
 
         .grade-badge {
-            padding: 4px 10px; border-radius: 15px; color: white; font-weight: bold; font-size: 0.8rem;
+            padding: 4px 12px; border-radius: 20px; 
+            color: white; font-weight: bold; font-size: 0.85rem;
+            min-width: 30px; text-align: center;
         }
         .grade-A { background: var(--success); }
         .grade-B { background: #3b82f6; }
         .grade-C { background: var(--warning); }
         .grade-D { background: var(--danger); }
 
-        /* القائمة السفلية */
+        /* شريط التنقل السفلي */
         .bottom-nav {
             position: fixed; bottom: 20px; left: 50%;
             transform: translateX(-50%);
             width: 90%; max-width: 400px;
             background: var(--glass-bg);
-            backdrop-filter: blur(15px);
+            backdrop-filter: blur(20px);
             border-radius: 50px;
-            display: flex; justify-content: space-around;
-            padding: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: flex; justify-content: space-between;
+            padding: 10px 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
             z-index: 1000;
             border: 1px solid var(--glass-border);
         }
 
         .nav-item {
-            font-size: 1.5rem; color: var(--text-sec);
+            font-size: 1.6rem; color: var(--text-sec);
             cursor: pointer; transition: 0.3s; position: relative;
             padding: 5px;
+            display: flex; flex-direction: column; align-items: center;
         }
 
         .nav-item.active {
             color: var(--primary); transform: translateY(-5px);
         }
 
-        /* Inputs for Settings */
+        /* عناصر الإعدادات */
         .settings-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--glass-bg);
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 10px;
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0,0,0,0.03);
+            margin-bottom: 10px; padding: 10px;
+            border-radius: 12px;
             border: 1px solid var(--glass-border);
         }
         
         .form-input, .form-select {
-            padding: 8px;
+            padding: 8px 12px;
             border-radius: 8px;
-            border: 1px solid #ccc;
-            background: var(--light);
+            border: 1px solid #ddd;
+            background: #fff;
             color: var(--text-main);
             outline: none;
+            font-size: 1rem;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -280,136 +295,139 @@
         <!-- Header -->
         <header>
             <div class="logo">
-                SmartGrade Pro
+                ✨ SmartGrade Pro
             </div>
-            <button id="themeToggle" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">🌙</button>
+            <button id="themeToggle" style="background:none; border:none; font-size:1.4rem; cursor:pointer;" title="تغيير المظهر">🌙</button>
         </header>
 
-        <!-- View 1: Home -->
+        <!-- 1. الرئيسية -->
         <section id="view-home" class="active">
             <div class="card" style="text-align: center; margin-top: 20px;">
-                <h1 style="font-size: 1.8rem; margin-bottom: 10px;">المصحح الآلي الذكي</h1>
-                <p style="color: var(--text-sec); margin-bottom: 20px;">تصحيح فوري لأوراق الامتحانات باستخدام الكاميرا.</p>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-                    <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 10px;">
-                        <h3 id="total-scanned">0</h3>
-                        <small>أوراق تم تصحيحها</small>
+                <h1 style="font-size: 1.8rem; margin-bottom: 10px;">المصحح الآلي</h1>
+                <p style="color: var(--text-sec); margin-bottom: 25px;">تصحيح أوراق الامتحانات بسرعة ودقة باستخدام الكاميرا.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                    <div style="background: rgba(0,0,0,0.04); padding: 15px; border-radius: 15px;">
+                        <h3 id="total-scanned" style="color:var(--primary); font-size:1.8rem">0</h3>
+                        <small style="color:var(--text-sec)">عدد الأوراق</small>
                     </div>
-                    <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 10px;">
-                        <h3 id="avg-global">0%</h3>
-                        <small>المعدل العام</small>
+                    <div style="background: rgba(0,0,0,0.04); padding: 15px; border-radius: 15px;">
+                        <h3 id="avg-global" style="color:var(--accent); font-size:1.8rem">0%</h3>
+                        <small style="color:var(--text-sec)">المعدل العام</small>
                     </div>
                 </div>
+
                 <button class="btn" onclick="navTo('view-camera')">
-                    📸 بدء التصحيح
+                    📸 ابدأ التصحيح الآن
                 </button>
             </div>
 
             <div class="card">
-                <h3>📜 تعليمات هامة للورقة</h3>
-                <ul style="padding-right: 20px; margin-top: 10px; font-size: 0.9rem; line-height: 1.8; color: var(--text-sec);">
-                    <li>يجب أن تكون الإجابات مكتوبة بشكل نصي واضح.</li>
-                    <li><strong>الصيغة المطلوبة:</strong> رقم السؤال، ثم نقطة، ثم الحرف (مثل: <b>1. A</b>).</li>
-                    <li>يفضل الطباعة أو الكتابة بخط كبير وأحرف منفصلة.</li>
-                    <li>قم بضبط "نموذج الإجابة" من الإعدادات قبل البدء.</li>
+                <h3>💡 تعليمات هامة للورقة</h3>
+                <ul style="padding-right: 20px; margin-top: 15px; font-size: 0.95rem; line-height: 1.8; color: var(--text-sec);">
+                    <li>يجب أن تكون الإجابات نصية: <b>1. A</b></li>
+                    <li>تأكد من إضاءة الغرفة الجيدة.</li>
+                    <li>اجعل الورقة داخل المربع عند التصوير.</li>
+                    <li>يمكنك تعديل نموذج الإجابة من زر ⚙️ بالأسفل.</li>
                 </ul>
             </div>
         </section>
 
-        <!-- View 2: Camera & Upload -->
+        <!-- 2. الكاميرا -->
         <section id="view-camera">
             <div class="card">
-                <h2>التقاط صورة الورقة</h2>
+                <h2>التقاط صورة</h2>
                 <div class="camera-container">
+                    <div class="scan-text">ضع الإجابات داخل المربع</div>
                     <video id="video" autoplay playsinline></video>
                     <canvas id="canvas" style="display:none;"></canvas>
                     <div class="scan-overlay"></div>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn" id="captureBtn">التقاط 📸</button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn" id="captureBtn" style="flex: 2;">التقاط 📸</button>
                     <input type="file" id="fileInput" accept="image/*" style="display: none;">
-                    <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">رفع 📂</button>
+                    <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('fileInput').click()">رفع 📂</button>
                 </div>
             </div>
         </section>
 
-        <!-- View 3: Single Result -->
+        <!-- 3. النتائج -->
         <section id="view-result">
             <div class="card" style="text-align: center;">
                 <h2>نتيجة الطالب</h2>
                 <div class="score-circle" id="result-circle">
                     <span class="score-text" id="result-score">0%</span>
                 </div>
-                <h3 id="result-eval" style="color: var(--primary);">ممتاز</h3>
+                <h3 id="result-eval" style="color: var(--primary); margin-bottom: 10px;">-</h3>
             </div>
 
             <div class="card">
                 <h3>تفاصيل الإجابات</h3>
                 <div id="answers-list" style="margin-top: 15px;">
-                    <!-- List generated via JS -->
+                    <!-- سيتم توليد القائمة هنا -->
                 </div>
             </div>
 
-            <div class="card">
-                <button class="btn" onclick="saveAndNew()">حفظ وتصحيح جديد</button>
+            <div class="card" style="display: flex; gap: 10px; flex-direction: column;">
+                <button class="btn" onclick="saveAndNew()">حفظ وتصحيح ورقة أخرى</button>
             </div>
         </section>
 
-        <!-- View 4: Dashboard -->
+        <!-- 4. الإحصائيات -->
         <section id="view-dashboard">
             <div class="card">
-                <h2>📊 الإحصائيات العامة</h2>
+                <h2>📊 لوحة الإحصائيات</h2>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
-                    <div style="text-align:center;">
-                        <span style="color:var(--text-sec)">أعلى نقطة</span><br>
-                        <strong id="stat-max" style="color: var(--success); font-size:1.2rem">-</strong>
+                    <div style="text-align:center; padding:10px; background:rgba(0,0,0,0.03); border-radius:10px;">
+                        <span style="color:var(--text-sec); font-size:0.9rem">أعلى درجة</span><br>
+                        <strong id="stat-max" style="color: var(--success); font-size:1.4rem">-</strong>
                     </div>
-                    <div style="text-align:center;">
-                        <span style="color:var(--text-sec)">أدنى نقطة</span><br>
-                        <strong id="stat-min" style="color: var(--danger); font-size:1.2rem">-</strong>
+                    <div style="text-align:center; padding:10px; background:rgba(0,0,0,0.03); border-radius:10px;">
+                        <span style="color:var(--text-sec); font-size:0.9rem">أدنى درجة</span><br>
+                        <strong id="stat-min" style="color: var(--danger); font-size:1.4rem">-</strong>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h3>توزيع الدرجات</h3>
+                <h3>الرسم البياني</h3>
                 <canvas id="barChart" height="200" style="width:100%; margin-top:10px;"></canvas>
             </div>
             
             <div class="card">
-                <h3>سجل الطلاب</h3>
-                <div id="students-log" style="max-height: 200px; overflow-y: auto; margin-bottom:15px;"></div>
-                <button class="btn btn-danger" onclick="clearData()">حذف البيانات 🗑️</button>
+                <h3>سجل الطلاب المحفوظ</h3>
+                <div id="students-log" style="max-height: 250px; overflow-y: auto; margin-bottom:15px;"></div>
+                <button class="btn btn-danger" onclick="clearData()">حذف جميع البيانات 🗑️</button>
             </div>
         </section>
 
-        <!-- View 5: Settings (UPDATED UI) -->
+        <!-- 5. الإعدادات (واجهة سهلة) -->
         <section id="view-settings">
             <div class="card">
-                <h2>⚙️ إعداد نموذج الإجابة</h2>
+                <h2>⚙️ نموذج الإجابة</h2>
                 <p style="color: var(--text-sec); margin-bottom: 15px; font-size: 0.9rem;">
-                    حدد عدد الأسئلة، ثم اختر الإجابة الصحيحة والنقاط لكل سؤال.
+                    اضبط عدد الأسئلة والإجابات الصحيحة هنا.
                 </p>
                 
-                <!-- Controls -->
-                <div class="settings-control">
+                <!-- التحكم بالعدد -->
+                <div class="settings-control" style="background: var(--light);">
                     <span>عدد الأسئلة:</span>
                     <input type="number" id="q-count-input" value="5" min="1" max="50" class="form-input" style="width: 70px; text-align: center;">
-                    <button class="btn btn-outline" onclick="generateQuestionInputs()" style="width: auto; padding: 8px 15px; font-size: 0.9rem;">توليد القائمة</button>
+                    <button class="btn btn-outline" onclick="generateQuestionInputs()" style="width: auto; padding: 8px 15px; font-size: 0.9rem; margin-right:auto;">توليد</button>
                 </div>
 
-                <!-- Questions Container -->
-                <div id="questions-container" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
-                    <!-- JS will insert rows here -->
+                <!-- قائمة الأسئلة -->
+                <div id="questions-container" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px; padding: 5px;">
+                    <!-- سيتم ملؤها بالجافاسكريبت -->
                 </div>
 
-                <button class="btn" onclick="saveSettingsUI()">💾 حفظ التعديلات</button>
+                <button class="btn" onclick="saveSettingsUI()">💾 حفظ الإعدادات</button>
             </div>
         </section>
 
     </div>
 
-    <!-- Bottom Navigation -->
+    <!-- شريط التنقل -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="navTo('view-home')">🏠</div>
         <div class="nav-item" onclick="navTo('view-camera')">📸</div>
@@ -417,18 +435,19 @@
         <div class="nav-item" onclick="navTo('view-settings')">⚙️</div>
     </nav>
 
-    <!-- Loading Overlay -->
+    <!-- شاشة الانتظار -->
     <div class="loader-overlay" id="loader">
         <div class="spinner"></div>
         <h3 id="loader-text">جاري المعالجة...</h3>
+        <small style="margin-top:10px; opacity:0.7;">يرجى الانتظار قليلاً</small>
     </div>
 
     <script>
-        // --- State Management ---
+        // --- 1. إدارة الحالة (State Management) ---
         const state = {
             currentView: 'view-home',
             students: [],
-            // النموذج الافتراضي (سيتم تحديثه من الإعدادات)
+            // نموذج افتراضي
             answerKey: [
                 { id: 1, answer: 'A', points: 2 },
                 { id: 2, answer: 'B', points: 2 },
@@ -439,7 +458,7 @@
             currentResult: null
         };
 
-        // --- DOM Elements ---
+        // --- 2. عناصر الصفحة ---
         const views = document.querySelectorAll('section');
         const navItems = document.querySelectorAll('.nav-item');
         const video = document.getElementById('video');
@@ -447,21 +466,23 @@
         const ctx = canvas.getContext('2d');
         const loader = document.getElementById('loader');
 
-        // --- Initialization ---
+        // --- 3. التهيئة عند التشغيل ---
         document.addEventListener('DOMContentLoaded', () => {
             loadFromStorage();
             
-            // تهيئة واجهة الإعدادات بالبيانات المحفوظة
+            // تهيئة واجهة الإعدادات
             document.getElementById('q-count-input').value = state.answerKey.length || 5;
             generateQuestionInputs();
             
             updateDashboard();
             updateHomeStats();
             
-            // Dark Mode Init
+            // استعادة وضع الظلام
             if(localStorage.getItem('theme') === 'dark') {
                 document.body.setAttribute('data-theme', 'dark');
             }
+            
+            // زر تبديل الوضع
             document.getElementById('themeToggle').addEventListener('click', () => {
                 const isDark = document.body.getAttribute('data-theme') === 'dark';
                 document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
@@ -469,22 +490,24 @@
             });
         });
 
-        // --- Navigation ---
+        // --- 4. التنقل بين الصفحات ---
         function navTo(viewId) {
             views.forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
             
+            // تحديث الأيقونات
             const map = ['view-home', 'view-camera', 'view-dashboard', 'view-settings'];
             navItems.forEach((n, i) => {
                 if(map[i] === viewId) n.classList.add('active');
                 else n.classList.remove('active');
             });
 
+            // تشغيل/إيقاف الكاميرا
             if(viewId === 'view-camera') startCamera();
             else stopCamera();
         }
 
-        // --- Settings Logic (UPDATED) ---
+        // --- 5. منطق واجهة الإعدادات (Settings UI) ---
         function generateQuestionInputs() {
             const count = parseInt(document.getElementById('q-count-input').value);
             const container = document.getElementById('questions-container');
@@ -493,13 +516,12 @@
             const oldKey = state.answerKey || [];
 
             for (let i = 1; i <= count; i++) {
-                // محاولة جلب القيم القديمة إذا وجدت
                 const oldQ = oldKey.find(q => q.id === i) || { answer: 'A', points: 2 };
 
                 const row = document.createElement('div');
                 row.className = 'settings-control';
                 row.innerHTML = `
-                    <strong style="width: 25px;">${i}</strong>
+                    <strong style="width: 25px; color:var(--primary);">${i}</strong>
                     <div style="flex: 1;">
                         <select id="ans-${i}" class="form-select" style="width:100%">
                             <option value="A" ${oldQ.answer === 'A' ? 'selected' : ''}>A</option>
@@ -508,7 +530,7 @@
                             <option value="D" ${oldQ.answer === 'D' ? 'selected' : ''}>D</option>
                         </select>
                     </div>
-                    <div style="width: 70px;">
+                    <div style="width: 80px;">
                         <input type="number" id="pts-${i}" value="${oldQ.points}" class="form-input" style="width:100%" placeholder="نقاط">
                     </div>
                 `;
@@ -528,21 +550,22 @@
 
             state.answerKey = newKey;
             saveToStorage();
-            alert(`تم حفظ النموذج بنجاح!\nعدد الأسئلة: ${count}`);
+            alert(`✅ تم تحديث النموذج بنجاح!\nعدد الأسئلة: ${count}`);
             navTo('view-home');
         }
 
-        // --- Camera Logic ---
+        // --- 6. الكاميرا ---
         let stream = null;
         async function startCamera() {
             try {
+                // محاولة استخدام الكاميرا الخلفية
                 stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: 'environment' } 
                 });
                 video.srcObject = stream;
             } catch (err) {
                 console.error(err);
-                // Fail silently or show button only (handled by UI)
+                // لا نظهر خطأ مزعج، فالمستخدم قد يستخدم رفع الملفات
             }
         }
 
@@ -553,9 +576,10 @@
             }
         }
 
+        // التقاط
         document.getElementById('captureBtn').addEventListener('click', () => {
             if (!video.videoWidth) {
-                alert("الكاميرا لا تعمل. استخدم زر رفع صورة.");
+                alert("⚠️ الكاميرا لا تعمل أو لم يُسمح لها. يرجى استخدام زر 'رفع'.");
                 return;
             }
             canvas.width = video.videoWidth;
@@ -564,6 +588,7 @@
             processImage(canvas.toDataURL('image/png'));
         });
 
+        // رفع ملف
         document.getElementById('fileInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -582,26 +607,50 @@
             }
         });
 
-        // --- OCR Processing ---
+        // --- 7. المعالجة الذكية (OCR) - تم التحديث لـ GitHub Pages ---
         async function processImage(dataUrl) {
-            document.getElementById('loader-text').innerText = "جاري قراءة الورقة...";
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loader-text');
             loader.style.display = 'flex';
+            loaderText.innerText = "جاري تهيئة المحرك الذكي...";
 
             try {
-                const worker = await Tesseract.createWorker('eng');
+                // التأكد من تحميل Tesseract
+                if (typeof Tesseract === 'undefined') {
+                    throw new Error("لم يتم تحميل مكتبة Tesseract. تأكد من الاتصال بالإنترنت.");
+                }
+
+                // إنشاء Worker بمسارات صريحة (CDN) لتجنب مشاكل الاستضافة
+                const worker = await Tesseract.createWorker('eng', 1, {
+                    // تحديد المسارات يدوياً لضمان العمل على أي استضافة
+                    workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@v4.0.3/dist/worker.min.js',
+                    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+                    corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@v4.0.3/tesseract-core.wasm.js',
+                    logger: m => {
+                        // تحديث نص التحميل بالنسبة المئوية
+                        if(m.status === 'recognizing text') {
+                            loaderText.innerText = `جاري قراءة الورقة... ${Math.round(m.progress * 100)}%`;
+                        }
+                    }
+                });
+
+                // بدء التعرف
                 const ret = await worker.recognize(dataUrl);
-                await worker.terminate();
+                await worker.terminate(); // تنظيف الذاكرة
 
                 const text = ret.data.text;
-                console.log("OCR Result:", text);
+                console.log("OCR Raw:", text);
+
+                if (!text || text.trim().length < 2) {
+                    throw new Error("لم يتم العثور على نص واضح في الصورة.");
+                }
 
                 let extracted = parseAnswers(text);
                 
-                // --- Fallback / Simulation Logic ---
-                // إذا لم نجد عدداً كافياً من الإجابات (بسبب جودة الكاميرا أو الخط)
-                // نقوم بمحاكاة النتيجة لتجربة التطبيق (كما طُلب في الـ Prompt)
+                // Fallback / Simulation (إذا كان النص ضعيف جداً)
                 if (Object.keys(extracted).length < state.answerKey.length * 0.5) {
-                    alert("تنبيه: النصوص غير واضحة تماماً للكاميرا. سيتم استخدام وضع المحاكاة للعرض.");
+                    // نستخدم setTimeout لضمان ظهور التنبيه
+                    setTimeout(() => alert("تنبيه: النصوص غير واضحة تماماً. سيتم استخدام وضع المحاكاة التقريبي."), 100);
                     extracted = simulateAnswers();
                 }
 
@@ -611,12 +660,15 @@
                 navTo('view-result');
 
             } catch (err) {
-                alert("حدث خطأ في المعالجة: " + err.message);
+                console.error("Processing Error:", err);
+                let msg = err.message || err;
+                alert(`❌ حدث خطأ:\n${msg}\n\nنصيحة: تأكد من إضاءة جيدة أو استخدم رفع صورة واضحة.`);
             } finally {
                 loader.style.display = 'none';
             }
         }
 
+        // استخراج الإجابات من النص
         function parseAnswers(text) {
             const answers = {};
             // البحث عن نمط: "1. A" أو "1 A" أو "1) A"
@@ -628,7 +680,7 @@
                 if(match) {
                     const num = parseInt(match[1]);
                     const char = match[2].toUpperCase();
-                    // تأكد أن رقم السؤال موجود في النموذج
+                    // تخزين الإجابة إذا كان رقم السؤال ضمن النطاق
                     if(num <= state.answerKey.length) {
                         answers[num] = char;
                     }
@@ -637,17 +689,18 @@
             return answers;
         }
 
+        // دالة المحاكاة (للعرض فقط في حالة الفشل)
         function simulateAnswers() {
             const mock = {};
             state.answerKey.forEach(q => {
-                // احتمال 70% أن تكون الإجابة صحيحة (لأغراض العرض)
+                // 70% إجابة صحيحة، 30% عشوائية
                 const isCorrect = Math.random() > 0.3;
                 mock[q.id] = isCorrect ? q.answer : ['A','B','C','D'][Math.floor(Math.random()*4)];
             });
             return mock;
         }
 
-        // --- Grading Logic ---
+        // --- 8. منطق التصحيح ---
         function gradeExam(studentAnswers) {
             let totalScore = 0;
             let maxScore = 0;
@@ -660,9 +713,9 @@
                 const points = isCorrect ? q.points : 0;
                 totalScore += points;
 
-                // Mastery Level (A/D here since binary points, expandable later)
+                // مستوى التحكم (Mastery)
                 let mastery = 'D';
-                if(points === q.points) mastery = 'A'; // 100%
+                if(points === q.points) mastery = 'A';
                 
                 details.push({
                     id: q.id,
@@ -691,12 +744,13 @@
             };
         }
 
-        // --- Render UI ---
+        // --- 9. عرض النتائج ---
         function renderResult(res) {
             const circle = document.getElementById('result-circle');
             document.getElementById('result-score').innerText = res.pct + '%';
             document.getElementById('result-eval').innerText = res.evalText;
 
+            // تحديث لون الدائرة
             circle.style.setProperty('--percent', res.pct + '%');
             circle.style.setProperty('--success', res.pct >= 50 ? '#10b981' : '#ef4444');
 
@@ -704,14 +758,14 @@
             list.innerHTML = '';
             res.details.forEach(d => {
                 const div = document.createElement('div');
-                div.style.cssText = `display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);`;
+                div.style.cssText = `display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid rgba(0,0,0,0.05);`;
                 div.innerHTML = `
                     <div>
                         <strong>س ${d.id}</strong> 
-                        <span style="color:var(--text-sec); margin-right:5px;">(إجابتك: ${d.student})</span>
+                        <span style="color:var(--text-sec); margin-right:8px; font-size:0.9rem;">(إجابتك: ${d.student})</span>
                     </div>
-                    <div>
-                        ${d.isCorrect ? '✅' : '❌'} 
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        ${d.isCorrect ? '<span style="color:#10b981">✔</span>' : '<span style="color:#ef4444">✘</span>'} 
                         <span class="grade-badge grade-${d.mastery}">${d.mastery}</span>
                     </div>
                 `;
@@ -719,7 +773,7 @@
             });
         }
 
-        // --- Data & Storage ---
+        // --- 10. البيانات والتخزين ---
         function saveAndNew() {
             if(state.currentResult) {
                 state.students.push(state.currentResult);
@@ -742,17 +796,15 @@
             document.getElementById('stat-min').innerText = min + '%';
             document.getElementById('total-scanned').innerText = state.students.length;
             
-            // Draw Chart
             drawChart(scores);
 
-            // Log
             const logs = document.getElementById('students-log');
             logs.innerHTML = '';
             state.students.slice().reverse().forEach((s, i) => {
                 logs.innerHTML += `
-                    <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
-                        <span>طالب #${state.students.length - i}</span>
-                        <strong style="color:${s.pct>=50?'green':'red'}">${s.pct}%</strong>
+                    <div style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.9rem;">ورقة #${state.students.length - i}</span>
+                        <strong style="color:${s.pct>=50?'#10b981':'#ef4444'}">${s.pct}%</strong>
                     </div>
                 `;
             });
@@ -769,9 +821,12 @@
         function drawChart(scores) {
             const cvs = document.getElementById('barChart');
             const c = cvs.getContext('2d');
-            c.clearRect(0,0,cvs.width,cvs.height);
+            const w = cvs.width;
+            const h = cvs.height;
             
-            // Buckets: <50, 50-74, 75-89, 90-100
+            c.clearRect(0,0,w,h);
+            
+            // توزيع الفئات: 0-49, 50-74, 75-89, 90-100
             const buckets = [0,0,0,0]; 
             scores.forEach(s => {
                 if(s < 50) buckets[0]++;
@@ -781,25 +836,30 @@
             });
 
             const maxVal = Math.max(...buckets, 1);
-            const barW = (cvs.width / 4) - 20;
+            const barW = (w / 4) - 20;
             const colors = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'];
-            const labels = ['ضعيف', 'مقبول', 'جيد', 'ممتاز'];
+            const labels = ['D', 'C', 'B', 'A'];
 
             buckets.forEach((val, i) => {
-                const h = (val / maxVal) * (cvs.height - 40);
-                const x = 10 + i * (cvs.width / 4);
-                const y = cvs.height - h - 20;
+                const barH = (val / maxVal) * (h - 40);
+                const x = 10 + i * (w / 4);
+                const y = h - barH - 20;
 
+                // رسم العمود
                 c.fillStyle = colors[i];
-                c.fillRect(x+10, y, barW, h);
+                // Rounded top logic simplified
+                c.fillRect(x+10, y, barW, barH);
                 
-                c.fillStyle = '#555';
-                c.font = "12px Tajawal";
-                c.fillText(val, x + barW/2 + 5, y - 5);
-                c.fillText(labels[i], x + 10, cvs.height - 5);
+                // النص
+                c.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-main');
+                c.font = "bold 12px Tajawal";
+                c.textAlign = "center";
+                c.fillText(val, x + 10 + barW/2, y - 5);
+                c.fillText(labels[i], x + 10 + barW/2, h - 5);
             });
         }
 
+        // التخزين المحلي
         function saveToStorage() {
             localStorage.setItem('smartGradeDB', JSON.stringify({
                 students: state.students,
@@ -817,11 +877,12 @@
         }
 
         function clearData() {
-            if(confirm("مسح جميع النتائج؟")) {
+            if(confirm("هل أنت متأكد من حذف جميع بيانات الطلاب؟")) {
                 state.students = [];
                 saveToStorage();
                 updateDashboard();
                 updateHomeStats();
+                alert("تم الحذف.");
             }
         }
     </script>
