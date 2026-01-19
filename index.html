@@ -3,201 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartGrader PRO - v2.1</title>
+    <title>SmartGrader PRO v3.0 - Ultimate OMR</title>
     
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="cvReadyTrigger()"></script>
+    <script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="cvReady()"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap');
-        body { font-family: 'Tajawal', sans-serif; overflow-x: hidden; }
+        body { font-family: 'Tajawal', sans-serif; transition: background 0.3s; }
         [x-cloak] { display: none !important; }
-        .active-tab { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .loader { border-top-color: #3b82f6; animation: spinner 1s linear infinite; }
-        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .active-tab { animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .loader { border-top-color: #2563eb; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* تصميم ورقة الإجابة المخفية للتصدير */
+        #sheet-template { width: 800px; padding: 40px; background: white; color: black; position: absolute; left: -9999px; }
+        .omr-row { border-bottom: 1px solid #eee; padding: 5px 0; display: flex; align-items: center; }
+        .omr-circle { width: 22px; height: 22px; border: 1.5px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin: 0 4px; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900" x-data="smartGrader()" x-init="init()">
+<body class="bg-gray-50 text-gray-900" x-data="app()" x-init="init()">
 
-    <!-- Loading Screen -->
-    <div x-show="!cvLoaded" class="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center text-center">
-        <div class="loader w-12 h-12 border-4 border-slate-200 rounded-full mb-4"></div>
-        <h2 class="text-lg font-bold text-blue-600">جاري تشغيل محرك OMR...</h2>
+    <!-- Loading Engine -->
+    <div x-show="!isReady" class="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center">
+        <div class="loader w-12 h-12 border-4 border-gray-200 rounded-full mb-4"></div>
+        <p class="font-bold text-blue-600">SmartGrader AI Engine Loading...</p>
     </div>
 
-    <!-- Top Navbar -->
-    <nav class="fixed top-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 z-50">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
-                <span class="font-bold text-xl tracking-tight hidden md:block">SmartGrader</span>
-            </div>
-
-            <div class="flex items-center gap-3">
-                <!-- Language Selector -->
-                <select x-model="lang" @change="changeLang()" class="text-xs border rounded-lg p-2 bg-slate-50 outline-none">
-                    <option value="ar">العربية</option>
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
-                </select>
-
-                <!-- Data Menu -->
-                <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" class="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition">
-                        <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
-                    </button>
-                    <div x-show="open" @click.outside="open = false" x-cloak class="absolute left-0 mt-2 w-48 bg-white shadow-xl rounded-xl border p-2 z-[60]">
-                        <button @click="exportData()" class="w-full text-right p-2 hover:bg-slate-50 rounded-lg flex items-center gap-2 text-sm">
-                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                            <span x-text="t('export')"></span>
-                        </button>
-                        <label class="w-full text-right p-2 hover:bg-slate-50 rounded-lg flex items-center gap-2 text-sm cursor-pointer">
-                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                            <span x-text="t('import')"></span>
-                            <input type="file" @change="importData($event)" class="hidden">
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Navigation -->
+    <!-- Mobile Bottom Nav -->
+    <nav class="fixed bottom-0 w-full bg-white border-t z-50 md:hidden h-16 flex justify-around items-center">
+        <template x-for="t in ['stats', 'create', 'correct', 'results']">
+            <button @click="tab = t" :class="tab === t ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center">
+                <span class="text-[10px] font-bold mt-1" x-text="dict[lang][t]"></span>
+            </button>
+        </template>
     </nav>
 
-    <!-- Bottom Navigation (Mobile) -->
-    <nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 z-50 md:hidden">
-        <div class="flex justify-around items-center h-16">
-            <button @click="tab = 'stats'" :class="tab === 'stats' ? 'text-blue-600' : 'text-slate-400'" class="flex flex-col items-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                <span class="text-[10px] mt-1" x-text="t('stats')"></span>
-            </button>
-            <button @click="tab = 'create'" :class="tab === 'create' ? 'text-blue-600' : 'text-slate-400'" class="flex flex-col items-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"></path></svg>
-                <span class="text-[10px] mt-1" x-text="t('create')"></span>
-            </button>
-            <button @click="tab = 'correct'" :class="tab === 'correct' ? 'text-blue-600' : 'text-slate-400'" class="flex flex-col items-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                <span class="text-[10px] mt-1" x-text="t('grading')"></span>
-            </button>
-            <button @click="tab = 'results'" :class="tab === 'results' ? 'text-blue-600' : 'text-slate-400'" class="flex flex-col items-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-                <span class="text-[10px] mt-1" x-text="t('results')"></span>
-            </button>
+    <!-- Desktop Sidebar -->
+    <aside :dir="lang === 'ar' ? 'rtl' : 'ltr'" class="fixed top-0 bottom-0 w-64 bg-white border-l border-r hidden md:block z-40" 
+           :class="lang === 'ar' ? 'right-0' : 'left-0'">
+        <div class="p-6">
+            <h1 class="text-2xl font-black text-blue-600">SmartGrader</h1>
+            <p class="text-xs text-gray-400">Professional OMR v3.0</p>
         </div>
-    </nav>
-
-    <!-- Sidebar (Desktop) -->
-    <aside class="fixed right-0 top-16 w-64 h-full bg-white border-l border-slate-200 hidden md:block z-40">
-        <div class="p-4 space-y-2">
-            <template x-for="item in ['stats', 'create', 'correct', 'results']">
-                <button @click="tab = item" 
-                    :class="tab === item ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'"
-                    class="w-full flex items-center gap-3 p-3 rounded-xl transition font-medium">
-                    <span x-text="t(item)"></span>
+        <nav class="mt-4 px-4 space-y-2">
+            <template x-for="t in ['stats', 'create', 'correct', 'results']">
+                <button @click="tab = t" 
+                    :class="tab === t ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'"
+                    class="w-full flex items-center p-3 rounded-xl transition font-bold">
+                    <span x-text="dict[lang][t]"></span>
                 </button>
             </template>
+        </nav>
+        <div class="absolute bottom-6 w-full px-6">
+            <div class="p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                <p class="text-[10px] font-bold text-gray-400 mb-2 uppercase" x-text="dict[lang].data_management"></p>
+                <div class="flex gap-2">
+                    <button @click="exportData" class="flex-1 bg-white p-2 rounded-lg border shadow-sm text-green-600">⬇️</button>
+                    <label class="flex-1 bg-white p-2 rounded-lg border shadow-sm text-blue-600 cursor-pointer text-center">
+                        ⬆️ <input type="file" class="hidden" @change="importData">
+                    </label>
+                </div>
+            </div>
         </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="md:mr-64 pt-20 pb-24 px-4 max-w-5xl mx-auto">
+    <!-- Header / Top Bar -->
+    <header class="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md z-30 flex items-center justify-between px-6 md:px-12"
+            :class="lang === 'ar' ? 'md:mr-64' : 'md:ml-64'">
+        <div class="flex items-center gap-4">
+            <span class="font-bold text-gray-500 hidden md:block" x-text="dict[lang][tab]"></span>
+        </div>
+        <select x-model="lang" @change="updateDir()" class="bg-gray-100 border-none rounded-lg p-2 text-xs font-bold outline-none">
+            <option value="ar">العربية</option>
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+        </select>
+    </header>
 
-        <!-- TAB: STATISTICS -->
+    <!-- Main Content -->
+    <main class="pt-20 pb-24 px-4 md:px-12 transition-all" :class="lang === 'ar' ? 'md:mr-64' : 'md:ml-64'">
+
+        <!-- STATS TAB -->
         <div x-show="tab === 'stats'" class="active-tab" x-cloak>
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h1 class="text-2xl font-bold" x-text="t('stats_title')"></h1>
-                <select x-model="statFilter" @change="calculateStats()" class="p-2 border rounded-xl bg-white w-full md:w-48 shadow-sm">
-                    <option value="all" x-text="t('all_classes')"></option>
-                    <template x-for="cls in classes" :key="cls">
-                        <option :value="cls" x-text="cls"></option>
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold" x-text="dict[lang].stats_title"></h2>
+                <select x-model="filterClass" @change="refreshStats()" class="p-2 border rounded-xl text-sm outline-none">
+                    <option value="all" x-text="dict[lang].all_classes"></option>
+                    <template x-for="c in classes" :key="c">
+                        <option :value="c" x-text="c"></option>
                     </template>
                 </select>
             </div>
-            
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <p class="text-slate-400 text-xs mb-1" x-text="t('total_exams')"></p>
-                    <p class="text-2xl font-black text-blue-600" x-text="exams.length"></p>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <div class="text-gray-400 text-xs font-bold uppercase mb-1" x-text="dict[lang].total_exams"></div>
+                    <div class="text-2xl font-black text-blue-600" x-text="exams.length"></div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <p class="text-slate-400 text-xs mb-1" x-text="t('total_results')"></p>
-                    <p class="text-2xl font-black text-emerald-600" x-text="results.length"></p>
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <div class="text-gray-400 text-xs font-bold uppercase mb-1" x-text="dict[lang].total_graded"></div>
+                    <div class="text-2xl font-black text-emerald-600" x-text="results.length"></div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <p class="text-slate-400 text-xs mb-1" x-text="t('avg_score')"></p>
-                    <p class="text-2xl font-black text-orange-500" x-text="avgScore + '%'"></p>
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <div class="text-gray-400 text-xs font-bold uppercase mb-1" x-text="dict[lang].avg_score"></div>
+                    <div class="text-2xl font-black text-orange-500" x-text="avgScore + '%'"></div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <p class="text-slate-400 text-xs mb-1" x-text="t('mastery_a')"></p>
-                    <p class="text-2xl font-black text-purple-600" x-text="masteryA + '%'"></p>
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <div class="text-gray-400 text-xs font-bold uppercase mb-1" x-text="dict[lang].success_rate"></div>
+                    <div class="text-2xl font-black text-purple-600" x-text="successRate + '%'"></div>
                 </div>
             </div>
-
-            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                <canvas id="mainChart" class="max-h-[300px]"></canvas>
+            <div class="bg-white p-6 rounded-3xl border shadow-sm h-80">
+                <canvas id="statsChart"></canvas>
             </div>
         </div>
 
-        <!-- TAB: CREATE EXAM -->
+        <!-- CREATE EXAM TAB -->
         <div x-show="tab === 'create'" class="active-tab" x-cloak>
-            <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-                <div class="bg-blue-600 p-6 text-white text-center">
-                    <h2 class="text-xl font-bold" x-text="t('new_exam')"></h2>
-                    <p class="text-blue-100 text-sm opacity-80" x-text="t('new_exam_desc')"></p>
-                </div>
-                
-                <div class="p-6 md:p-8 space-y-6">
+            <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl border overflow-hidden">
+                <div class="p-8 space-y-6">
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-sm font-bold mb-2" x-text="t('exam_name')"></label>
-                            <input type="text" x-model="examForm.title" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm font-bold mb-2" x-text="dict[lang].exam_title"></label>
+                            <input type="text" x-model="examForm.title" class="w-full p-3 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-bold mb-2" x-text="t('class_name')"></label>
-                            <input type="text" x-model="examForm.className" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm font-bold mb-2" x-text="dict[lang].target_class"></label>
+                            <input type="text" x-model="examForm.className" class="w-full p-3 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
-
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-sm font-bold mb-2" x-text="t('q_count')"></label>
-                            <input type="number" x-model.number="examForm.qCount" @change="initQuestions()" class="w-full p-3 border rounded-xl">
+                            <label class="block text-sm font-bold mb-2" x-text="dict[lang].q_count"></label>
+                            <input type="number" x-model.number="examForm.qCount" @change="initQuestions()" class="w-full p-3 bg-gray-50 border rounded-2xl">
                         </div>
                         <div>
-                            <label class="block text-sm font-bold mb-2" x-text="t('opt_count')"></label>
-                            <select x-model.number="examForm.optCount" class="w-full p-3 border rounded-xl">
-                                <option value="4">4 (A-D)</option>
-                                <option value="5">5 (A-E)</option>
+                            <label class="block text-sm font-bold mb-2" x-text="dict[lang].opt_count"></label>
+                            <select x-model.number="examForm.optCount" class="w-full p-3 bg-gray-50 border rounded-2xl">
+                                <option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="8">8</option>
+                                <option value="12">12</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-bold mb-2" x-text="t('point_q')"></label>
-                            <input type="number" step="0.5" x-model.number="examForm.pointsPerQ" class="w-full p-3 border rounded-xl">
+                            <label class="block text-sm font-bold mb-2" x-text="dict[lang].point_per_q"></label>
+                            <input type="number" step="0.5" x-model.number="examForm.points" class="w-full p-3 bg-gray-50 border rounded-2xl">
                         </div>
                         <div>
-                            <label class="block text-sm font-bold mb-2" x-text="t('partial')"></label>
-                            <input type="number" step="0.25" x-model.number="examForm.partialPoints" class="w-full p-3 border rounded-xl">
+                            <label class="block text-sm font-bold mb-2" x-text="dict[lang].partial"></label>
+                            <input type="number" step="0.25" x-model.number="examForm.partial" class="w-full p-3 bg-gray-50 border rounded-2xl">
                         </div>
                     </div>
 
-                    <div class="border-t pt-6">
-                        <h3 class="font-bold mb-4 flex items-center gap-2 text-blue-600">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <span x-text="t('answer_key')"></span>
-                        </h3>
+                    <div class="pt-6 border-t">
+                        <h3 class="font-bold mb-4 text-blue-600" x-text="dict[lang].answer_key"></h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-2">
                             <template x-for="(q, idx) in examForm.questions" :key="idx">
-                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                    <span class="font-bold text-slate-400 w-6" x-text="idx + 1"></span>
-                                    <div class="flex gap-2">
-                                        <template x-for="opt in ['A','B','C','D','E'].slice(0, examForm.optCount)">
-                                            <button @click="toggleAnswer(idx, opt)" 
-                                                :class="q.correct.includes(opt) ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-400'"
-                                                class="w-9 h-9 rounded-full border border-slate-200 font-bold text-sm transition-all"
-                                                x-text="opt">
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border">
+                                    <span class="font-bold text-gray-400 w-6" x-text="idx + 1"></span>
+                                    <div class="flex flex-wrap gap-1 justify-end">
+                                        <template x-for="opt in examForm.optCount">
+                                            <button @click="toggleCorrect(idx, opt-1)" 
+                                                :class="q.correct.includes(opt-1) ? 'bg-blue-600 text-white' : 'bg-white text-gray-400'"
+                                                class="w-8 h-8 rounded-full border text-[10px] font-bold transition-all"
+                                                x-text="String.fromCharCode(65 + opt - 1)">
                                             </button>
                                         </template>
                                     </div>
@@ -206,37 +182,43 @@
                         </div>
                     </div>
 
-                    <button @click="saveExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2">
-                        <span x-text="t('save_continue')"></span>
+                    <button @click="saveExam()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                        <span x-text="editingId ? dict[lang].update : dict[lang].save_continue"></span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- TAB: CORRECT EXAM -->
+        <!-- CORRECT EXAM TAB (Cards) -->
         <div x-show="tab === 'correct'" class="active-tab" x-cloak>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <template x-for="exam in exams" :key="exam.id">
-                    <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all group">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="ex in exams" :key="ex.id">
+                    <div class="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group overflow-hidden">
                         <div class="p-6">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-xl font-bold text-slate-800" x-text="exam.title"></h3>
-                                <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-1 rounded-full" x-text="exam.className"></span>
+                                <h3 class="font-bold text-xl" x-text="ex.title"></h3>
+                                <button @click="editExam(ex)" class="text-blue-500 hover:text-blue-700">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
                             </div>
-                            <p class="text-slate-400 text-xs mb-4" x-text="new Date(exam.date).toLocaleDateString()"></p>
-                            <div class="flex gap-4 text-xs font-bold text-slate-500">
-                                <span x-text="exam.qCount + ' ' + t('questions')"></span>
-                                <span x-text="exam.optCount + ' ' + t('options')"></span>
+                            <p class="text-gray-400 text-xs mb-4" x-text="ex.className + ' • ' + new Date(ex.date).toLocaleDateString()"></p>
+                            <div class="flex gap-4 text-[10px] font-bold text-gray-500 bg-gray-50 p-2 rounded-xl">
+                                <span x-text="ex.qCount + ' ' + dict[lang].questions"></span>
+                                <span x-text="ex.optCount + ' ' + dict[lang].options"></span>
                             </div>
                         </div>
-                        <div class="flex border-t divide-x divide-x-reverse bg-slate-50">
-                            <button @click="downloadPDF(exam)" class="flex-1 p-4 text-xs font-bold text-slate-600 hover:bg-white transition flex items-center justify-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                <span x-text="t('download_sheet')"></span>
+                        <div class="grid grid-cols-3 border-t divide-x divide-x-reverse bg-gray-50/50">
+                            <button @click="downloadSheet(ex, 'pdf')" class="p-4 text-[10px] font-bold hover:bg-white flex flex-col items-center gap-1">
+                                <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z"></path></svg>
+                                PDF
                             </button>
-                            <button @click="openScanner(exam)" class="flex-1 p-4 text-xs font-bold text-blue-600 hover:bg-white transition flex items-center justify-center gap-2">
+                            <button @click="downloadSheet(ex, 'png')" class="p-4 text-[10px] font-bold hover:bg-white flex flex-col items-center gap-1">
+                                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                PNG
+                            </button>
+                            <button @click="openScanner(ex)" class="p-4 text-[10px] font-bold text-blue-600 hover:bg-white flex flex-col items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                                <span x-text="t('start_grading')"></span>
+                                <span x-text="dict[lang].scan"></span>
                             </button>
                         </div>
                     </div>
@@ -244,52 +226,47 @@
             </div>
         </div>
 
-        <!-- TAB: RESULTS -->
+        <!-- RESULTS TAB -->
         <div x-show="tab === 'results'" class="active-tab" x-cloak>
             <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
-                <div class="p-4 md:p-6 border-b bg-slate-50/50 flex flex-wrap gap-4">
-                    <div class="flex-1 min-w-[150px]">
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1" x-text="t('filter_class')"></label>
-                        <select x-model="resFilterClass" class="w-full p-2 border rounded-xl text-sm outline-none">
+                <div class="p-6 border-b bg-gray-50/50 flex flex-wrap gap-4">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-[10px] font-bold text-gray-400 mb-2" x-text="dict[lang].filter_class"></label>
+                        <select x-model="resFilterClass" class="w-full p-2 border rounded-xl outline-none">
                             <option value="">-</option>
-                            <template x-for="cls in classes" :key="cls">
-                                <option :value="cls" x-text="cls"></option>
-                            </template>
+                            <template x-for="c in classes" :key="c"><option :value="c" x-text="c"></option></template>
                         </select>
                     </div>
-                    <div class="flex-1 min-w-[150px]">
-                        <label class="block text-[10px] font-bold text-slate-400 mb-1" x-text="t('filter_exam')"></label>
-                        <select x-model="resFilterExam" class="w-full p-2 border rounded-xl text-sm outline-none">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-[10px] font-bold text-gray-400 mb-2" x-text="dict[lang].filter_exam"></label>
+                        <select x-model="resFilterExam" class="w-full p-2 border rounded-xl outline-none">
                             <option value="">-</option>
-                            <template x-for="ex in exams" :key="ex.id">
-                                <option :value="ex.id" x-text="ex.title"></option>
-                            </template>
+                            <template x-for="e in exams" :key="e.id"><option :value="e.id" x-text="e.title"></option></template>
                         </select>
                     </div>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-right text-sm">
-                        <thead class="bg-slate-50 text-slate-500 font-bold">
+                        <thead class="bg-gray-50 text-gray-500">
                             <tr>
-                                <th class="px-6 py-4" x-text="t('th_name')"></th>
-                                <th class="px-6 py-4" x-text="t('th_score')"></th>
-                                <th class="px-6 py-4" x-text="t('th_mastery')"></th>
-                                <th class="px-6 py-4 text-center" x-text="t('th_actions')"></th>
+                                <th class="px-6 py-4" x-text="dict[lang].th_name"></th>
+                                <th class="px-6 py-4" x-text="dict[lang].th_score"></th>
+                                <th class="px-6 py-4" x-text="dict[lang].th_mastery"></th>
+                                <th class="px-6 py-4 text-center" x-text="dict[lang].th_actions"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y">
                             <template x-for="res in filteredResults" :key="res.id">
-                                <tr class="hover:bg-slate-50 transition">
+                                <tr class="hover:bg-blue-50/30 transition">
                                     <td class="px-6 py-4">
-                                        <img :src="res.nameImage" class="h-10 border rounded bg-white shadow-sm" alt="Name">
+                                        <img :src="res.nameImage" class="h-10 border rounded shadow-sm bg-white">
                                     </td>
-                                    <td class="px-6 py-4 font-black text-blue-600" x-text="res.score + ' / ' + res.total"></td>
+                                    <td class="px-6 py-4 font-black text-blue-600" x-text="res.score + '/' + res.total"></td>
                                     <td class="px-6 py-4">
                                         <button @click="showMastery(res)" :class="getMasteryColor(res.mastery)" class="px-3 py-1 rounded-full text-[10px] font-black" x-text="res.mastery"></button>
                                     </td>
-                                    <td class="px-6 py-4 flex justify-center gap-2">
-                                        <button @click="deleteResult(res.id)" class="p-2 text-red-400 hover:bg-red-50 rounded-lg">
+                                    <td class="px-6 py-4 text-center">
+                                        <button @click="deleteResult(res.id)" class="text-red-400 hover:text-red-600">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                         </button>
                                     </td>
@@ -300,66 +277,76 @@
                 </div>
             </div>
         </div>
+
     </main>
+
+    <!-- OMR Sheet Hidden Template for PDF/PNG -->
+    <div id="sheet-template" x-ref="sheet">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 28px;" x-text="activeSheet?.title"></h1>
+            <p style="margin: 5px 0; font-size: 16px;" x-text="activeSheet?.className + ' | ' + new Date().toLocaleDateString()"></p>
+        </div>
+        <div style="border: 2px solid #000; padding: 15px; margin-bottom: 30px; height: 80px; display: flex; align-items: center;">
+            <span style="font-weight: bold; margin-right: 10px;">NAME / الاسم / NOM:</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+            <template x-for="i in Math.ceil((activeSheet?.qCount || 0)/2)">
+                <div style="display: flex; flex-direction: column;">
+                    <!-- Question Row Left -->
+                    <div class="omr-row" x-show="(i-1) < activeSheet?.qCount">
+                        <span style="width: 30px; font-weight: bold;" x-text="(i) + '.'"></span>
+                        <div style="display: flex;">
+                            <template x-for="o in (activeSheet?.optCount || 0)">
+                                <div class="omr-circle" x-text="String.fromCharCode(65 + o - 1)"></div>
+                            </template>
+                        </div>
+                    </div>
+                    <!-- Question Row Right -->
+                    <div class="omr-row" x-show="(i-1 + Math.ceil(activeSheet?.qCount/2)) < activeSheet?.qCount">
+                        <span style="width: 30px; font-weight: bold;" x-text="(i + Math.ceil(activeSheet?.qCount/2)) + '.'"></span>
+                        <div style="display: flex;">
+                            <template x-for="o in (activeSheet?.optCount || 0)">
+                                <div class="omr-circle" x-text="String.fromCharCode(65 + o - 1)"></div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <div style="margin-top: 40px; font-size: 10px; text-align: center; color: #888;">Powered by SmartGrader Professional OMR</div>
+    </div>
 
     <!-- Scanner Overlay -->
     <div x-show="scanning" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center" x-cloak>
         <video id="video" class="w-full h-full object-cover"></video>
         <canvas id="cvCanvas" class="hidden"></canvas>
         <div class="absolute inset-0 border-[40px] border-black/60 pointer-events-none flex items-center justify-center">
-            <div class="w-72 h-96 border-2 border-dashed border-blue-500/50 rounded-2xl relative">
-                <div class="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-blue-500 rounded-tl-xl"></div>
-                <div class="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-blue-500 rounded-tr-xl"></div>
-                <div class="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-blue-500 rounded-bl-xl"></div>
-                <div class="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-blue-500 rounded-br-xl"></div>
-            </div>
+            <div class="w-72 h-96 border-2 border-dashed border-white/50 rounded-3xl"></div>
         </div>
-        <div class="absolute bottom-10 flex gap-6 items-center">
-            <button @click="stopScanner()" class="bg-white/20 backdrop-blur-md p-4 rounded-full text-white">✕</button>
-            <button @click="processOMR()" class="w-20 h-20 bg-white rounded-full border-8 border-slate-300 shadow-2xl flex items-center justify-center">
+        <div class="absolute bottom-10 flex gap-6">
+            <button @click="stopScanner" class="bg-white/20 p-4 rounded-full text-white backdrop-blur">✕</button>
+            <button @click="processOMR" class="w-20 h-20 bg-white rounded-full border-8 border-gray-300 shadow-2xl flex items-center justify-center">
                 <div class="w-12 h-12 bg-blue-600 rounded-full"></div>
             </button>
-            <div class="w-12"></div>
-        </div>
-    </div>
-
-    <!-- Mastery Modal -->
-    <div x-show="showModal" class="fixed inset-0 z-[110] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
-        <div class="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
-            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-lg" x-text="t('mastery_analysis')"></h3>
-                <button @click="showModal = false" class="text-slate-400">✕</button>
-            </div>
-            <div class="p-6">
-                <canvas id="radarChart" class="mb-6"></canvas>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="p-4 bg-blue-50 rounded-2xl text-center">
-                        <div class="text-[10px] text-blue-500 font-bold uppercase" x-text="t('th_score')"></div>
-                        <div class="text-2xl font-black text-blue-700" x-text="selectedRes?.score"></div>
-                    </div>
-                    <div class="p-4 bg-purple-50 rounded-2xl text-center">
-                        <div class="text-[10px] text-purple-500 font-bold uppercase" x-text="t('th_mastery')"></div>
-                        <div class="text-2xl font-black text-purple-700" x-text="selectedRes?.mastery"></div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
     <script>
-        function smartGrader() {
+        function app() {
             return {
                 tab: 'stats',
                 lang: 'ar',
-                cvLoaded: false,
+                isReady: false,
                 db: null,
                 exams: [],
                 results: [],
                 classes: [],
-                statFilter: 'all',
+                filterClass: 'all',
                 avgScore: 0,
-                masteryA: 0,
-                examForm: { title: '', className: '', qCount: 10, optCount: 4, pointsPerQ: 1, partialPoints: 0.25, questions: [] },
+                successRate: 0,
+                editingId: null,
+                examForm: { title: '', className: '', qCount: 20, optCount: 4, points: 1, partial: 0.25, questions: [] },
+                activeSheet: null,
                 scanning: false,
                 activeExam: null,
                 resFilterClass: '',
@@ -369,93 +356,124 @@
 
                 dict: {
                     ar: {
-                        stats: 'الإحصائيات', create: 'إنشاء', grading: 'تصحيح', results: 'النتائج',
-                        export: 'تصدير البيانات', import: 'استيراد البيانات', stats_title: 'إحصائيات الأداء العامة',
-                        all_classes: 'جميع الأقسام', total_exams: 'إجمالي الامتحانات', total_results: 'أوراق مصححة',
-                        avg_score: 'متوسط النقط', mastery_a: 'نسبة التفوق A', new_exam: 'إنشاء امتحان جديد',
-                        new_exam_desc: 'حدد الإعدادات ومفتاح التصحيح بدقة', exam_name: 'عنوان الامتحان',
-                        class_name: 'القسم المستهدف', q_count: 'عدد الأسئلة', opt_count: 'عدد الخيارات',
-                        point_q: 'نقطة السؤال', partial: 'نقطة جزئية', answer_key: 'تحديد الأجوبة الصحيحة',
-                        save_continue: 'حفظ واستمرار', questions: 'سؤال', options: 'خيارات',
-                        download_sheet: 'تحميل الورقة', start_grading: 'بدء التصحيح الآلي', filter_class: 'حسب القسم',
+                        stats: 'الإحصائيات', create: 'إنشاء امتحان', correct: 'تصحيح امتحان', results: 'النتائج',
+                        stats_title: 'إحصائيات الأداء', all_classes: 'جميع الأقسام', total_exams: 'إجمالي الامتحانات',
+                        total_graded: 'أوراق مصححة', avg_score: 'متوسط النقط', success_rate: 'نسبة التحكم',
+                        exam_title: 'عنوان الامتحان', target_class: 'القسم المستهدف', q_count: 'عدد الأسئلة',
+                        opt_count: 'الخيارات', point_per_q: 'نقطة السؤال', partial: 'نقطة جزئية',
+                        answer_key: 'مفتاح الإجابة', save_continue: 'حفظ واستمرار', update: 'تحديث البيانات',
+                        questions: 'سؤال', options: 'خيارات', scan: 'تصحيح', filter_class: 'حسب القسم',
                         filter_exam: 'حسب الامتحان', th_name: 'اسم التلميذ', th_score: 'النتيجة',
-                        th_mastery: 'درجة التحكم', th_actions: 'إجراءات', mastery_analysis: 'تحليل مستوى التلميذ'
+                        th_mastery: 'التحكم', th_actions: 'إجراءات', data_management: 'إدارة البيانات'
                     },
                     en: {
-                        stats: 'Stats', create: 'Create', grading: 'Grading', results: 'Results',
-                        export: 'Export Data', import: 'Import Data', stats_title: 'Performance Overview',
-                        all_classes: 'All Classes', total_exams: 'Total Exams', total_results: 'Total Graded',
-                        avg_score: 'Avg Score', mastery_a: 'Mastery A %', new_exam: 'New Exam',
-                        new_exam_desc: 'Set grading key and exam info', exam_name: 'Exam Title',
-                        class_name: 'Class/Group', q_count: 'Questions', opt_count: 'Options',
-                        point_q: 'Pts/Q', partial: 'Partial Pts', answer_key: 'Answer Key',
-                        save_continue: 'Save and Continue', questions: 'Q', options: 'Options',
-                        download_sheet: 'Download Sheet', start_grading: 'Scan Sheet', filter_class: 'By Class',
+                        stats: 'Stats', create: 'Create', correct: 'Grading', results: 'Results',
+                        stats_title: 'Performance Statistics', all_classes: 'All Classes', total_exams: 'Total Exams',
+                        total_graded: 'Graded Sheets', avg_score: 'Avg Score', success_rate: 'Success Rate',
+                        exam_title: 'Exam Title', target_class: 'Target Class', q_count: 'Questions',
+                        opt_count: 'Options', point_per_q: 'Point/Q', partial: 'Partial Point',
+                        answer_key: 'Answer Key', save_continue: 'Save & Continue', update: 'Update Exam',
+                        questions: 'Q', options: 'Opt', scan: 'Scan', filter_class: 'By Class',
                         filter_exam: 'By Exam', th_name: 'Student Name', th_score: 'Score',
-                        th_mastery: 'Mastery', th_actions: 'Actions', mastery_analysis: 'Mastery Analysis'
+                        th_mastery: 'Mastery', th_actions: 'Actions', data_management: 'Data Management'
+                    },
+                    fr: {
+                        stats: 'Stats', create: 'Créer', correct: 'Correction', results: 'Résultats',
+                        stats_title: 'Statistiques de Performance', all_classes: 'Toutes les Classes', total_exams: 'Total Examens',
+                        total_graded: 'Copies Corrigées', avg_score: 'Note Moyenne', success_rate: 'Taux de Maîtrise',
+                        exam_title: 'Titre de l\'examen', target_class: 'Classe Cible', q_count: 'Nb Questions',
+                        opt_count: 'Options', point_per_q: 'Points/Q', partial: 'Point Partiel',
+                        answer_key: 'Clé de réponse', save_continue: 'Enregistrer', update: 'Mettre à jour',
+                        questions: 'Q', options: 'Opt', scan: 'Scanner', filter_class: 'Par Classe',
+                        filter_exam: 'Par Examen', th_name: 'Nom de l\'élève', th_score: 'Note',
+                        th_mastery: 'Maîtrise', th_actions: 'Actions', data_management: 'Gestion des données'
                     }
                 },
 
-                t(key) { return this.dict[this.lang][key] || key; },
-
                 async init() {
-                    this.db = new Dexie("SmartGraderV2");
+                    this.db = new Dexie("SmartGraderDB_v3");
                     this.db.version(1).stores({
                         exams: '++id, title, className, date',
                         results: '++id, examId, className, mastery'
                     });
                     await this.loadData();
                     this.initQuestions();
-                    window.cvReadyTrigger = () => { this.cvLoaded = true; };
+                    window.cvReady = () => { this.isReady = true; };
+                    this.updateDir();
                 },
 
                 initQuestions() {
                     this.examForm.questions = Array.from({ length: this.examForm.qCount }, () => ({ correct: [] }));
                 },
 
-                toggleAnswer(idx, opt) {
-                    const q = this.examForm.questions[idx];
-                    if (q.correct.includes(opt)) {
-                        q.correct = q.correct.filter(a => a !== opt);
-                    } else {
-                        q.correct.push(opt);
-                    }
+                toggleCorrect(qIdx, optIdx) {
+                    const q = this.examForm.questions[qIdx];
+                    if (q.correct.includes(optIdx)) q.correct = q.correct.filter(i => i !== optIdx);
+                    else q.correct.push(optIdx);
                 },
 
                 async loadData() {
                     this.exams = await this.db.exams.toArray();
                     this.results = await this.db.results.toArray();
                     this.classes = [...new Set(this.exams.map(e => e.className))];
-                    this.calculateStats();
+                    this.refreshStats();
                 },
 
                 async saveExam() {
-                    if (!this.examForm.title || !this.examForm.className) {
-                        alert("Please fill title and class");
-                        return;
+                    if (!this.examForm.title || !this.examForm.className) return alert("Fill all fields");
+                    const data = JSON.parse(JSON.stringify(this.examForm));
+                    data.date = new Date().toISOString();
+                    
+                    if (this.editingId) {
+                        await this.db.exams.update(this.editingId, data);
+                        this.editingId = null;
+                    } else {
+                        await this.db.exams.add(data);
                     }
                     
-                    // تنظيف البيانات من Alpine Proxy
-                    const cleanData = JSON.parse(JSON.stringify(this.examForm));
-                    cleanData.date = new Date().toISOString();
-
-                    try {
-                        await this.db.exams.add(cleanData);
-                        this.examForm = { title: '', className: '', qCount: 10, optCount: 4, pointsPerQ: 1, partialPoints: 0.25, questions: [] };
-                        this.initQuestions();
-                        await this.loadData();
-                        this.tab = 'correct';
-                    } catch (err) {
-                        console.error("Dexie Add Error:", err);
-                    }
+                    this.examForm = { title: '', className: '', qCount: 20, optCount: 4, points: 1, partial: 0.25, questions: [] };
+                    this.initQuestions();
+                    await this.loadData();
+                    this.tab = 'correct';
                 },
 
-                async openScanner(exam) {
-                    this.activeExam = exam;
+                editExam(ex) {
+                    this.editingId = ex.id;
+                    this.examForm = JSON.parse(JSON.stringify(ex));
+                    this.tab = 'create';
+                },
+
+                async downloadSheet(ex, format) {
+                    this.activeSheet = ex;
+                    this.$nextTick(async () => {
+                        const element = document.getElementById('sheet-template');
+                        const canvas = await html2canvas(element, { scale: 2 });
+                        const imgData = canvas.toDataURL('image/png');
+                        
+                        if (format === 'png') {
+                            const link = document.createElement('a');
+                            link.download = `${ex.title}_Sheet.png`;
+                            link.href = imgData;
+                            link.click();
+                        } else {
+                            const { jsPDF } = window.jspdf;
+                            const pdf = new jsPDF('p', 'mm', 'a4');
+                            const imgProps = pdf.getImageProperties(imgData);
+                            const pdfWidth = pdf.internal.pageSize.getWidth();
+                            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                            pdf.save(`${ex.title}_Sheet.pdf`);
+                        }
+                    });
+                },
+
+                async openScanner(ex) {
+                    this.activeExam = ex;
                     this.scanning = true;
                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                    document.getElementById('video').srcObject = stream;
-                    document.getElementById('video').play();
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
+                    video.play();
                 },
 
                 stopScanner() {
@@ -464,8 +482,7 @@
                     this.scanning = false;
                 },
 
-                processOMR() {
-                    // محاكاة معالجة OpenCV
+                async processOMR() {
                     const video = document.getElementById('video');
                     const canvas = document.getElementById('cvCanvas');
                     canvas.width = video.videoWidth;
@@ -473,39 +490,84 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(video, 0, 0);
 
-                    // OMR Simulation Logic
+                    // OMR Simulation
                     let score = 0;
-                    const total = this.activeExam.qCount * this.activeExam.pointsPerQ;
-                    const details = [];
-
-                    this.activeExam.questions.forEach(q => {
-                        const isCorrect = Math.random() > 0.4;
-                        if (isCorrect) score += this.activeExam.pointsPerQ;
-                        details.push(isCorrect);
+                    const total = this.activeExam.qCount * this.activeExam.points;
+                    const details = this.activeExam.questions.map(() => {
+                        const isCorrect = Math.random() > 0.3;
+                        if (isCorrect) score += this.activeExam.points;
+                        return isCorrect;
                     });
 
-                    const percentage = (score / total) * 100;
+                    const pct = (score / total) * 100;
                     let mastery = 'D';
-                    if (percentage >= 85) mastery = 'A';
-                    else if (percentage >= 70) mastery = 'B';
-                    else if (percentage >= 50) mastery = 'C';
+                    if (pct >= 85) mastery = 'A'; else if (pct >= 70) mastery = 'B'; else if (pct >= 50) mastery = 'C';
 
-                    const nameImage = canvas.toDataURL('image/png', 0.5);
-
-                    this.db.results.add({
+                    await this.db.results.add({
                         examId: this.activeExam.id,
                         className: this.activeExam.className,
-                        score,
-                        total,
-                        mastery,
-                        nameImage,
-                        details,
+                        score, total, mastery, details,
+                        nameImage: canvas.toDataURL('image/png', 0.5),
                         date: new Date().toISOString()
-                    }).then(() => {
-                        this.stopScanner();
-                        this.loadData();
-                        this.tab = 'results';
                     });
+
+                    this.stopScanner();
+                    await this.loadData();
+                    this.tab = 'results';
+                },
+
+                refreshStats() {
+                    let filtered = this.filterClass === 'all' ? this.results : this.results.filter(r => r.className === this.filterClass);
+                    if (filtered.length === 0) { this.avgScore = 0; this.successRate = 0; this.updateChart([0,0,0,0]); return; }
+                    
+                    const sum = filtered.reduce((a, b) => a + (b.score / b.total), 0);
+                    this.avgScore = Math.round((sum / filtered.length) * 100);
+                    const masteryA = filtered.filter(r => r.mastery === 'A').length;
+                    this.successRate = Math.round((masteryA / filtered.length) * 100);
+                    
+                    const dist = ['A','B','C','D'].map(m => filtered.filter(r => r.mastery === m).length);
+                    this.updateChart(dist);
+                },
+
+                updateChart(data) {
+                    const ctx = document.getElementById('statsChart');
+                    if (!ctx) return;
+                    if (window.sChart) window.sChart.destroy();
+                    window.sChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['A','B','C','D'],
+                            datasets: [{
+                                data: data,
+                                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                                borderRadius: 12
+                            }]
+                        },
+                        options: { plugins: { legend: { display: false } }, maintainAspectRatio: false }
+                    });
+                },
+
+                exportData() {
+                    Promise.all([this.db.exams.toArray(), this.db.results.toArray()]).then(([e, r]) => {
+                        const blob = new Blob([JSON.stringify({ e, r })], { type: 'application/json' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `smartgrader_data_${Date.now()}.json`;
+                        a.click();
+                    });
+                },
+
+                importData(ev) {
+                    const file = ev.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        const data = JSON.parse(e.target.result);
+                        await this.db.exams.bulkAdd(data.e);
+                        await this.db.results.bulkAdd(data.r);
+                        this.loadData();
+                        alert("Done!");
+                    };
+                    reader.readAsText(file);
                 },
 
                 get filteredResults() {
@@ -515,120 +577,16 @@
                     });
                 },
 
-                calculateStats() {
-                    let data = this.statFilter === 'all' ? this.results : this.results.filter(r => r.className === this.statFilter);
-                    if (data.length === 0) {
-                        this.avgScore = 0; this.masteryA = 0;
-                        this.updateChart([0,0,0,0]);
-                        return;
-                    }
-                    const sum = data.reduce((acc, r) => acc + (r.score / r.total), 0);
-                    this.avgScore = Math.round((sum / data.length) * 100);
-                    const aCount = data.filter(r => r.mastery === 'A').length;
-                    this.masteryA = Math.round((aCount / data.length) * 100);
-                    
-                    const dist = ['A','B','C','D'].map(m => data.filter(r => r.mastery === m).length);
-                    this.updateChart(dist);
-                },
-
-                updateChart(data) {
-                    const ctx = document.getElementById('mainChart');
-                    if (!ctx) return;
-                    if (window.mChart) window.mChart.destroy();
-                    window.mChart = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: ['A', 'B', 'C', 'D'],
-                            datasets: [{
-                                data: data,
-                                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
-                                borderRadius: 10
-                            }]
-                        },
-                        options: { plugins: { legend: { display: false } } }
-                    });
-                },
-
-                showMastery(res) {
-                    this.selectedRes = res;
-                    this.showModal = true;
-                    this.$nextTick(() => {
-                        const ctx = document.getElementById('radarChart');
-                        if (window.rChart) window.rChart.destroy();
-                        window.rChart = new Chart(ctx, {
-                            type: 'radar',
-                            data: {
-                                labels: res.details.map((_, i) => `Q${i+1}`),
-                                datasets: [{
-                                    label: 'Control',
-                                    data: res.details.map(d => d ? 1 : 0),
-                                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                                    borderColor: '#3b82f6'
-                                }]
-                            }
-                        });
-                    });
-                },
-
-                downloadPDF(exam) {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
-                    doc.setFontSize(20);
-                    doc.text(exam.title, 105, 20, { align: 'center' });
-                    doc.setFontSize(10);
-                    doc.text(`${exam.className} | Questions: ${exam.qCount}`, 105, 28, { align: 'center' });
-                    doc.rect(20, 35, 170, 15);
-                    doc.text("FULL NAME:", 22, 40);
-                    let y = 65;
-                    for (let i = 0; i < exam.qCount; i++) {
-                        doc.text(`${i+1}:`, 20, y);
-                        for (let j = 0; j < exam.optCount; j++) {
-                            doc.circle(40 + (j*15), y-1, 4);
-                            doc.text(['A','B','C','D','E'][j], 39+(j*15), y+1);
-                        }
-                        y += 10;
-                    }
-                    doc.save(`${exam.title}_Sheet.pdf`);
-                },
-
-                exportData() {
-                    Promise.all([this.db.exams.toArray(), this.db.results.toArray()]).then(([e, r]) => {
-                        const blob = new Blob([JSON.stringify({ e, r })], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `smartgrader_backup.json`;
-                        a.click();
-                    });
-                },
-
-                importData(ev) {
-                    const file = ev.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        const data = JSON.parse(e.target.result);
-                        await this.db.exams.bulkAdd(data.e);
-                        await this.db.results.bulkAdd(data.r);
-                        this.loadData();
-                        alert("Data Imported!");
-                    };
-                    reader.readAsText(file);
-                },
-
                 getMasteryColor(m) {
-                    const c = { 'A': 'bg-emerald-100 text-emerald-700', 'B': 'bg-blue-100 text-blue-700', 'C': 'bg-orange-100 text-orange-600', 'D': 'bg-red-100 text-red-700' };
-                    return c[m] || 'bg-slate-100';
+                    const c = { 'A': 'bg-emerald-100 text-emerald-700', 'B': 'bg-blue-100 text-blue-700', 'C': 'bg-orange-100 text-orange-700', 'D': 'bg-red-100 text-red-700' };
+                    return c[m] || 'bg-gray-100';
                 },
 
-                deleteResult(id) {
-                    if (confirm("Delete this result?")) {
-                        this.db.results.delete(id).then(() => this.loadData());
-                    }
-                },
+                deleteResult(id) { if (confirm("Delete?")) this.db.results.delete(id).then(() => this.loadData()); },
 
-                changeLang() {
-                    document.dir = this.lang === 'ar' ? 'rtl' : 'ltr';
+                updateDir() {
+                    document.documentElement.dir = this.lang === 'ar' ? 'rtl' : 'ltr';
+                    document.documentElement.lang = this.lang;
                 }
             }
         }
