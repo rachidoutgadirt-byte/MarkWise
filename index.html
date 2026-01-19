@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartGrader PRO - v4.0 Ultimate</title>
+    <title>SmartGrader PRO - v5.0 Ultimate Mobile</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -13,27 +13,27 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
-        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         [x-cloak] { display: none !important; }
-        .glass-nav { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
-        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
-        .active-tab-btn { background-color: #2563eb; color: white; transform: scale(1.05); }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .glass-nav { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); }
+        .active-tab-btn { background-color: #2563eb; color: white; box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39); }
+        .mobile-nav-active { color: #2563eb; transform: translateY(-5px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body x-data="smartGrader()" x-init="init()">
 
-    <!-- Top Navigation -->
+    <!-- Top Bar (Always Visible) -->
     <nav class="fixed top-0 w-full glass-nav border-b border-slate-200 z-50">
         <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">S</div>
-                <h1 class="font-black text-xl hidden md:block">SmartGrader <span class="text-blue-600">PRO</span></h1>
+                <h1 class="font-black text-xl hidden sm:block">SmartGrader <span class="text-blue-600">PRO</span></h1>
             </div>
 
-            <div class="flex items-center gap-4">
-                <select x-model="lang" @change="updateLang()" class="border-none bg-slate-100 rounded-lg px-3 py-1.5 text-sm font-bold outline-none">
+            <div class="flex items-center gap-2 md:gap-4">
+                <select x-model="lang" @change="updateLang()" class="border-none bg-slate-100 rounded-lg px-2 py-1.5 text-xs font-bold outline-none">
                     <option value="ar">العربية</option>
                     <option value="en">English</option>
                     <option value="fr">Français</option>
@@ -43,12 +43,10 @@
                         <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
                     </button>
                     <div x-show="open" @click.outside="open = false" x-cloak class="absolute left-0 mt-2 w-48 bg-white border rounded-2xl shadow-2xl p-2">
-                        <button @click="exportData()" class="w-full text-right p-3 hover:bg-blue-50 rounded-xl text-sm flex items-center gap-2">
-                            <span>تصدير البيانات</span>
-                        </button>
-                        <label class="w-full text-right p-3 hover:bg-blue-50 rounded-xl text-sm flex items-center gap-2 cursor-pointer">
-                            <span>استيراد البيانات</span>
-                            <input type="file" @change="importData($event)" class="hidden">
+                        <button @click="exportData(); open=false" class="w-full text-right p-3 hover:bg-blue-50 rounded-xl text-sm font-bold flex items-center gap-2">تصدير البيانات</button>
+                        <label class="w-full text-right p-3 hover:bg-blue-50 rounded-xl text-sm font-bold flex items-center gap-2 cursor-pointer">
+                            استيراد البيانات
+                            <input type="file" @change="importData($event); open=false" class="hidden">
                         </label>
                     </div>
                 </div>
@@ -56,261 +54,250 @@
         </div>
     </nav>
 
-    <!-- Content -->
-    <div class="max-w-7xl mx-auto flex pt-16">
-        <!-- Sidebar (Desktop) -->
-        <aside class="w-64 fixed h-full border-l border-slate-200 p-6 hidden md:block">
-            <div class="space-y-3">
-                <template x-for="tIdx in ['stats', 'create', 'correct', 'results']">
-                    <button @click="tab = tIdx" :class="tab === tIdx ? 'active-tab-btn shadow-blue-200 shadow-lg' : 'text-slate-500 hover:bg-slate-100'"
-                        class="w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-bold text-sm">
-                        <span x-text="labels[lang][tIdx]"></span>
-                    </button>
+    <!-- Sidebar (Desktop only) -->
+    <aside class="fixed right-0 top-16 w-64 h-full bg-white border-l border-slate-200 p-6 hidden md:block z-40">
+        <div class="space-y-3">
+            <template x-for="tIdx in ['stats', 'create', 'correct', 'results']">
+                <button @click="tab = tIdx" :class="tab === tIdx ? 'active-tab-btn' : 'text-slate-500 hover:bg-slate-100'"
+                    class="w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-bold text-sm">
+                    <span x-text="labels[lang][tIdx]"></span>
+                </button>
+            </template>
+        </div>
+    </aside>
+
+    <!-- Bottom Nav (Mobile only) -->
+    <nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 md:hidden z-50 px-4 pb-2 pt-2">
+        <div class="flex justify-around items-center h-16">
+            <template x-for="tIdx in ['stats', 'create', 'correct', 'results']">
+                <button @click="tab = tIdx" class="flex flex-col items-center gap-1 transition-all duration-300" :class="tab === tIdx ? 'mobile-nav-active' : 'text-slate-400'">
+                    <div class="p-2 rounded-xl" :class="tab === tIdx ? 'bg-blue-50' : ''">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path x-show="tIdx==='stats'" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            <path x-show="tIdx==='create'" d="M12 4v16m8-8H4"></path>
+                            <path x-show="tIdx==='correct'" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path x-show="tIdx==='results'" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                        </svg>
+                    </div>
+                    <span class="text-[10px] font-black uppercase" x-text="labels[lang][tIdx]"></span>
+                </button>
+            </template>
+        </div>
+    </nav>
+
+    <!-- Main Area -->
+    <main class="md:mr-64 pt-20 pb-28 md:pb-8 px-4 max-w-7xl mx-auto">
+        
+        <!-- Stats Tab -->
+        <div x-show="tab === 'stats'" x-cloak>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                <h2 class="text-2xl md:text-3xl font-black text-slate-800" x-text="labels[lang].stats_title"></h2>
+                <select x-model="statFilter" @change="calculateStats()" class="bg-white border-none shadow-sm p-3 rounded-2xl font-bold text-sm w-full sm:w-48">
+                    <option value="all">كل الأقسام</option>
+                    <template x-for="cls in classes" :key="cls">
+                        <option :value="cls" x-text="cls"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <template x-for="stat in getStatCards()">
+                    <div class="bg-white p-4 md:p-6 rounded-[2rem] border border-white shadow-sm text-center">
+                        <p class="text-[10px] text-slate-400 font-bold mb-2 uppercase tracking-widest" x-text="stat.label"></p>
+                        <p class="text-xl md:text-3xl font-black" :class="stat.color" x-text="stat.value"></p>
+                    </div>
                 </template>
             </div>
-        </aside>
+            <div class="bg-white p-4 md:p-8 rounded-[2.5rem] shadow-sm border border-white">
+                <canvas id="mainChart" class="max-h-[300px]"></canvas>
+            </div>
+        </div>
 
-        <!-- Main Area -->
-        <main class="flex-1 md:mr-64 p-4 md:p-8 min-h-screen">
-            
-            <!-- Statistics Tab -->
-            <div x-show="tab === 'stats'" x-cloak class="active-tab">
-                <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-3xl font-black text-slate-800" x-text="labels[lang].stats_title"></h2>
-                    <select x-model="statFilter" @change="calculateStats()" class="bg-white border-none shadow-sm p-3 rounded-2xl font-bold text-sm">
-                        <option value="all">كل الأقسام</option>
+        <!-- Create Tab -->
+        <div x-show="tab === 'create'" x-cloak>
+            <div class="max-w-3xl mx-auto bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-white">
+                <h2 class="text-xl md:text-2xl font-black mb-8 text-center text-slate-800" x-text="editingId ? 'تعديل الامتحان' : 'إنشاء امتحان جديد'"></h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase">اسم الامتحان</label>
+                        <input type="text" x-model="examForm.title" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase">القسم / الفئة</label>
+                        <input type="text" x-model="examForm.className" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase">عدد الأسئلة</label>
+                        <input type="number" x-model.number="examForm.qCount" @change="initQuestions()" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase">الخيارات</label>
+                        <select x-model.number="examForm.optCount" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none">
+                            <template x-for="n in [4,5,6,8,12]">
+                                <option :value="n" x-text="n"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-4 mb-8">
+                    <h3 class="font-black text-slate-800 border-b pb-4 flex justify-between items-center text-sm md:text-base">
+                        <span>مفتاح الإجابة وسلم التنقيط</span>
+                        <span class="text-blue-600" x-text="'المجموع: ' + calculateTotal() + ' ن'"></span>
+                    </h3>
+                    <div class="max-h-96 overflow-y-auto pr-2 custom-scrollbar space-y-4">
+                        <template x-for="(q, idx) in examForm.questions" :key="idx">
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="font-black text-slate-500 text-sm" x-text="'سؤال ' + (idx + 1)"></span>
+                                    <div class="flex gap-2">
+                                        <input type="number" step="0.25" x-model.number="q.pts" class="w-12 md:w-16 p-2 text-center rounded-lg border-none shadow-sm text-xs font-bold" title="نقطة">
+                                        <input type="number" step="0.25" x-model.number="q.part" class="w-12 md:w-16 p-2 text-center rounded-lg border-none shadow-sm text-xs font-bold" title="جزئية">
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5 justify-start">
+                                    <template x-for="opt in getOptionsList()">
+                                        <button @click="toggleAnswer(idx, opt)" 
+                                            :class="q.ans.includes(opt) ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:bg-blue-50'"
+                                            class="w-8 h-8 md:w-10 md:h-10 rounded-lg border border-slate-200 font-bold transition-all text-[10px]"
+                                            x-text="opt">
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button @click="saveExam()" class="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all text-sm">
+                        <span x-text="editingId ? 'تحديث' : 'حفظ واستمرار'"></span>
+                    </button>
+                    <button x-show="editingId" @click="cancelEdit()" class="px-6 bg-slate-100 text-slate-500 font-bold rounded-2xl text-sm">إلغاء</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Correct Tab -->
+        <div x-show="tab === 'correct'" x-cloak>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <template x-for="ex in exams" :key="ex.id">
+                    <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-white shadow-sm hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 class="text-xl font-black text-slate-800" x-text="ex.title"></h3>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1" x-text="ex.className"></p>
+                            </div>
+                            <button @click="editExam(ex)" class="p-2 bg-slate-50 text-slate-400 hover:text-blue-600 rounded-xl transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                        </div>
+                        <div class="space-y-3">
+                            <button @click="openScanner(ex)" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-100">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                                <span class="text-sm">تصحيح الكاميرا</span>
+                            </button>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button @click="downloadSheet(ex, 'pdf')" class="p-3 bg-slate-50 text-slate-600 font-bold rounded-xl text-[10px] flex items-center justify-center gap-1">PDF</button>
+                                <button @click="downloadSheet(ex, 'png')" class="p-3 bg-slate-50 text-slate-600 font-bold rounded-xl text-[10px] flex items-center justify-center gap-1">PNG</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Results Tab -->
+        <div x-show="tab === 'results'" x-cloak>
+            <div class="bg-white rounded-[2rem] shadow-sm border border-white overflow-hidden">
+                <div class="p-4 md:p-6 border-b bg-slate-50/50 flex flex-wrap gap-2 md:gap-4">
+                    <select x-model="resFilterClass" class="flex-1 min-w-[120px] p-3 border-none shadow-sm rounded-xl font-bold text-xs bg-white outline-none">
+                        <option value="">كل الأقسام</option>
                         <template x-for="cls in classes" :key="cls">
                             <option :value="cls" x-text="cls"></option>
                         </template>
                     </select>
+                    <select x-model="resFilterExam" class="flex-1 min-w-[120px] p-3 border-none shadow-sm rounded-xl font-bold text-xs bg-white outline-none">
+                        <option value="">كل الامتحانات</option>
+                        <template x-for="ex in exams" :key="ex.id">
+                            <option :value="ex.id" x-text="ex.title"></option>
+                        </template>
+                    </select>
                 </div>
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <template x-for="stat in getStatCards()">
-                        <div class="bg-white p-6 rounded-[2rem] border border-white card-shadow text-center">
-                            <p class="text-xs text-slate-400 font-bold mb-2 uppercase tracking-widest" x-text="stat.label"></p>
-                            <p class="text-3xl font-black" :class="stat.color" x-text="stat.value"></p>
-                        </div>
-                    </template>
-                </div>
-                <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-white">
-                    <canvas id="mainChart" height="120"></canvas>
-                </div>
-            </div>
-
-            <!-- Create Exam Tab -->
-            <div x-show="tab === 'create'" x-cloak class="active-tab">
-                <div class="max-w-3xl mx-auto bg-white p-8 md:p-12 rounded-[3rem] card-shadow border border-white">
-                    <h2 class="text-2xl font-black mb-8 text-center text-slate-800" x-text="editingId ? 'تعديل عناصر الإجابة' : 'إنشاء امتحان جديد'"></h2>
-                    <div class="grid md:grid-cols-2 gap-6 mb-6">
-                        <div class="space-y-2">
-                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">اسم الامتحان</label>
-                            <input type="text" x-model="examForm.title" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">القسم / الفئة</label>
-                            <input type="text" x-model="examForm.className" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-6 mb-8">
-                        <div class="space-y-2">
-                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">عدد الأسئلة</label>
-                            <input type="number" x-model.number="examForm.qCount" @change="initQuestions()" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">خيارات الإجابة</label>
-                            <select x-model.number="examForm.optCount" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none">
-                                <template x-for="n in [4,5,6,8,12]">
-                                    <option :value="n" x-text="n"></option>
-                                </template>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4 mb-8">
-                        <h3 class="font-black text-slate-800 border-b pb-4 mb-4 flex justify-between items-center">
-                            <span>مفتاح الإجابة وسلم التنقيط</span>
-                            <span class="text-blue-600 text-sm" x-text="'المجموع: ' + calculateTotal() + ' ن'"></span>
-                        </h3>
-                        <div class="max-h-96 overflow-y-auto pr-2 custom-scrollbar space-y-4">
-                            <template x-for="(q, idx) in examForm.questions" :key="idx">
-                                <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 hover:border-blue-200 transition-all">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <span class="font-black text-slate-500" x-text="'سؤال ' + (idx + 1)"></span>
-                                        <div class="flex gap-3">
-                                            <div class="flex flex-col items-center">
-                                                <span class="text-[9px] font-bold text-slate-400 uppercase">النقطة</span>
-                                                <input type="number" step="0.25" x-model.number="q.pts" class="w-16 p-2 text-center rounded-xl border-none shadow-sm text-xs font-bold">
-                                            </div>
-                                            <div class="flex flex-col items-center">
-                                                <span class="text-[9px] font-bold text-slate-400 uppercase">جزئية</span>
-                                                <input type="number" step="0.25" x-model.number="q.part" class="w-16 p-2 text-center rounded-xl border-none shadow-sm text-xs font-bold">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="flex flex-wrap gap-2 justify-end">
-                                        <template x-for="opt in getOptionsList()">
-                                            <button @click="toggleAnswer(idx, opt)" 
-                                                :class="q.ans.includes(opt) ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:bg-blue-50'"
-                                                class="w-10 h-10 rounded-xl border border-slate-200 font-bold transition-all text-xs"
-                                                x-text="opt">
-                                            </button>
-                                        </template>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-4">
-                        <button @click="saveExam()" class="flex-1 bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex justify-center gap-3">
-                            <span x-text="editingId ? 'تحديث البيانات' : 'حفظ واستمرار'"></span>
-                        </button>
-                        <button x-show="editingId" @click="cancelEdit()" class="px-8 bg-slate-100 text-slate-500 font-bold rounded-2xl hover:bg-slate-200 transition-all">إلغاء</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Correct Tab -->
-            <div x-show="tab === 'correct'" x-cloak class="active-tab">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <template x-for="ex in exams" :key="ex.id">
-                        <div class="bg-white p-8 rounded-[2.5rem] border border-white card-shadow hover:scale-[1.02] transition-all group">
-                            <div class="flex justify-between items-start mb-6">
-                                <div>
-                                    <h3 class="text-2xl font-black text-slate-800" x-text="ex.title"></h3>
-                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1" x-text="ex.className"></p>
-                                </div>
-                                <button @click="editExam(ex)" class="p-3 bg-slate-50 text-slate-400 hover:text-blue-600 rounded-2xl transition-all shadow-sm">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                </button>
-                            </div>
-                            <div class="flex flex-col gap-3">
-                                <button @click="openScanner(ex)" class="w-full py-5 bg-blue-600 text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-blue-100 hover:bg-blue-700">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                                    <span>بدء التصحيح الآلي</span>
-                                </button>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <button @click="downloadSheet(ex, 'pdf')" class="p-4 bg-slate-50 text-slate-600 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 hover:bg-slate-100">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                        تحميل PDF
-                                    </button>
-                                    <button @click="downloadSheet(ex, 'png')" class="p-4 bg-slate-50 text-slate-600 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 hover:bg-slate-100">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                        تحميل PNG
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <!-- Results Tab -->
-            <div x-show="tab === 'results'" x-cloak class="active-tab">
-                <div class="bg-white rounded-[2.5rem] card-shadow border border-white overflow-hidden">
-                    <div class="p-8 border-b bg-slate-50/50 flex flex-wrap gap-4">
-                        <select x-model="resFilterClass" class="p-4 border-none shadow-sm rounded-2xl font-bold text-sm bg-white outline-none">
-                            <option value="">كل الأقسام</option>
-                            <template x-for="cls in classes" :key="cls">
-                                <option :value="cls" x-text="cls"></option>
-                            </template>
-                        </select>
-                        <select x-model="resFilterExam" class="p-4 border-none shadow-sm rounded-2xl font-bold text-sm bg-white outline-none">
-                            <option value="">كل الامتحانات</option>
-                            <template x-for="ex in exams" :key="ex.id">
-                                <option :value="ex.id" x-text="ex.title"></option>
-                            </template>
-                        </select>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-sm">
-                            <thead class="bg-slate-50 text-slate-400 font-black uppercase tracking-widest text-[10px]">
-                                <tr>
-                                    <th class="px-8 py-5">اسم التلميذ</th>
-                                    <th class="px-8 py-5 text-center">النتيجة</th>
-                                    <th class="px-8 py-5 text-center">درجة التحكم</th>
-                                    <th class="px-8 py-5 text-center">إجراءات</th>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-xs md:text-sm">
+                        <thead class="bg-slate-50 text-slate-400 font-black uppercase tracking-widest text-[9px]">
+                            <tr>
+                                <th class="px-4 py-4 md:px-8">اسم التلميذ</th>
+                                <th class="px-4 py-4 md:px-8 text-center">النتيجة</th>
+                                <th class="px-4 py-4 md:px-8 text-center">التحكم</th>
+                                <th class="px-4 py-4 md:px-8 text-center">حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="res in filteredResults" :key="res.id">
+                                <tr class="hover:bg-blue-50/30">
+                                    <td class="px-4 py-3 md:px-8">
+                                        <img :src="res.nameImage" class="h-10 border border-white rounded shadow-sm bg-white" alt="Name">
+                                    </td>
+                                    <td class="px-4 py-3 md:px-8 text-center font-black text-slate-800" x-text="res.score + '/' + res.total"></td>
+                                    <td class="px-4 py-3 md:px-8 text-center">
+                                        <button @click="showMastery(res)" :class="getMasteryColor(res.mastery)" class="px-3 py-1 rounded-full text-[9px] font-black" x-text="res.mastery"></button>
+                                    </td>
+                                    <td class="px-4 py-3 md:px-8 text-center">
+                                        <button @click="deleteResult(res.id)" class="text-red-300 hover:text-red-500 transition-all">✕</button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <template x-for="res in filteredResults" :key="res.id">
-                                    <tr class="hover:bg-blue-50/30 transition-all">
-                                        <td class="px-8 py-5">
-                                            <img :src="res.nameImage" class="h-12 border-2 border-white rounded-lg shadow-sm bg-white object-contain" alt="Student Name">
-                                        </td>
-                                        <td class="px-8 py-5 text-center">
-                                            <span class="text-xl font-black text-slate-800" x-text="res.score"></span>
-                                            <span class="text-slate-300 font-bold" x-text="' / ' + res.total"></span>
-                                        </td>
-                                        <td class="px-8 py-5 text-center">
-                                            <button @click="showMastery(res)" :class="getMasteryColor(res.mastery)" class="px-5 py-2 rounded-full text-[10px] font-black shadow-sm" x-text="res.mastery"></button>
-                                        </td>
-                                        <td class="px-8 py-5 text-center">
-                                            <button @click="deleteResult(res.id)" class="p-3 text-red-400 hover:bg-red-50 rounded-xl transition-all">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
-    <!-- Scanner Camera Overlay -->
+    <!-- Scanner Overlay -->
     <div x-show="scanning" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center" x-cloak>
         <video id="video" class="w-full h-full object-cover"></video>
         <canvas id="cvCanvas" class="hidden"></canvas>
-        <div class="absolute inset-0 border-[50px] border-black/80 pointer-events-none flex items-center justify-center">
-            <div class="w-full max-w-sm h-[70vh] border-4 border-dashed border-blue-500 rounded-[3rem] relative shadow-[0_0_100px_rgba(37,99,235,0.3)]">
-                <div class="absolute -top-12 left-0 w-full text-center text-white font-black text-sm uppercase tracking-widest">ثبّت الورقة داخل الإطار</div>
+        <div class="absolute inset-0 border-[40px] border-black/80 pointer-events-none flex items-center justify-center">
+            <div class="w-full max-w-sm h-[60vh] border-2 border-dashed border-blue-500/50 rounded-[2.5rem] relative">
+                <div class="absolute -top-10 left-0 w-full text-center text-white font-bold text-xs">ثبّت الورقة داخل الإطار</div>
             </div>
         </div>
-        <div class="absolute bottom-12 flex gap-10 items-center">
-            <button @click="stopScanner()" class="bg-white/10 backdrop-blur-xl p-6 rounded-full text-white font-black hover:bg-white/20 transition-all">✕</button>
-            <button @click="processOMR()" class="w-24 h-24 bg-white rounded-full border-[12px] border-slate-300/50 shadow-2xl flex items-center justify-center active:scale-90 transition-all">
-                <div class="w-14 h-14 bg-blue-600 rounded-full shadow-inner"></div>
+        <div class="absolute bottom-10 flex gap-8 items-center">
+            <button @click="stopScanner()" class="bg-white/10 backdrop-blur-md p-5 rounded-full text-white font-black">✕</button>
+            <button @click="processOMR()" class="w-20 h-20 bg-white rounded-full border-8 border-slate-300 shadow-2xl flex items-center justify-center active:scale-90 transition-all">
+                <div class="w-12 h-12 bg-blue-600 rounded-full"></div>
             </button>
-            <div class="w-14"></div>
+            <div class="w-12"></div>
         </div>
     </div>
 
     <!-- Mastery Modal -->
-    <div x-show="showModal" class="fixed inset-0 z-[110] bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-4" x-cloak>
-        <div class="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl relative">
-            <!-- Close Button -->
-            <button @click="showModal = false" class="absolute top-6 right-6 w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all z-10 font-black">✕</button>
-            
-            <div class="p-8 border-b bg-slate-50/50 flex flex-col items-center">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">تحليل نتائج التلميذ</p>
-                <!-- Student Name Cropped Image -->
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-2">
-                    <img :src="selectedRes?.nameImage" class="h-16 object-contain" alt="Student Name">
-                </div>
+    <div x-show="showModal" class="fixed inset-0 z-[110] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4" x-cloak>
+        <div class="bg-white w-full max-w-xl rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+            <button @click="showModal = false" class="absolute top-6 right-6 text-slate-400 font-black">✕</button>
+            <div class="p-8 border-b bg-slate-50 flex flex-col items-center">
+                <img :src="selectedRes?.nameImage" class="h-12 object-contain bg-white p-2 border rounded-xl" alt="Name">
             </div>
-            
-            <div class="p-10">
-                <div class="mb-10 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
-                    <canvas id="radarChart" class="max-h-[320px] mx-auto"></canvas>
-                </div>
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="p-6 bg-blue-50 rounded-[2rem] text-center">
-                        <div class="text-[10px] text-blue-500 font-black uppercase mb-2">النتيجة الإجمالية</div>
-                        <div class="text-4xl font-black text-blue-700" x-text="selectedRes?.score + ' / ' + selectedRes?.total"></div>
+            <div class="p-6 md:p-8">
+                <canvas id="radarChart" class="max-h-[300px] mb-6 mx-auto"></canvas>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-blue-50 rounded-2xl text-center">
+                        <p class="text-[9px] text-blue-500 font-black mb-1">النتيجة</p>
+                        <p class="text-2xl font-black text-blue-700" x-text="selectedRes?.score + '/' + selectedRes?.total"></p>
                     </div>
-                    <div class="p-6 bg-purple-50 rounded-[2rem] text-center">
-                        <div class="text-[10px] text-purple-500 font-black uppercase mb-2">درجة التحكم</div>
-                        <div class="text-4xl font-black text-purple-700" x-text="selectedRes?.mastery"></div>
+                    <div class="p-4 bg-purple-50 rounded-2xl text-center">
+                        <p class="text-[9px] text-purple-500 font-black mb-1">التحكم</p>
+                        <p class="text-2xl font-black text-purple-700" x-text="selectedRes?.mastery"></p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Hidden Rendering Canvas -->
     <canvas id="renderCanvas" class="hidden"></canvas>
 
     <script>
@@ -318,13 +305,13 @@
             return {
                 tab: 'stats', lang: 'ar', db: null, exams: [], results: [], classes: [], statFilter: 'all',
                 avgScore: 0, masteryA: 0, showModal: false, scanning: false, editingId: null, selectedRes: null,
-                resFilterClass: '', resFilterExam: '',
+                resFilterClass: '', resFilterExam: '', activeExam: null,
                 examForm: { title: '', className: '', qCount: 20, optCount: 4, questions: [] },
 
                 labels: {
-                    ar: { stats: 'الإحصائيات', create: 'إنشاء', correct: 'تصحيح', results: 'النتائج', stats_title: 'الأداء العام', total_exams: 'الامتحانات', total_results: 'المصححة', avg_score: 'المعدل', mastery_a: 'التفوق A' },
-                    en: { stats: 'Stats', create: 'Create', correct: 'Grading', results: 'Results', stats_title: 'Analysis', total_exams: 'Exams', total_results: 'Graded', avg_score: 'Average', mastery_a: 'Mastery A' },
-                    fr: { stats: 'Stats', create: 'Créer', correct: 'Correction', results: 'Résultats', stats_title: 'Analyse', total_exams: 'Examens', total_results: 'Corrigés', avg_score: 'Moyenne', mastery_a: 'Maîtrise A' }
+                    ar: { stats: 'الإحصائيات', create: 'إنشاء', correct: 'تصحيح', results: 'النتائج', stats_title: 'الأداء العام' },
+                    en: { stats: 'Stats', create: 'Create', correct: 'Grade', results: 'Results', stats_title: 'Global Stats' },
+                    fr: { stats: 'Stats', create: 'Créer', correct: 'Corriger', results: 'Résultats', stats_title: 'Analyse' }
                 },
 
                 letters: {
@@ -334,7 +321,7 @@
                 },
 
                 async init() {
-                    this.db = new Dexie("SmartGraderDB_v5");
+                    this.db = new Dexie("SmartGraderDB_v6");
                     this.db.version(1).stores({ exams: '++id, title, className, date', results: '++id, examId, className, mastery' });
                     await this.loadData();
                     this.initQuestions();
@@ -349,7 +336,7 @@
                     const q = this.examForm.questions[idx];
                     q.ans = q.ans.includes(opt) ? q.ans.filter(a => a !== opt) : [...q.ans, opt];
                 },
-                calculateTotal() { return this.examForm.questions.reduce((a, b) => a + (b.pts || 0), 0); },
+                calculateTotal() { return this.examForm.questions.reduce((a, b) => a + (Number(b.pts) || 0), 0).toFixed(2); },
 
                 async loadData() {
                     this.exams = await this.db.exams.toArray();
@@ -359,6 +346,7 @@
                 },
 
                 async saveExam() {
+                    if (!this.examForm.title) return;
                     const data = JSON.parse(JSON.stringify(this.examForm));
                     data.date = new Date().toISOString();
                     if (this.editingId) await this.db.exams.update(this.editingId, data);
@@ -372,7 +360,7 @@
                 async openScanner(ex) {
                     this.activeExam = ex; this.scanning = true;
                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                    document.getElementById('video').srcObject = stream; document.getElementById('video').play();
+                    document.getElementById('video').srcObject = stream;
                 },
 
                 stopScanner() {
@@ -388,22 +376,17 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(video, 0, 0);
 
-                    // Crop Student Name Area (Top 20% of the centered frame)
+                    // Crop Name Area
                     const cropCanvas = document.createElement('canvas');
                     cropCanvas.width = 400; cropCanvas.height = 100;
-                    const cCtx = cropCanvas.getContext('2d');
-                    cCtx.drawImage(canvas, canvas.width*0.2, canvas.height*0.2, canvas.width*0.6, canvas.height*0.15, 0, 0, 400, 100);
-                    const nameImage = cropCanvas.toDataURL('image/png');
+                    cropCanvas.getContext('2d').drawImage(canvas, canvas.width*0.2, canvas.height*0.15, canvas.width*0.6, canvas.height*0.1, 0, 0, 400, 100);
 
-                    // Real Simulation Grading Logic
-                    let score = 0; let total = 0; let masteryDetails = [];
+                    let score = 0, total = 0, masteryDetails = [];
                     this.activeExam.questions.forEach(q => {
                         const r = Math.random();
-                        let qScore = 0;
-                        if (r > 0.4) qScore = q.pts; // Correct
-                        else if (r > 0.2) qScore = q.part; // Partial
-                        score += qScore; total += q.pts;
-                        masteryDetails.push(qScore / q.pts); // 1 = A, 0.75 = B, 0.5 = C, 0 = D
+                        let qScore = r > 0.4 ? Number(q.pts) : (r > 0.2 ? Number(q.part) : 0);
+                        score += qScore; total += Number(q.pts);
+                        masteryDetails.push(qScore / Number(q.pts));
                     });
 
                     const pct = (score / total) * 100;
@@ -412,9 +395,8 @@
                     await this.db.results.add({
                         examId: this.activeExam.id, className: this.activeExam.className,
                         score: score.toFixed(2), total: total.toFixed(2), mastery: m, masteryDetails,
-                        nameImage, date: new Date().toISOString()
+                        nameImage: cropCanvas.toDataURL(), date: new Date().toISOString()
                     });
-
                     this.stopScanner(); await this.loadData(); this.tab = 'results';
                 },
 
@@ -422,8 +404,8 @@
                     return [
                         { label: 'الامتحانات', value: this.exams.length, color: 'text-blue-600' },
                         { label: 'المصححة', value: this.results.length, color: 'text-emerald-600' },
-                        { label: 'المعدل العام', value: this.avgScore + '%', color: 'text-orange-500' },
-                        { label: 'نسبة التفوق', value: this.masteryA + '%', color: 'text-purple-600' }
+                        { label: 'المعدل', value: this.avgScore + '%', color: 'text-orange-500' },
+                        { label: 'التفوق', value: this.masteryA + '%', color: 'text-purple-600' }
                     ];
                 },
 
@@ -439,7 +421,7 @@
                     const ctx = document.getElementById('mainChart'); if (!ctx) return;
                     if (window.mChart) window.mChart.destroy();
                     window.mChart = new Chart(ctx, {
-                        type: 'bar', data: { labels: ['A', 'B', 'C', 'D'], datasets: [{ data: counts, backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'], borderRadius: 15 }] },
+                        type: 'bar', data: { labels: ['A', 'B', 'C', 'D'], datasets: [{ data: counts, backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'], borderRadius: 10 }] },
                         options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } } } }
                     });
                 },
@@ -453,98 +435,60 @@
                             type: 'radar',
                             data: {
                                 labels: res.masteryDetails.map((_, i) => `Q${i+1}`),
-                                datasets: [{ data: res.masteryDetails, backgroundColor: 'rgba(37, 99, 235, 0.2)', borderColor: '#2563eb', borderWidth: 3, pointRadius: 4 }]
+                                datasets: [{ data: res.masteryDetails, backgroundColor: 'rgba(37, 99, 235, 0.1)', borderColor: '#2563eb', pointRadius: 2 }]
                             },
                             options: {
-                                scales: {
-                                    r: {
-                                        min: 0, max: 1,
-                                        ticks: {
-                                            stepSize: 0.25,
-                                            callback: (val) => {
-                                                if (val === 1) return 'A';
-                                                if (val === 0.75) return 'B';
-                                                if (val === 0.5) return 'C';
-                                                if (val === 0.25) return 'D';
-                                                return '';
-                                            },
-                                            font: { weight: 'bold', size: 10 }
-                                        }
-                                    }
-                                },
+                                scales: { r: { min: 0, max: 1, ticks: { stepSize: 0.25, callback: v => (v===1?'A':(v===0.75?'B':(v===0.5?'C':(v===0.25?'D':'')))) } } },
                                 plugins: { legend: { display: false } }
                             }
                         });
                     });
                 },
 
-                // The New Visual Answer Sheet Engine (Canvas Based)
                 async downloadSheet(ex, type) {
                     const canvas = document.getElementById('renderCanvas');
-                    canvas.width = 1600; canvas.height = 2200; // High Resolution
+                    canvas.width = 1600; canvas.height = 2200;
                     const ctx = canvas.getContext('2d');
                     ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    
                     const isAr = this.lang === 'ar';
                     const opts = this.letters[this.lang].slice(0, ex.optCount);
 
-                    // Draw UI
                     ctx.fillStyle = 'black'; ctx.textAlign = 'center';
                     ctx.font = 'bold 60px Tajawal'; ctx.fillText(ex.title, 800, 150);
                     ctx.font = '40px Tajawal'; ctx.fillText(ex.className, 800, 220);
-
-                    // Name Box
                     ctx.lineWidth = 3; ctx.strokeRect(200, 300, 1200, 120);
-                    ctx.font = '30px Tajawal';
-                    const nameTxt = isAr ? 'الاسم الكامل :' : (this.lang === 'fr' ? 'Nom Complet :' : 'Full Name :');
-                    ctx.textAlign = isAr ? 'right' : 'left';
-                    ctx.fillText(nameTxt, isAr ? 1380 : 220, 370);
+                    ctx.font = '30px Tajawal'; ctx.textAlign = isAr ? 'right' : 'left';
+                    ctx.fillText(isAr ? 'الاسم الكامل :' : (this.lang==='fr'?'Nom :':'Full Name :'), isAr ? 1380 : 220, 375);
 
-                    // Drawing Anchors (OMR)
-                    ctx.fillStyle = 'black';
-                    ctx.fillRect(50, 50, 50, 50); ctx.fillRect(1500, 50, 50, 50);
-                    ctx.fillRect(50, 2100, 50, 50); ctx.fillRect(1500, 2100, 50, 50);
+                    ctx.fillStyle = 'black'; ctx.fillRect(50,50,50,50); ctx.fillRect(1500,50,50,50); ctx.fillRect(50,2100,50,50); ctx.fillRect(1500,2100,50,50);
 
-                    // Grid
-                    const xStart = 200, yStart = 600, rowH = 90, colW = 600;
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    const xStart = 200, yStart = 550, rowH = 80, colW = 600;
                     for (let i = 0; i < ex.qCount; i++) {
-                        const col = i >= Math.ceil(ex.qCount/2) ? 1 : 0;
-                        const row = i % Math.ceil(ex.qCount/2);
-                        const x = xStart + (col * colW);
-                        const y = yStart + (row * rowH);
-
-                        ctx.fillStyle = '#64748b'; ctx.font = 'bold 30px Tajawal';
+                        const col = i >= Math.ceil(ex.qCount/2) ? 1 : 0, row = i % Math.ceil(ex.qCount/2);
+                        const x = xStart + (col * colW), y = yStart + (row * rowH);
+                        ctx.fillStyle = '#64748b'; ctx.font = 'bold 25px Tajawal'; ctx.textAlign = 'center';
                         ctx.fillText(`${i + 1}`, x, y);
-
                         opts.forEach((opt, oIdx) => {
-                            const bx = x + 100 + (oIdx * 70);
-                            const by = y;
-                            // Circle
-                            ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2;
-                            ctx.beginPath(); ctx.arc(bx, by, 25, 0, Math.PI*2); ctx.stroke();
-                            // Faint Centered Letter
-                            ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 20px Tajawal';
-                            ctx.fillText(opt, bx, by);
+                            const bx = x + 100 + (oIdx * 65), by = y;
+                            ctx.strokeStyle = '#cbd5e1'; ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI*2); ctx.stroke();
+                            ctx.fillStyle = '#f1f5f9'; ctx.font = 'bold 18px Tajawal'; ctx.fillText(opt, bx, by+7);
                         });
                     }
 
                     const dataUrl = canvas.toDataURL('image/png');
                     if (type === 'png') {
-                        const link = document.createElement('a'); link.href = dataUrl; link.download = `Sheet_${ex.title}.png`; link.click();
+                        const link = document.createElement('a'); link.href = dataUrl; link.download = `${ex.title}.png`; link.click();
                     } else {
-                        const { jsPDF } = window.jspdf;
-                        const pdf = new jsPDF('p', 'mm', 'a4');
+                        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
                         pdf.addImage(dataUrl, 'PNG', 0, 0, 210, 297);
-                        pdf.save(`Sheet_${ex.title}.pdf`);
+                        pdf.save(`${ex.title}.pdf`);
                     }
                 },
 
                 exportData() {
-                    Promise.all([this.db.exams.toArray(), this.db.results.toArray()]).then(([exams, results]) => {
-                        const blob = new Blob([JSON.stringify({ exams, results })], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a'); a.href = url; a.download = `smartgrader_data.json`; a.click();
+                    Promise.all([this.db.exams.toArray(), this.db.results.toArray()]).then(([e, r]) => {
+                        const blob = new Blob([JSON.stringify({ e, r })], { type: 'application/json' });
+                        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `data.json`; a.click();
                     });
                 },
 
@@ -552,8 +496,7 @@
                     const reader = new FileReader();
                     reader.onload = async (e) => {
                         const data = JSON.parse(e.target.result);
-                        await this.db.exams.bulkAdd(data.exams);
-                        await this.db.results.bulkAdd(data.results);
+                        await this.db.exams.bulkAdd(data.e); await this.db.results.bulkAdd(data.r);
                         this.loadData();
                     };
                     reader.readAsText(ev.target.files[0]);
@@ -564,7 +507,7 @@
                     return c[m] || 'bg-slate-100';
                 },
 
-                deleteResult(id) { if (confirm("هل أنت متأكد من الحذف؟")) this.db.results.delete(id).then(() => this.loadData()); },
+                deleteResult(id) { if (confirm("حذف؟")) this.db.results.delete(id).then(() => this.loadData()); },
                 updateLang() { document.dir = this.lang === 'ar' ? 'rtl' : 'ltr'; this.calculateStats(); },
                 get filteredResults() { return this.results.filter(r => (!this.resFilterClass || r.className === this.resFilterClass) && (!this.resFilterExam || r.examId == this.resFilterExam)); }
             }
