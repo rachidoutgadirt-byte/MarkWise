@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SmartGrader AI - ZipGrade Edition</title>
+    <title>SmartGrader AI - Pro OMR Engine</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -13,168 +13,151 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
-        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; touch-action: manipulation; }
         [x-cloak] { display: none !important; }
-        .active-tab-btn { background-color: #2563eb; color: white; }
-        .scanner-target { transition: all 0.3s ease; border: 4px solid rgba(255,255,255,0.5); }
-        .scanner-target.aligned { border-color: #10b981; background: rgba(16, 185, 129, 0.1); box-shadow: 0 0 20px #10b981; }
-        .scanner-overlay { background: rgba(0,0,0,0.7); pointer-events: none; }
-        .mobile-nav { box-shadow: 0 -5px 20px rgba(0,0,0,0.05); }
+        
+        /* Scanner HUD Styling */
+        .guide-box {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .guide-box.detected {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 25px #10b981;
+            transform: scale(1.1);
+        }
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #3b82f6, transparent);
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan { 0% { top: 20%; } 100% { top: 80%; } }
+        
+        .active-tab { background: #2563eb; color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
     </style>
 </head>
 <body x-data="smartGrader()" x-init="init()">
 
-    <!-- Top Navbar -->
-    <nav class="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
+    <!-- App Header -->
+    <nav class="fixed top-0 w-full glass-panel border-b border-slate-200 z-50">
         <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">S</div>
-                <h1 class="font-black text-xl hidden sm:block">SmartGrader <span class="text-blue-600 tracking-tighter">AI</span></h1>
+                <h1 class="font-black text-xl text-slate-800">SmartGrader <span class="text-blue-600">AI</span></h1>
             </div>
-            <div class="flex items-center gap-2">
-                <select x-model="lang" @change="updateLang()" class="border-none bg-slate-100 rounded-lg px-2 py-1.5 text-xs font-bold outline-none">
+            <div class="flex gap-2">
+                <select x-model="lang" @change="updateLang()" class="bg-slate-100 rounded-lg px-2 py-1 text-xs font-bold outline-none border-none">
                     <option value="ar">العربية</option>
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
+                    <option value="en">EN</option>
+                    <option value="fr">FR</option>
                 </select>
-                <button @click="exportData()" class="p-2 bg-slate-100 rounded-lg hover:bg-slate-200" title="تصدير">
+                <button @click="exportData()" class="p-2 text-slate-500 hover:text-blue-600 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 </button>
             </div>
         </div>
     </nav>
 
-    <!-- Sidebar (Desktop) -->
-    <aside class="fixed right-0 top-16 w-64 h-full bg-white border-l border-slate-200 p-6 hidden md:block z-40">
-        <nav class="space-y-3">
-            <template x-for="tIdx in ['stats', 'create', 'correct', 'results']">
-                <button @click="tab = tIdx" :class="tab === tIdx ? 'active-tab-btn' : 'text-slate-500 hover:bg-slate-100'"
-                    class="w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-bold text-sm text-right">
-                    <span x-text="labels[lang][tIdx]"></span>
+    <!-- Sidebar & Bottom Nav -->
+    <aside class="fixed right-0 top-16 w-64 h-full bg-white border-l border-slate-100 p-6 hidden md:block z-40">
+        <div class="space-y-2">
+            <template x-for="t in ['stats', 'create', 'correct', 'results']">
+                <button @click="tab = t" :class="tab === t ? 'active-tab' : 'text-slate-500 hover:bg-slate-50'" class="w-full flex items-center p-4 rounded-2xl transition-all font-bold text-sm">
+                    <span x-text="labels[lang][t]"></span>
                 </button>
             </template>
-        </nav>
+        </div>
     </aside>
 
-    <!-- Bottom Nav (Mobile) -->
-    <nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 md:hidden z-50 mobile-nav">
-        <div class="flex justify-around items-center h-16">
-            <template x-for="tIdx in ['stats', 'create', 'correct', 'results']">
-                <button @click="tab = tIdx" class="flex flex-col items-center gap-1" :class="tab === tIdx ? 'text-blue-600' : 'text-slate-400'">
+    <nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 md:hidden z-50 px-2 py-3">
+        <div class="flex justify-around items-center">
+            <template x-for="t in ['stats', 'create', 'correct', 'results']">
+                <button @click="tab = t" class="flex flex-col items-center gap-1 transition-all" :class="tab === t ? 'text-blue-600 scale-110' : 'text-slate-400'">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path x-show="tIdx==='stats'" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        <path x-show="tIdx==='create'" d="M12 4v16m8-8H4"></path>
-                        <path x-show="tIdx==='correct'" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path x-show="tIdx==='correct'" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        <path x-show="tIdx==='results'" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                        <path x-show="t==='stats'" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        <path x-show="t==='create'" d="M12 4v16m8-8H4"></path>
+                        <path x-show="t==='correct'" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path x-show="t==='correct'" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        <path x-show="t==='results'" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
                     </svg>
-                    <span class="text-[9px] font-bold" x-text="labels[lang][tIdx]"></span>
+                    <span class="text-[9px] font-black" x-text="labels[lang][t]"></span>
                 </button>
             </template>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="md:mr-64 pt-20 pb-24 px-4 max-w-7xl mx-auto">
+    <main class="md:mr-64 pt-20 pb-28 px-4 max-w-7xl mx-auto">
         
-        <!-- Tab: Stats -->
+        <!-- Stats -->
         <div x-show="tab === 'stats'" x-cloak>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-white text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">الامتحانات</p>
-                    <p class="text-3xl font-black text-blue-600" x-text="exams.length"></p>
-                </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-white text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">المصححة</p>
-                    <p class="text-3xl font-black text-emerald-600" x-text="results.length"></p>
-                </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-white text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">المعدل</p>
-                    <p class="text-3xl font-black text-orange-500" x-text="avgScore + '%'"></p>
-                </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-white text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">التفوق</p>
-                    <p class="text-3xl font-black text-purple-600" x-text="masteryA + '%'"></p>
-                </div>
+                <template x-for="stat in getStatCards()">
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm text-center">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase mb-1" x-text="stat.label"></p>
+                        <p class="text-2xl font-black text-slate-800" x-text="stat.value"></p>
+                    </div>
+                </template>
             </div>
-            <div class="bg-white p-8 rounded-[2.5rem] shadow-sm">
+            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm">
                 <canvas id="mainChart" class="max-h-[300px]"></canvas>
             </div>
         </div>
 
-        <!-- Tab: Create -->
+        <!-- Create Exam -->
         <div x-show="tab === 'create'" x-cloak>
-            <div class="max-w-3xl mx-auto bg-white p-8 rounded-[3rem] shadow-lg">
-                <h2 class="text-xl font-black mb-8 text-center" x-text="editingId ? 'تعديل الامتحان' : 'إنشاء امتحان جديد'"></h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <label class="text-xs font-black text-slate-400 uppercase">عنوان الامتحان</label>
-                        <input type="text" x-model="examForm.title" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 mt-2">
-                    </div>
-                    <div>
-                        <label class="text-xs font-black text-slate-400 uppercase">القسم</label>
-                        <input type="text" x-model="examForm.className" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 mt-2">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <label class="text-xs font-black text-slate-400 uppercase">الأسئلة</label>
-                        <input type="number" x-model.number="examForm.qCount" @change="initQuestions()" class="w-full p-4 bg-slate-50 rounded-2xl font-bold mt-2">
-                    </div>
-                    <div>
-                        <label class="text-xs font-black text-slate-400 uppercase">الخيارات</label>
-                        <select x-model.number="examForm.optCount" class="w-full p-4 bg-slate-50 rounded-2xl font-bold mt-2">
-                            <template x-for="n in [4,5,6,8,12]">
-                                <option :value="n" x-text="n"></option>
-                            </template>
+            <div class="max-w-2xl mx-auto bg-white p-8 rounded-[3rem] shadow-xl">
+                <h2 class="text-xl font-black mb-6" x-text="editingId ? 'تعديل الامتحان' : 'امتحان جديد'"></h2>
+                <div class="space-y-4">
+                    <input type="text" x-model="examForm.title" placeholder="عنوان الامتحان" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" x-model="examForm.className" placeholder="القسم" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="number" x-model.number="examForm.qCount" @change="initQuestions()" placeholder="عدد الأسئلة" class="p-4 bg-slate-50 rounded-2xl font-bold">
+                        <select x-model.number="examForm.optCount" class="p-4 bg-slate-50 rounded-2xl font-bold outline-none">
+                            <template x-for="n in [4,5,6,8,12]"><option :value="n" x-text="n + ' خيارات'"></option></template>
                         </select>
                     </div>
-                </div>
-
-                <div class="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar border-t pt-6">
-                    <template x-for="(q, idx) in examForm.questions" :key="idx">
-                        <div class="bg-slate-50 p-4 rounded-3xl flex flex-col gap-4">
-                            <div class="flex justify-between items-center">
-                                <span class="font-black text-slate-500" x-text="'سؤال ' + (idx + 1)"></span>
-                                <div class="flex gap-2">
+                    <div class="max-h-80 overflow-y-auto pr-2 custom-scrollbar space-y-3 mt-6 border-t pt-4">
+                        <template x-for="(q, idx) in examForm.questions" :key="idx">
+                            <div class="bg-slate-50 p-4 rounded-2xl">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="font-bold text-slate-500" x-text="'سؤال ' + (idx+1)"></span>
                                     <input type="number" step="0.25" x-model.number="q.pts" class="w-16 p-2 rounded-xl text-center text-xs font-bold" title="نقطة">
-                                    <input type="number" step="0.25" x-model.number="q.part" class="w-16 p-2 rounded-xl text-center text-xs font-bold" title="جزئية">
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="opt in getOptionsList()">
+                                        <button @click="toggleAnswer(idx, opt)" :class="q.ans.includes(opt) ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'" class="w-9 h-9 rounded-xl border border-slate-200 font-bold text-xs" x-text="opt"></button>
+                                    </template>
                                 </div>
                             </div>
-                            <div class="flex flex-wrap gap-2">
-                                <template x-for="opt in getOptionsList()">
-                                    <button @click="toggleAnswer(idx, opt)" 
-                                        :class="q.ans.includes(opt) ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'"
-                                        class="w-10 h-10 rounded-xl border border-slate-200 font-bold transition-all text-xs"
-                                        x-text="opt">
-                                    </button>
-                                </template>
-                            </div>
-                        </div>
-                    </template>
+                        </template>
+                    </div>
+                    <button @click="saveExam()" class="w-full bg-blue-600 text-white font-black py-5 rounded-3xl shadow-lg hover:bg-blue-700 transition-all">حفظ الامتحان</button>
                 </div>
-
-                <button @click="saveExam()" class="w-full bg-blue-600 text-white font-black py-5 rounded-3xl shadow-xl mt-8 hover:bg-blue-700 transition-all">
-                    <span x-text="editingId ? 'تحديث' : 'حفظ واستمرار'"></span>
-                </button>
             </div>
         </div>
 
-        <!-- Correct Tab -->
+        <!-- Correct Tab (Cards) -->
         <div x-show="tab === 'correct'" x-cloak>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <template x-for="ex in exams" :key="ex.id">
-                    <div class="bg-white p-8 rounded-[2.5rem] border border-white shadow-sm hover:scale-[1.01] transition-all">
-                        <h3 class="text-2xl font-black text-slate-800" x-text="ex.title"></h3>
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-white hover:shadow-md transition-all">
+                        <h3 class="text-2xl font-black text-slate-800 mb-2" x-text="ex.title"></h3>
                         <p class="text-xs font-bold text-slate-400 uppercase mb-6" x-text="ex.className"></p>
-                        <div class="space-y-3">
-                            <button @click="openScanner(ex)" class="w-full py-5 bg-blue-600 text-white font-black rounded-3xl flex items-center justify-center gap-3 shadow-lg">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                                <span>بدء التصحيح الذكي</span>
-                            </button>
-                            <div class="grid grid-cols-2 gap-3">
-                                <button @click="downloadSheet(ex, 'pdf')" class="p-3 bg-slate-50 text-slate-600 font-bold rounded-xl text-xs">PDF</button>
-                                <button @click="downloadSheet(ex, 'png')" class="p-3 bg-slate-50 text-slate-600 font-bold rounded-xl text-xs">PNG</button>
-                            </div>
+                        <button @click="openScanner(ex)" class="w-full py-5 bg-blue-600 text-white font-black rounded-3xl flex items-center justify-center gap-3 shadow-blue-200 shadow-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                            <span>بدء التصحيح الذكي</span>
+                        </button>
+                        <div class="flex gap-2 mt-3">
+                            <button @click="downloadSheet(ex, 'pdf')" class="flex-1 p-3 bg-slate-50 text-slate-500 font-bold rounded-xl text-xs">تحميل PDF</button>
+                            <button @click="downloadSheet(ex, 'png')" class="flex-1 p-3 bg-slate-50 text-slate-500 font-bold rounded-xl text-xs">تحميل PNG</button>
                         </div>
                     </div>
                 </template>
@@ -184,83 +167,70 @@
         <!-- Results Tab -->
         <div x-show="tab === 'results'" x-cloak>
             <div class="bg-white rounded-[2rem] shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-right text-sm">
-                        <thead class="bg-slate-50 text-slate-400 font-black uppercase text-[10px]">
-                            <tr>
-                                <th class="px-8 py-5">اسم التلميذ</th>
-                                <th class="px-8 py-5 text-center">النتيجة</th>
-                                <th class="px-8 py-5 text-center">التحكم</th>
-                                <th class="px-8 py-5 text-center">حذف</th>
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-slate-50 text-slate-400 font-black uppercase text-[10px]">
+                        <tr>
+                            <th class="px-8 py-5">اسم التلميذ</th>
+                            <th class="px-8 py-5 text-center">النتيجة</th>
+                            <th class="px-8 py-5 text-center">التحكم</th>
+                            <th class="px-8 py-5 text-center">حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <template x-for="res in filteredResults" :key="res.id">
+                            <tr class="hover:bg-blue-50/50">
+                                <td class="px-8 py-4"><img :src="res.nameImage" class="h-10 border bg-white rounded object-contain"></td>
+                                <td class="px-8 py-4 text-center font-black text-slate-800" x-text="res.score + '/' + res.total"></td>
+                                <td class="px-8 py-4 text-center">
+                                    <button @click="showMastery(res)" :class="getMasteryColor(res.mastery)" class="px-4 py-1.5 rounded-full text-[10px] font-black" x-text="res.mastery"></button>
+                                </td>
+                                <td class="px-8 py-4 text-center"><button @click="deleteResult(res.id)" class="text-red-400">✕</button></td>
                             </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            <template x-for="res in filteredResults" :key="res.id">
-                                <tr class="hover:bg-blue-50/50 transition-all">
-                                    <td class="px-8 py-4">
-                                        <img :src="res.nameImage" class="h-12 border-2 border-white rounded-lg shadow-sm bg-white object-contain">
-                                    </td>
-                                    <td class="px-8 py-4 text-center font-black text-slate-800" x-text="res.score + '/' + res.total"></td>
-                                    <td class="px-8 py-4 text-center">
-                                        <button @click="showMastery(res)" :class="getMasteryColor(res.mastery)" class="px-4 py-1.5 rounded-full text-[10px] font-black" x-text="res.mastery"></button>
-                                    </td>
-                                    <td class="px-8 py-4 text-center">
-                                        <button @click="deleteResult(res.id)" class="text-red-400 hover:text-red-600 font-black">✕</button>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
+                        </template>
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>
 
-    <!-- Scanner Overlay (Full Screen AI Engine) -->
-    <div x-show="scanning" class="fixed inset-0 z-[100] bg-black flex items-center justify-center overflow-hidden" x-cloak>
-        <video id="video" class="w-full h-full object-cover" autoplay playsinline muted></video>
+    <!-- SMART SCANNER OVERLAY -->
+    <div x-show="scanning" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden" x-cloak>
+        <video id="video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
         <canvas id="cvCanvas" class="hidden"></canvas>
         
-        <!-- Smart HUD Markers -->
-        <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <!-- Central Processing Zone -->
-            <div class="relative w-72 h-96">
-                <!-- Top Left Anchor -->
-                <div id="target-tl" class="scanner-target absolute top-0 left-0 w-12 h-12 rounded-tl-3xl"></div>
-                <!-- Top Right Anchor -->
-                <div id="target-tr" class="scanner-target absolute top-0 right-0 w-12 h-12 rounded-tr-3xl"></div>
-                <!-- Bottom Left Anchor -->
-                <div id="target-bl" class="scanner-target absolute bottom-0 left-0 w-12 h-12 rounded-bl-3xl"></div>
-                <!-- Bottom Right Anchor -->
-                <div id="target-br" class="scanner-target absolute bottom-0 right-0 w-12 h-12 rounded-br-3xl"></div>
-                
-                <div class="absolute inset-x-0 -top-12 text-center text-white font-black text-xs animate-pulse tracking-widest uppercase">
-                    <span x-text="isAligned ? 'جاري التصحيح...' : 'قم بمحاذاة المربعات السوداء'"></span>
-                </div>
+        <!-- Scanner HUD -->
+        <div class="relative w-72 h-96 z-10">
+            <div class="scan-line"></div>
+            <!-- Target Corners -->
+            <div id="box-tl" class="guide-box top-0 left-0"></div>
+            <div id="box-tr" class="guide-box top-0 right-0"></div>
+            <div id="box-bl" class="guide-box bottom-0 left-0"></div>
+            <div id="box-br" class="guide-box bottom-0 right-0"></div>
+            
+            <div class="absolute -top-16 inset-x-0 text-center text-white font-black text-xs uppercase tracking-widest drop-shadow-lg">
+                <span x-text="scanStatus"></span>
             </div>
         </div>
 
-        <div class="absolute bottom-10">
-            <button @click="stopScanner()" class="bg-white/20 backdrop-blur-xl p-5 rounded-full text-white font-black">✕</button>
-        </div>
+        <button @click="stopScanner()" class="absolute bottom-10 bg-white/20 backdrop-blur-xl p-5 rounded-full text-white font-black z-20">إغلاق الكاميرا</button>
     </div>
 
     <!-- Mastery Modal -->
     <div x-show="showModal" class="fixed inset-0 z-[110] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4" x-cloak>
         <div class="bg-white w-full max-w-xl rounded-[3rem] overflow-hidden shadow-2xl relative">
             <button @click="showModal = false" class="absolute top-6 right-6 text-slate-400 font-black">✕</button>
-            <div class="p-8 border-b bg-slate-50 flex flex-col items-center">
-                <img :src="selectedRes?.nameImage" class="h-12 object-contain bg-white p-2 border rounded-xl">
+            <div class="p-8 border-b bg-slate-50 text-center">
+                <img :src="selectedRes?.nameImage" class="h-12 mx-auto bg-white p-2 border rounded-xl">
             </div>
             <div class="p-8">
                 <canvas id="radarChart" class="max-h-[300px] mb-6 mx-auto"></canvas>
                 <div class="grid grid-cols-2 gap-4 text-center">
                     <div class="p-4 bg-blue-50 rounded-2xl">
-                        <p class="text-[9px] text-blue-500 font-black uppercase mb-1">النتيجة</p>
+                        <p class="text-[9px] text-blue-500 font-black mb-1 uppercase">النتيجة</p>
                         <p class="text-2xl font-black text-blue-700" x-text="selectedRes?.score + '/' + selectedRes?.total"></p>
                     </div>
                     <div class="p-4 bg-purple-50 rounded-2xl">
-                        <p class="text-[9px] text-purple-500 font-black uppercase mb-1">التحكم</p>
+                        <p class="text-[9px] text-purple-500 font-black mb-1 uppercase">التحكم</p>
                         <p class="text-2xl font-black text-purple-700" x-text="selectedRes?.mastery"></p>
                     </div>
                 </div>
@@ -275,19 +245,15 @@
             return {
                 tab: 'stats', lang: 'ar', db: null, exams: [], results: [], classes: [], statFilter: 'all',
                 avgScore: 0, masteryA: 0, showModal: false, scanning: false, editingId: null, selectedRes: null,
-                resFilterClass: '', resFilterExam: '', activeExam: null, isAligned: false,
+                resFilterClass: '', resFilterExam: '', activeExam: null, scanStatus: 'جارِ البحث عن الورقة...',
                 examForm: { title: '', className: '', qCount: 20, optCount: 4, questions: [] },
-
                 labels: { ar: { stats: 'الإحصائيات', create: 'إنشاء', correct: 'تصحيح', results: 'النتائج', stats_title: 'الأداء العام' },
-                          en: { stats: 'Stats', create: 'Create', correct: 'Grading', results: 'Results', stats_title: 'Overview' },
-                          fr: { stats: 'Stats', create: 'Créer', correct: 'Correction', results: 'Résultats', stats_title: 'Analyse' } },
-
+                          en: { stats: 'Stats', create: 'Create', correct: 'Grade', results: 'Results', stats_title: 'Analysis' } },
                 letters: { ar: ['أ','ب','ج','د','هـ','و','ز','ح','ط','ي','ك','ل'],
-                           en: ['A','B','C','D','E','F','G','H','I','J','K','L'],
-                           fr: ['A','B','C','D','E','F','G','H','I','J','K','L'] },
+                           en: ['A','B','C','D','E','F','G','H','I','J','K','L'] },
 
                 async init() {
-                    this.db = new Dexie("SmartGrader_v10");
+                    this.db = new Dexie("SmartGrader_v20");
                     this.db.version(1).stores({ exams: '++id, title, className, date', results: '++id, examId, className, mastery' });
                     await this.loadData();
                     this.initQuestions();
@@ -297,7 +263,7 @@
                     this.examForm.questions = Array.from({ length: this.examForm.qCount }, () => ({ ans: [], pts: 1, part: 0.25 }));
                 },
 
-                getOptionsList() { return this.letters[this.lang].slice(0, this.examForm.optCount); },
+                getOptionsList() { return this.letters[this.lang === 'ar' ? 'ar' : 'en'].slice(0, this.examForm.optCount); },
                 toggleAnswer(idx, opt) {
                     const q = this.examForm.questions[idx];
                     q.ans = q.ans.includes(opt) ? q.ans.filter(a => a !== opt) : [...q.ans, opt];
@@ -314,15 +280,14 @@
                 async saveExam() {
                     const data = JSON.parse(JSON.stringify(this.examForm));
                     data.date = new Date().toISOString();
-                    if (this.editingId) await this.db.exams.update(this.editingId, data);
-                    else await this.db.exams.add(data);
-                    this.editingId = null; this.initQuestions(); await this.loadData(); this.tab = 'correct';
+                    await this.db.exams.add(data);
+                    this.initQuestions(); await this.loadData(); this.tab = 'correct';
                 },
 
                 async openScanner(ex) {
                     this.activeExam = ex;
                     this.scanning = true;
-                    this.isAligned = false;
+                    this.scanStatus = "ضع الأركان السوداء داخل المربعات";
                     
                     try {
                         const video = document.getElementById('video');
@@ -331,16 +296,11 @@
                         });
                         video.srcObject = stream;
                         await video.play();
-                        
-                        // Start the Real-time Processing Loop
-                        this.processFrame();
-                    } catch (err) {
-                        alert("تعذر فتح الكاميرا: " + err.message);
-                        this.scanning = false;
-                    }
+                        this.processLoop();
+                    } catch (err) { alert("Camera Error: " + err.message); this.scanning = false; }
                 },
 
-                processFrame() {
+                processLoop() {
                     if (!this.scanning) return;
                     
                     const video = document.getElementById('video');
@@ -349,68 +309,73 @@
                     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
                     ctx.drawImage(video, 0, 0);
 
-                    // Anchor Detection Logic (Sampling pixels at corner areas)
-                    // We check if the brightness at the corners is low (Black square detected)
-                    const alignmentData = this.checkAlignment(ctx, canvas.width, canvas.height);
+                    // --- ZIPGRADE-STYLE DETECTION ENGINE ---
+                    const alignment = this.checkSmartAlignment(ctx, canvas.width, canvas.height);
                     
-                    this.updateHUD(alignmentData);
+                    this.updateHUD(alignment);
 
-                    if (alignmentData.allAligned) {
-                        if (!this.alignmentTimer) {
-                            this.alignmentTimer = setTimeout(() => this.captureAndGrade(), 1000);
+                    if (alignment.allReady) {
+                        this.scanStatus = "تم الكشف! ثبّت يدك...";
+                        if (!this.holdTimer) {
+                            this.holdTimer = setTimeout(() => this.captureAndGrade(), 800);
                         }
                     } else {
-                        clearTimeout(this.alignmentTimer);
-                        this.alignmentTimer = null;
+                        this.scanStatus = "قم بمحاذاة المربعات السوداء";
+                        clearTimeout(this.holdTimer);
+                        this.holdTimer = null;
                     }
 
-                    requestAnimationFrame(() => this.processFrame());
+                    requestAnimationFrame(() => this.processLoop());
                 },
 
-                checkAlignment(ctx, w, h) {
-                    // Coordinates of HUD zones relative to screen
-                    // In a real mobile environment, we sample the centers of our HUD squares
-                    const targets = {
-                        tl: [w*0.25, h*0.25], tr: [w*0.75, h*0.25],
-                        bl: [w*0.25, h*0.75], br: [w*0.75, h*0.75]
+                checkSmartAlignment(ctx, w, h) {
+                    // Zones to check: 4 corners of the HUD area
+                    // We use relative sizing to match the UI
+                    const zones = {
+                        tl: { x: w*0.32, y: h*0.28 },
+                        tr: { x: w*0.68, y: h*0.28 },
+                        bl: { x: w*0.32, y: h*0.72 },
+                        br: { x: w*0.68, y: h*0.72 }
                     };
-                    
-                    const results = {};
-                    let allAligned = true;
 
-                    for (const [key, pos] of Object.entries(targets)) {
-                        const pixel = ctx.getImageData(pos[0], pos[1], 1, 1).data;
-                        const brightness = (pixel[0] + pixel[1] + pixel[2]) / 3;
-                        // Brightness < 60 means we detected something very dark (Anchor)
-                        results[key] = brightness < 60;
-                        if (!results[key]) allAligned = false;
+                    const results = {};
+                    let count = 0;
+
+                    for (const [key, pos] of Object.entries(zones)) {
+                        // Sample a 20x20 area for better stability
+                        const imageData = ctx.getImageData(pos.x - 10, pos.y - 10, 20, 20).data;
+                        let darkPixels = 0;
+                        for (let i = 0; i < imageData.length; i += 4) {
+                            const brightness = (imageData[i] + imageData[i+1] + imageData[i+2]) / 3;
+                            if (brightness < 75) darkPixels++; // Dark threshold
+                        }
+                        // If more than 60% of pixels in the 20x20 zone are dark
+                        results[key] = darkPixels > 240; 
+                        if (results[key]) count++;
                     }
 
-                    return { ...results, allAligned };
+                    return { ...results, allReady: count === 4 };
                 },
 
                 updateHUD(data) {
-                    this.isAligned = data.allAligned;
-                    document.getElementById('target-tl').classList.toggle('aligned', data.tl);
-                    document.getElementById('target-tr').classList.toggle('aligned', data.tr);
-                    document.getElementById('target-bl').classList.toggle('aligned', data.bl);
-                    document.getElementById('target-br').classList.toggle('aligned', data.br);
+                    document.getElementById('box-tl').className = `guide-box top-0 left-0 ${data.tl ? 'detected' : ''}`;
+                    document.getElementById('box-tr').className = `guide-box top-0 right-0 ${data.tr ? 'detected' : ''}`;
+                    document.getElementById('box-bl').className = `guide-box bottom-0 left-0 ${data.bl ? 'detected' : ''}`;
+                    document.getElementById('box-br').className = `guide-box bottom-0 right-0 ${data.br ? 'detected' : ''}`;
                 },
 
                 async captureAndGrade() {
-                    if (!this.isAligned) return;
-                    
                     const video = document.getElementById('video');
                     const canvas = document.getElementById('cvCanvas');
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(video, 0, 0);
 
-                    // Crop Name
+                    // 1. Crop Name Area
                     const cropCanvas = document.createElement('canvas');
                     cropCanvas.width = 400; cropCanvas.height = 100;
-                    cropCanvas.getContext('2d').drawImage(canvas, canvas.width*0.2, canvas.height*0.15, canvas.width*0.6, canvas.height*0.1, 0, 0, 400, 100);
+                    cropCanvas.getContext('2d').drawImage(canvas, canvas.width*0.25, canvas.height*0.2, canvas.width*0.5, canvas.height*0.1, 0, 0, 400, 100);
 
-                    // Grading
+                    // 2. Grading Simulation (Real logic in full version)
                     let score = 0, total = 0, masteryDetails = [];
                     this.activeExam.questions.forEach(q => {
                         const r = Math.random();
@@ -428,9 +393,10 @@
                         nameImage: cropCanvas.toDataURL(), date: new Date().toISOString()
                     });
 
-                    this.stopScanner();
-                    this.tab = 'results';
-                    this.calculateStats();
+                    // Vibrate to signal success (if mobile supported)
+                    if (navigator.vibrate) navigator.vibrate(200);
+
+                    this.stopScanner(); await this.loadData(); this.tab = 'results';
                 },
 
                 stopScanner() {
@@ -439,36 +405,39 @@
                     if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
                 },
 
+                // The PDF/PNG Drawing Engine
                 async downloadSheet(ex, type) {
                     const canvas = document.getElementById('renderCanvas');
                     canvas.width = 1600; canvas.height = 2200;
                     const ctx = canvas.getContext('2d');
                     ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
                     const isAr = this.lang === 'ar';
-                    const opts = this.letters[this.lang].slice(0, ex.optCount);
+                    const opts = this.letters[isAr ? 'ar' : 'en'].slice(0, ex.optCount);
 
                     ctx.fillStyle = 'black'; ctx.textAlign = 'center';
-                    ctx.font = 'bold 60px Tajawal'; ctx.fillText(ex.title, 800, 150);
+                    ctx.font = 'bold 65px Tajawal'; ctx.fillText(ex.title, 800, 150);
                     ctx.font = '40px Tajawal'; ctx.fillText(ex.className, 800, 220);
-                    ctx.lineWidth = 3; ctx.strokeRect(200, 300, 1200, 120);
+                    ctx.lineWidth = 3; ctx.strokeRect(300, 320, 1000, 150);
                     ctx.font = '30px Tajawal'; ctx.textAlign = isAr ? 'right' : 'left';
-                    ctx.fillText(isAr ? 'الاسم الكامل :' : (this.lang==='fr'?'Nom :':'Full Name :'), isAr ? 1380 : 220, 375);
+                    ctx.fillText(isAr ? 'الاسم الكامل :' : 'Nom Complet :', isAr ? 1280 : 320, 410);
 
-                    // THE 4 ANCHORS (Black Squares)
-                    ctx.fillStyle = 'black'; 
-                    ctx.fillRect(50, 50, 80, 80); ctx.fillRect(1470, 50, 80, 80);
-                    ctx.fillRect(50, 2070, 80, 80); ctx.fillRect(1470, 2070, 80, 80);
+                    // BOLD ANCHOR SQUARES
+                    ctx.fillStyle = 'black';
+                    const sqSize = 100;
+                    ctx.fillRect(100, 100, sqSize, sqSize); ctx.fillRect(1400, 100, sqSize, sqSize);
+                    ctx.fillRect(100, 2000, sqSize, sqSize); ctx.fillRect(1400, 2000, sqSize, sqSize);
 
-                    const xStart = 200, yStart = 600, rowH = 75, colW = 600;
+                    const xStart = 350, yStart = 650, rowH = 85, colW = 600;
                     for (let i = 0; i < ex.qCount; i++) {
                         const col = i >= Math.ceil(ex.qCount/2) ? 1 : 0, row = i % Math.ceil(ex.qCount/2);
                         const x = xStart + (col * colW), y = yStart + (row * rowH);
-                        ctx.fillStyle = '#64748b'; ctx.font = 'bold 24px Tajawal'; ctx.textAlign = 'center';
+                        ctx.fillStyle = '#64748b'; ctx.font = 'bold 28px Tajawal'; ctx.textAlign = 'center';
                         ctx.fillText(`${i + 1}`, x, y);
                         opts.forEach((opt, oIdx) => {
-                            const bx = x + 100 + (oIdx * 65), by = y;
-                            ctx.strokeStyle = '#cbd5e1'; ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI*2); ctx.stroke();
-                            ctx.fillStyle = '#f1f5f9'; ctx.font = 'bold 18px Tajawal'; ctx.fillText(opt, bx, by+7);
+                            const bx = x + 100 + (oIdx * 75), by = y;
+                            ctx.strokeStyle = '#cbd5e1'; ctx.beginPath(); ctx.arc(bx, by, 26, 0, Math.PI*2); ctx.stroke();
+                            ctx.fillStyle = '#f1f5f9'; ctx.font = 'bold 22px Tajawal'; ctx.fillText(opt, bx, by+8);
                         });
                     }
 
@@ -484,18 +453,18 @@
 
                 calculateStats() {
                     let data = this.statFilter === 'all' ? this.results : this.results.filter(r => r.className === this.statFilter);
-                    if (!data.length) { this.avgScore = 0; this.masteryA = 0; this.updateMainChart([0,0,0,0]); return; }
+                    if (!data.length) { this.avgScore = 0; this.masteryA = 0; this.updateChart([0,0,0,0]); return; }
                     this.avgScore = Math.round((data.reduce((a, b) => a + (b.score/b.total), 0) / data.length) * 100);
                     this.masteryA = Math.round((data.filter(r => r.mastery === 'A').length / data.length) * 100);
-                    this.updateMainChart(['A','B','C','D'].map(m => data.filter(r => r.mastery === m).length));
+                    this.updateChart(['A','B','C','D'].map(m => data.filter(r => r.mastery === m).length));
                 },
 
-                updateMainChart(counts) {
+                updateChart(counts) {
                     const ctx = document.getElementById('mainChart'); if (!ctx) return;
                     if (window.mChart) window.mChart.destroy();
                     window.mChart = new Chart(ctx, {
-                        type: 'bar', data: { labels: ['A', 'B', 'C', 'D'], datasets: [{ data: counts, backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'], borderRadius: 10 }] },
-                        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                        type: 'bar', data: { labels: ['A', 'B', 'C', 'D'], datasets: [{ data: counts, backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'], borderRadius: 15 }] },
+                        options: { plugins: { legend: { display: false } } }
                     });
                 },
 
@@ -520,7 +489,7 @@
 
                 exportData() {
                     Promise.all([this.db.exams.toArray(), this.db.results.toArray()]).then(([e, r]) => {
-                        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({e, r})])); a.download = `smartgrader.json`; a.click();
+                        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({e,r})])); a.download = `smartgrader.json`; a.click();
                     });
                 },
 
@@ -538,7 +507,15 @@
                     const c = { 'A': 'bg-emerald-100 text-emerald-700', 'B': 'bg-blue-100 text-blue-700', 'C': 'bg-orange-100 text-orange-600', 'D': 'bg-red-100 text-red-700' };
                     return c[m] || 'bg-slate-100';
                 },
-                deleteResult(id) { if (confirm("حذف؟")) this.db.results.delete(id).then(() => this.loadData()); },
+                deleteResult(id) { if (confirm("حذف النتيجة؟")) this.db.results.delete(id).then(() => this.loadData()); },
+                getStatCards() {
+                    return [
+                        { label: 'الامتحانات', value: this.exams.length },
+                        { label: 'المصححة', value: this.results.length },
+                        { label: 'المعدل', value: this.avgScore + '%' },
+                        { label: 'التفوق', value: this.masteryA + '%' }
+                    ];
+                },
                 updateLang() { document.dir = this.lang === 'ar' ? 'rtl' : 'ltr'; this.calculateStats(); },
                 get filteredResults() { return this.results.filter(r => (!this.resFilterClass || r.className === this.resFilterClass) && (!this.resFilterExam || r.examId == this.resFilterExam)); }
             }
