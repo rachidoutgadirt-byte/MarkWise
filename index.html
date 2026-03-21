@@ -537,7 +537,8 @@
             <button class="btn btn-primary" id="confirmBroadcastBtn" onclick="confirmBroadcastExam()" style="width:100%;"><i class="fas fa-check-circle"></i> تأكيد التعميم</button>
         </div>
     </div>
-
+<!-- صوت الكاميرا الحقيقي (ZipGrade Style) -->
+    <audio id="shutterAudio" src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"></audio>
     <!-- Print Template -->
     <div id="print-wrapper">
         <div class="omr-sheet" id="omr-print-template">
@@ -1136,26 +1137,29 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
         }
 
         function extractBubbleCoordinates() {
-            const sh = document.querySelector('.omr-sheet'); sh.style.display='block';
+            const sh = document.querySelector('.omr-sheet'); 
+            sh.style.display = 'block';
             
-            // الحساب الآن يعتمد على المربعات السوداء بدلاً من الورقة البيضاء لتطابق الكاميرا
+            // الحساب الدقيق يعتمد على "مراكز" المربعات السوداء الأربعة
             const tl = sh.querySelector('.marker-tl').getBoundingClientRect();
             const br = sh.querySelector('.marker-br').getBoundingClientRect();
             
-            const boxLeft = tl.left;
-            const boxTop = tl.top;
-            const boxWidth = br.right - tl.left;
-            const boxHeight = br.bottom - tl.top;
+            const boxLeft = tl.left + (tl.width / 2);
+            const boxTop = tl.top + (tl.height / 2);
+            const boxWidth = (br.left + br.width / 2) - boxLeft;
+            const boxHeight = (br.top + br.height / 2) - boxTop;
 
             const bubbles = document.querySelectorAll('.omr-bubble-mark');
             const layout = {};
             bubbles.forEach(b => {
                 const rB = b.getBoundingClientRect();
-                // المركز الدقيق للدائرة مقارنة بالمربعات الأربعة
+                // حساب المركز الدقيق لكل دائرة مقارنة بمساحة المربعات
                 const cx = (rB.left + rB.width/2 - boxLeft) / boxWidth;
                 const cy = (rB.top + rB.height/2 - boxTop) / boxHeight;
-                const q = b.getAttribute('data-q'), o = b.getAttribute('data-opt');
-                if(!layout[q]) layout[q]={}; 
+                
+                const q = b.getAttribute('data-q');
+                const o = b.getAttribute('data-opt');
+                if(!layout[q]) layout[q] = {}; 
                 layout[q][o] = {x: cx, y: cy};
             });
             return layout;
@@ -1406,17 +1410,14 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
 
         // توليد صوت التقاط (Camera Shutter Sound) برمجياً
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
         function playShutterSound() {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            // استخدام الصوت الحقيقي المدمج في HTML
+            const audio = document.getElementById('shutterAudio');
+            if(audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log("الصوت يحتاج تفاعل المستخدم"));
+            }
         }
 
         async function startScanner(eid, sid, sName) {
@@ -1476,7 +1477,6 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             if(AppState.videoStream) AppState.videoStream.getTracks().forEach(t=>t.stop()); 
             document.getElementById('scannerModal').style.display='none'; 
         }
-
         function scanLoop() {
             if(!isScanning) return;
             
@@ -1484,35 +1484,39 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             analysisCanvas.height = video.videoHeight;
             analysisCtx.drawImage(video, 0, 0, analysisCanvas.width, analysisCanvas.height);
             
-            // 🌟 الحماية 2: التحقق من أن الكاميرا لا تنظر إلى الظلام
-            // نتحقق من منتصف الشاشة، يجب أن يكون فاتحاً (ورقة بيضاء)
-            let centerDarkness = measureDarkness(analysisCtx, analysisCanvas.width/2, analysisCanvas.height/2, 20);
-            if (centerDarkness > 0.5) {
-                // الكاميرا مظلمة أو العدسة مغطاة، نقوم بتصفير العداد ونلغي المحاولة
-                stabilizationFrames = 0;
-                document.getElementById('stabilization-bar').style.width = '0%';
-                scanAnimationFrame = requestAnimationFrame(scanLoop);
-                return;
-            }
-
             let alignedCount = 0;
             const corners =['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'];
             
             const rv = video.getBoundingClientRect();
+            const rg = document.getElementById('guide-box').getBoundingClientRect();
             const sx = video.videoWidth / rv.width;
             const sy = video.videoHeight / rv.height;
 
-            corners.forEach(id => {
+            // إحداثيات زوايا مربع التوجيه (Guide Box) الدقيقة على الفيديو
+            const guideCorners =[
+                {x: (rg.left - rv.left) * sx, y: (rg.top - rv.top) * sy}, // TL
+                {x: (rg.right - rv.left) * sx, y: (rg.top - rv.top) * sy}, // TR
+                {x: (rg.left - rv.left) * sx, y: (rg.bottom - rv.top) * sy}, // BL
+                {x: (rg.right - rv.left) * sx, y: (rg.bottom - rv.top) * sy} // BR
+            ];
+
+            corners.forEach((id, index) => {
                 const el = document.getElementById(id);
-                const rc = el.getBoundingClientRect();
-                const cx = (rc.left - rv.left + rc.width/2) * sx;
-                const cy = (rc.top - rv.top + rc.height/2) * sy;
+                const cx = guideCorners[index].x;
+                const cy = guideCorners[index].y;
                 const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.015; 
                 
-                // عتبة السواد للمربع (يجب أن يكون أسود فعلاً وليس مجرد ظل)
-                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad) > 0.4; 
+                // 1. التحقق من أن الزاوية سوداء (المربع الأسود)
+                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad) > 0.45; 
                 
-                if(isDark) {
+                // 2. فحص ذكي للورقة: نتحقق من منطقة بجانب المربع لنتأكد أنها بيضاء وليست QR كود
+                let offset = checkRad * 3;
+                let innerX = (index % 2 === 0) ? cx + offset : cx - offset;
+                let innerY = (index < 2) ? cy + offset : cy - offset;
+                let isInnerLight = measureDarkness(analysisCtx, innerX, innerY, checkRad) < 0.2;
+
+                // يجب أن تكون الزاوية سوداء والمنطقة الداخلية بيضاء
+                if(isDark && isInnerLight) {
                     el.classList.add('aligned');
                     alignedCount++;
                 } else {
@@ -1522,7 +1526,7 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
 
             const stabBar = document.getElementById('stabilization-bar');
             
-            // 🌟 الحماية 3: زيادة مدة الثبات إلى 20 إطار لتجنب الاهتزاز الخفيف
+            // يجب أن تتطابق المربعات لـ 20 إطار متتالي (لتجنب الاهتزاز)
             if(alignedCount === 4) {
                 stabilizationFrames++;
                 stabBar.style.width = (stabilizationFrames / 20 * 100) + '%';
@@ -1549,6 +1553,7 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             const sx = video.videoWidth / rv.width;
             const sy = video.videoHeight / rv.height;
             
+            // القص يبدأ من حواف المربع الدليلي تماماً
             const cropX = (rg.left - rv.left) * sx;
             const cropY = (rg.top - rv.top) * sy;
             const cropW = rg.width * sx;
@@ -1567,18 +1572,18 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             for(let q in lay) {
                 let selectedOpts =[];
                 for(let o in lay[q]) {
+                    // التطابق الرياضي الدقيق 100%
                     const px = lay[q][o].x * cropW;
                     const py = lay[q][o].y * cropH;
-                    // تكبير مساحة الفحص قليلاً لتكون متسامحة مع الاهتزاز
-                    const rad = (11/800) * cropW * 1.3; 
+                    const rad = (11/800) * cropW * 1.2; 
                     
-                    // 🌟 إضافة مهمة جداً: رسم دوائر زرقاء شفافة توضح لك أين تنظر الكاميرا
+                    // رسم دائرة زرقاء دليلة للتحقق البصري
                     ctx.beginPath(); ctx.arc(px, py, rad, 0, 2*Math.PI); 
-                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
 
+                    // عتبة التقاط حساسة للقلم
                     let d = measureDarkness(ctx, px, py, rad); 
-                    // عتبة 12% لضمان التقاط علامات القلم الرصاص الخفيفة
-                    if(d > 0.12) { 
+                    if(d > 0.18) { 
                         selectedOpts.push({opt: o, px, py, rad});
                     }
                 }
@@ -1592,9 +1597,9 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
                         ctx.lineWidth = 4;
                         if(isCorrect) {
                             ptsEarned += key[q][so.opt];
-                            ctx.strokeStyle='#22c55e'; // أخضر للصحيح
+                            ctx.strokeStyle='#22c55e'; // صحيح (أخضر)
                         } else {
-                            ctx.strokeStyle='#ef4444'; // أحمر للخاطئ
+                            ctx.strokeStyle='#ef4444'; // خاطئ (أحمر)
                         }
                         ctx.stroke();
                     });
@@ -1603,7 +1608,7 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             }
             AppState.activeScan.extChoices=fc; 
             document.getElementById('scanned-feedback').innerText = `النتيجة المقدرة: ${tot}`;
-            document.getElementById('scanner-instruction').innerText = "تأكد من تطابق الدوائر الزرقاء مع الخيارات على الورقة.";
+            document.getElementById('scanner-instruction').innerText = "تأكد من تطابق الدوائر، ثم اضغط حفظ.";
         }
 
         function measureDarkness(ctx, cx, cy, rad) {
