@@ -1470,7 +1470,7 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             } catch(e) { alert("تعذر فتح الكاميرا. تأكد من منح الصلاحيات."); stopScanner(); }
         }
 
-        function scanLoop() {
+function scanLoop() {
             if(!isScanning) return;
             
             const video = document.getElementById('video-feed');
@@ -1489,7 +1489,6 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             const sx = video.videoWidth / rv.width;
             const sy = video.videoHeight / rv.height;
 
-            // نقاط الفحص هي زوايا المربع الدليلي
             const guideCorners =[
                 {x: (rg.left - rv.left) * sx, y: (rg.top - rv.top) * sy},
                 {x: (rg.right - rv.left) * sx, y: (rg.top - rv.top) * sy},
@@ -1497,18 +1496,23 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
                 {x: (rg.right - rv.left) * sx, y: (rg.bottom - rv.top) * sy}
             ];
 
+            // 🌟 الإصلاح الجذري: حساب حجم المربع الأسود بدقة (حوالي 4% من عرض الورقة)
+            const markerSize = rg.width * sx * 0.04;
+            // نصف قطر الفحص يجب أن يكون أصغر من المربع لكي يقع داخله بالكامل ولا يقرأ الورقة البيضاء
+            const checkRad = markerSize * 0.45;
+
             corners.forEach((id, index) => {
                 const el = document.getElementById(id);
-                // منطقة فحص أوسع لتسهيل الالتقاط
-                const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.02; 
                 
-                const insetX = (index % 2 === 0) ? checkRad : -checkRad;
-                const insetY = (index < 2) ? checkRad : -checkRad;
+                // إزاحة نقطة الفحص لتكون في مركز المربع الأسود بالضبط
+                const insetX = (index % 2 === 0) ? (markerSize/2) : -(markerSize/2);
+                const insetY = (index < 2) ? (markerSize/2) : -(markerSize/2);
+                
                 const cx = guideCorners[index].x + insetX;
                 const cy = guideCorners[index].y + insetY;
-                
-                // فحص سواد المربع
-                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad) > 0.35; 
+
+                // بما أن دائرة الفحص تقع الآن بالكامل داخل المربع الأسود، ستتحقق بسهولة
+                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad) > 0.40; 
 
                 if(isDark) {
                     el.style.borderColor = '#22c55e'; // أخضر
@@ -1522,6 +1526,7 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
 
             const stabBar = document.getElementById('stabilization-bar');
             
+            // ثبات لـ 15 إطار متتالي لضمان دقة الالتقاط
             if(alignedCount === 4) {
                 stabilizationFrames++;
                 stabBar.style.width = (stabilizationFrames / 15 * 100) + '%';
@@ -1539,6 +1544,15 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
                 stabBar.style.width = '0%';
                 scanAnimationFrame = requestAnimationFrame(scanLoop);
             }
+        }
+
+        // إضافة دالة الالتقاط اليدوي (عبر زر الكاميرا أعلى اليمين)
+        function forceCapture() {
+            if(!isScanning) return;
+            isScanning = false;
+            playShutterSound();
+            document.getElementById('stabilization-bar').style.width = '0%';
+            captureAndProcess();
         }
 
         function captureAndProcess() {
@@ -1604,19 +1618,18 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             document.getElementById('scanned-feedback').innerText = `النتيجة المقدرة: ${tot}`;
             document.getElementById('scanner-instruction').innerText = "تأكد من تطابق الدوائر، ثم اضغط حفظ.";
         }
-
-        function measureDarkness(ctx, cx, cy, rad) {
+function measureDarkness(ctx, cx, cy, rad) {
             if(cx-rad<0 || cy-rad<0 || cx+rad>ctx.canvas.width || cy+rad>ctx.canvas.height) return 0;
             const img = ctx.getImageData(cx-rad, cy-rad, rad*2, rad*2).data; let dC=0, t=0, rSq=rad*rad;
             for(let i=0; i<img.length; i+=4) {
                 const px=(i/4)%(rad*2)-rad, py=Math.floor((i/4)/(rad*2))-rad;
                 if(px*px+py*py<=rSq) { 
                     t++; 
-                    // رفعنا حساسية التقاط اللون الداكن من 120 إلى 150 (لتلتقط القلم الرصاص والأزرق بسهولة)
-                    if(0.299*img[i]+0.587*img[i+1]+0.114*img[i+2] < 150) dC++; 
+                    // 🌟 رفعنا التسامح مع الإضاءة إلى 160 (لكي يلتقط القلم الرصاص وحبر الطابعة الخفيف)
+                    if(0.299*img[i]+0.587*img[i+1]+0.114*img[i+2] < 160) dC++; 
                 }
             } return t===0 ? 0 : dC/t;
-        }    
+        }
 
         function retakePhoto() { 
             document.getElementById('preview-canvas').style.display='none'; 
