@@ -1496,23 +1496,21 @@ function scanLoop() {
                 {x: (rg.right - rv.left) * sx, y: (rg.bottom - rv.top) * sy}
             ];
 
-            // 🌟 الإصلاح الجذري: حساب حجم المربع الأسود بدقة (حوالي 4% من عرض الورقة)
-            const markerSize = rg.width * sx * 0.04;
-            // نصف قطر الفحص يجب أن يكون أصغر من المربع لكي يقع داخله بالكامل ولا يقرأ الورقة البيضاء
-            const checkRad = markerSize * 0.45;
+            // 🌟 تكبير مساحة الفحص لتكون متسامحة مع اهتزاز يد المستخدم
+            const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.025;
 
             corners.forEach((id, index) => {
                 const el = document.getElementById(id);
                 
-                // إزاحة نقطة الفحص لتكون في مركز المربع الأسود بالضبط
-                const insetX = (index % 2 === 0) ? (markerSize/2) : -(markerSize/2);
-                const insetY = (index < 2) ? (markerSize/2) : -(markerSize/2);
+                // توجيه نقطة الفحص نحو الداخل لاصطياد المربع الأسود
+                const insetX = (index % 2 === 0) ? checkRad : -checkRad;
+                const insetY = (index < 2) ? checkRad : -checkRad;
                 
                 const cx = guideCorners[index].x + insetX;
                 const cy = guideCorners[index].y + insetY;
 
-                // بما أن دائرة الفحص تقع الآن بالكامل داخل المربع الأسود، ستتحقق بسهولة
-                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad) > 0.40; 
+                // 🌟 فحص المربع بمرونة عالية (عتبة 140، ويكفي أن يكون 20% منه داكناً)
+                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad, 140) > 0.20; 
 
                 if(isDark) {
                     el.style.borderColor = '#22c55e'; // أخضر
@@ -1526,12 +1524,12 @@ function scanLoop() {
 
             const stabBar = document.getElementById('stabilization-bar');
             
-            // ثبات لـ 15 إطار متتالي لضمان دقة الالتقاط
+            // 🌟 تقليل عدد الإطارات المطلوبة للثبات من 15 إلى 8 لتسريع الالتقاط (نصف ثانية)
             if(alignedCount === 4) {
                 stabilizationFrames++;
-                stabBar.style.width = (stabilizationFrames / 15 * 100) + '%';
+                stabBar.style.width = (stabilizationFrames / 8 * 100) + '%';
                 
-                if(stabilizationFrames >= 15) {
+                if(stabilizationFrames >= 8) {
                     isScanning = false;
                     playShutterSound();
                     stabBar.style.width = '0%';
@@ -1546,7 +1544,7 @@ function scanLoop() {
             }
         }
 
-        // إضافة دالة الالتقاط اليدوي (عبر زر الكاميرا أعلى اليمين)
+        // دالة الالتقاط اليدوي الإجباري
         function forceCapture() {
             if(!isScanning) return;
             isScanning = false;
@@ -1580,18 +1578,18 @@ function scanLoop() {
             for(let q in lay) {
                 let selectedOpts =[];
                 for(let o in lay[q]) {
-                    // التطابق الرياضي الدقيق 100%
                     const px = lay[q][o].x * cropW;
                     const py = lay[q][o].y * cropH;
                     const rad = (11/800) * cropW * 1.2; 
                     
-                    // رسم دائرة زرقاء دليلة للتحقق البصري
+                    // رسم دائرة زرقاء شفافة فوق الدائرة لتتأكد من دقة التموضع
                     ctx.beginPath(); ctx.arc(px, py, rad, 0, 2*Math.PI); 
                     ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
 
-                    // عتبة التقاط حساسة للقلم
-                    let d = measureDarkness(ctx, px, py, rad); 
-                    if(d > 0.18) { 
+                    // 🌟 فحص إجابة التلميذ بصرامة عالية (عتبة 110 لكي لا يحسب الظلال كأنها قلم)
+                    // يجب أن يكون التلميذ قد لوّن 30% من الدائرة على الأقل
+                    let d = measureDarkness(ctx, px, py, rad, 110); 
+                    if(d > 0.30) { 
                         selectedOpts.push({opt: o, px, py, rad});
                     }
                 }
@@ -1605,9 +1603,9 @@ function scanLoop() {
                         ctx.lineWidth = 4;
                         if(isCorrect) {
                             ptsEarned += key[q][so.opt];
-                            ctx.strokeStyle='#22c55e'; // صحيح (أخضر)
+                            ctx.strokeStyle='#22c55e'; // أخضر
                         } else {
-                            ctx.strokeStyle='#ef4444'; // خاطئ (أحمر)
+                            ctx.strokeStyle='#ef4444'; // أحمر
                         }
                         ctx.stroke();
                     });
@@ -1618,15 +1616,16 @@ function scanLoop() {
             document.getElementById('scanned-feedback').innerText = `النتيجة المقدرة: ${tot}`;
             document.getElementById('scanner-instruction').innerText = "تأكد من تطابق الدوائر، ثم اضغط حفظ.";
         }
-function measureDarkness(ctx, cx, cy, rad) {
+
+        // 🌟 قمنا بإضافة (threshold) كمتغير لنتحكم في حساسية الضوء لكل جزء على حدة
+        function measureDarkness(ctx, cx, cy, rad, threshold = 130) {
             if(cx-rad<0 || cy-rad<0 || cx+rad>ctx.canvas.width || cy+rad>ctx.canvas.height) return 0;
             const img = ctx.getImageData(cx-rad, cy-rad, rad*2, rad*2).data; let dC=0, t=0, rSq=rad*rad;
             for(let i=0; i<img.length; i+=4) {
                 const px=(i/4)%(rad*2)-rad, py=Math.floor((i/4)/(rad*2))-rad;
                 if(px*px+py*py<=rSq) { 
                     t++; 
-                    // 🌟 رفعنا التسامح مع الإضاءة إلى 160 (لكي يلتقط القلم الرصاص وحبر الطابعة الخفيف)
-                    if(0.299*img[i]+0.587*img[i+1]+0.114*img[i+2] < 160) dC++; 
+                    if(0.299*img[i]+0.587*img[i+1]+0.114*img[i+2] < threshold) dC++; 
                 }
             } return t===0 ? 0 : dC/t;
         }
