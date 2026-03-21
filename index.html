@@ -99,14 +99,14 @@
         /* الزوايا الأربع مطابقة تماماً لأماكنها في الورقة المطبوعة */
         .target-corner { position: absolute; width: 35px; height: 35px; border: 3px solid rgba(255, 255, 255, 0.8); z-index: 5; transition: all 0.2s; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
         .target-corner.aligned { border-color: var(--success); background-color: rgba(34, 197, 94, 0.4); transform: scale(1.1); }
-        
-        #corner-tl { top: 3%; left: 4%; border-right: none; border-bottom: none; }
-        #corner-tr { top: 3%; right: 4%; border-left: none; border-bottom: none; }
-        #corner-bl { bottom: 3%; left: 4%; border-right: none; border-top: none; }
-        #corner-br { bottom: 3%; right: 4%; border-left: none; border-top: none; }
+       
+        #corner-tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        #corner-tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        #corner-bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        #corner-br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 
         #scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: rgba(34, 197, 94, 0.8); z-index: 4; box-shadow: 0 0 10px var(--success); animation: scanAnim 2s infinite linear; display: none; }
-        @keyframes scanAnim { 0% { top: 3%; } 50% { top: 97%; } 100% { top: 3%; } }
+        @keyframes scanAnim { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
 
         #preview-canvas { max-width: 100%; border: 1px solid #ccc; margin-top: 15px; border-radius: 5px; display: none;}
 
@@ -1140,15 +1140,14 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             const sh = document.querySelector('.omr-sheet'); 
             sh.style.display = 'block';
             
-            // الحساب الدقيق يعتمد على "مراكز" المربعات السوداء الأربعة
+            // الحساب الدقيق يعتمد على "الحواف الخارجية" للمربعات لتطابق إطار الكاميرا
             const tl = sh.querySelector('.marker-tl').getBoundingClientRect();
             const br = sh.querySelector('.marker-br').getBoundingClientRect();
             
-            const boxLeft = tl.left + (tl.width / 2);
-            const boxTop = tl.top + (tl.height / 2);
-            const boxWidth = (br.left + br.width / 2) - boxLeft;
-            const boxHeight = (br.top + br.height / 2) - boxTop;
-
+            const boxLeft = tl.left;
+            const boxTop = tl.top;
+            const boxWidth = br.right - tl.left;
+            const boxHeight = br.bottom - tl.top;
             const bubbles = document.querySelectorAll('.omr-bubble-mark');
             const layout = {};
             bubbles.forEach(b => {
@@ -1446,16 +1445,16 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
                     // تكبير ارتفاع الكاميرا لتناسب ورقة عمودية
                     const ch = window.innerHeight > 600 ? window.innerHeight * 0.65 : 450; 
                     container.style.height = ch + 'px';
-                    
-                    // حساب أبعاد المربع الدليلي ليتطابق مع نسبة ورقة A4 الحقيقية (1 : 1.414)
+                    // النسبة الدقيقة بين الحواف الخارجية للمربعات السوداء (1.435 بدلاً من 1.414)
+                    const markerRatio = 1.435; 
                     const guideBox = document.getElementById('guide-box');
                     let gw, gh; 
-                    if (ch / cw > 1.414) { 
+                    if (ch / cw > markerRatio) { 
                         gw = cw * 0.85; 
-                        gh = gw * 1.414; 
+                        gh = gw * markerRatio; 
                     } else { 
                         gh = ch * 0.85; 
-                        gw = gh / 1.414; 
+                        gw = gh / markerRatio; 
                     }
 
                  guideBox.style.width = gw + 'px';
@@ -1500,20 +1499,25 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
                 {x: (rg.right - rv.left) * sx, y: (rg.bottom - rv.top) * sy} // BR
             ];
 
-            corners.forEach((id, index) => {
+corners.forEach((id, index) => {
                 const el = document.getElementById(id);
-                const cx = guideCorners[index].x;
-                const cy = guideCorners[index].y;
-                const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.015; 
+                const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.018; 
                 
-                // 1. التحقق من أن الزاوية سوداء (المربع الأسود)
-                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad) > 0.45; 
+                // إزاحة نقطة الفحص قليلاً للداخل لتكون في "مركز" المربع الأسود بدلاً من الحافة
+                const insetX = (index % 2 === 0) ? checkRad : -checkRad;
+                const insetY = (index < 2) ? checkRad : -checkRad;
                 
-                // 2. فحص ذكي للورقة: نتحقق من منطقة بجانب المربع لنتأكد أنها بيضاء وليست QR كود
-                let offset = checkRad * 3;
-                let innerX = (index % 2 === 0) ? cx + offset : cx - offset;
-                let innerY = (index < 2) ? cy + offset : cy - offset;
-                let isInnerLight = measureDarkness(analysisCtx, innerX, innerY, checkRad) < 0.2;
+                const cx = guideCorners[index].x + insetX;
+                const cy = guideCorners[index].y + insetY;
+                
+                // 1. التحقق من المربع الأسود (عتبة 40%)
+                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad) > 0.40; 
+                
+                // 2. فحص المنطقة المجاورة للداخل (بيضاء وليست QR)
+                let innerX = guideCorners[index].x + (insetX * 3.5);
+                let innerY = guideCorners[index].y + (insetY * 3.5);
+                let isInnerLight = measureDarkness(analysisCtx, innerX, innerY, checkRad) < 0.25;
+
 
                 // يجب أن تكون الزاوية سوداء والمنطقة الداخلية بيضاء
                 if(isDark && isInnerLight) {
