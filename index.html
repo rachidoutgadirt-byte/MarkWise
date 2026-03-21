@@ -6,3 +6,1883 @@
 
     <title>المصحح</title>
     
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+
+        :root { 
+            --primary: #4f46e5; 
+            --secondary: #8b5cf6; 
+            --dark: #0f172a; 
+            --light: #f1f5f9; 
+            --success: #10b981; 
+            --danger: #f43f5e; 
+            --warning: #f59e0b; 
+            --gray: #64748b; 
+            --border: #cbd5e1; 
+            --font: 'Tajawal', sans-serif; 
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font); }
+        body { background-color: var(--light); color: var(--dark); display: flex; height: 100vh; overflow: hidden; }
+        .mobile-header { display: none; background: linear-gradient(90deg, var(--primary), var(--secondary)); color: white; padding: 15px 20px; align-items: center; justify-content: space-between; z-index: 200; box-shadow: 0 2px 10px rgba(0,0,0,0.15);}
+        .hamburger { font-size: 1.5rem; cursor: pointer; }
+
+        .sidebar { width: 250px; background: linear-gradient(180deg, var(--dark) 0%, #1e293b 100%); color: white; display: flex; flex-direction: column; z-index: 100; transition: transform 0.3s ease; box-shadow: 2px 0 10px rgba(0,0,0,0.05);}
+
+        .sidebar-header { padding: 20px; text-align: center; font-size: 1.5rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-links { list-style: none; padding: 10px 0; flex: 1; overflow-y: auto;}
+        .nav-links li { padding: 15px 20px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .nav-links li:hover, .nav-links li.active { background-color: var(--primary); }
+        .sidebar-footer { padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: auto; }
+        
+        .main-content { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column;}
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px 20px; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .tab-pane { display: none; animation: fadeIn 0.3s; flex: 1;}
+        .tab-pane.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+
+        /* --- تنسيقات ألوان وأشكال الأزرار --- */
+        .btn { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.3s ease; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+        .btn-icon { padding: 8px 10px; border-radius: 6px; }
+        
+        /* الألوان الخاصة بكل زر */
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: var(--warning); color: #000; }
+        .btn-dark { background: var(--dark); }
+        
+        /* التأثيرات عند تمرير الماوس والنقر */
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); opacity: 0.95; }
+        .btn:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        input, select, textarea { padding: 10px; border: 1px solid var(--border); border-radius: 5px; width: 100%; margin-bottom: 10px; outline: none; font-family: var(--font);}
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white;}
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid var(--border); font-size: 0.9rem;}
+        th { background: var(--light); white-space: nowrap;}
+        
+        .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .actions-cell { display: flex; justify-content: center; gap: 5px; }
+
+        .exam-grid-setup { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;}
+        .q-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: var(--light); border-radius: 5px;}
+        
+        /* تعديل تصميم الدائرة ونقطة الأس */
+        .q-option { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); display: flex; justify-content: center; align-items: center; cursor: pointer; background: white; font-weight: bold; position: relative;}
+        .q-option.selected { background: var(--success); color: white; border-color: var(--success); }
+        .q-score-badge { position: absolute; top: -8px; left: -8px; font-size: 11px; font-weight: bold; background: var(--warning); color: #000; border-radius: 50%; width: 22px; height: 22px; display: none; justify-content: center; align-items: center; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .q-option.selected .q-score-badge { display: flex; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 95%; max-width: 600px; max-height: 90vh; overflow-y: auto;}
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
+        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--danger); }
+
+        /* --- تصميم كاميرا الالتقاط التلقائي الدقيق --- */
+        #camera-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto 15px auto; overflow: hidden; background: #000; border-radius: 10px;}
+
+        #video-feed { width: 100%; height: 100%; display: block; object-fit: fill; border-radius: 10px; }
+
+        #guide-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 85%; border: 2px dashed rgba(255,255,255,0.4); box-sizing: border-box; box-shadow: 0 0 0 2000px rgba(0,0,0,0.7); z-index: 2;}  
+        /* الزوايا الأربع مطابقة تماماً لأماكنها في الورقة المطبوعة */
+        .target-corner { position: absolute; width: 35px; height: 35px; border: 3px solid rgba(255, 255, 255, 0.8); z-index: 5; transition: all 0.2s; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        .target-corner.aligned { border-color: var(--success); background-color: rgba(34, 197, 94, 0.4); transform: scale(1.1); }
+       
+        #corner-tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        #corner-tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        #corner-bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        #corner-br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        #scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: rgba(34, 197, 94, 0.8); z-index: 4; box-shadow: 0 0 10px var(--success); animation: scanAnim 2s infinite linear; display: none; }
+        @keyframes scanAnim { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+
+        #preview-canvas { max-width: 100%; border: 1px solid #ccc; margin-top: 15px; border-radius: 5px; display: none;}
+
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; text-align: left; direction: rtl;}
+        .prev-q-row { display: flex; align-items: center; gap: 5px; background: var(--light); padding: 5px 10px; border-radius: 5px; }
+        .prev-bubble { width: 25px; height: 25px; border-radius: 50%; border: 2px solid var(--border); display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; background: white;}
+        .prev-bubble.correct-choice { border-color: var(--success); background: #dcfce7; }
+        .prev-bubble.wrong-choice { border-color: var(--danger); background: #fee2e2; }
+        .prev-bubble.missed-choice { border-color: var(--warning); background: #fef3c7; border-style: dashed; }
+        .prev-status { font-weight: bold; font-size: 1.1rem; width: 20px; text-align: center; }
+        .status-c { color: var(--success); }
+        .status-x { color: var(--danger); }
+
+        .comp-A { background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; font-weight:bold; }
+        .comp-B { background: var(--secondary); color: white; padding: 2px 6px; border-radius: 4px; font-weight:bold; }
+        .comp-C { background: var(--warning); color: black; padding: 2px 6px; border-radius: 4px; font-weight:bold; }
+        .comp-D { background: var(--danger); color: white; padding: 2px 6px; border-radius: 4px; font-weight:bold; }
+
+        #print-wrapper { position: absolute; top: -9999px; left: -9999px; }
+        .omr-sheet { width: 800px; height: 1131px; background: white; position: relative; padding: 50px; color: black; font-family: Arial, sans-serif; box-sizing: border-box; direction: rtl;}
+        .marker { position: absolute; width: 30px; height: 30px; background: black; }
+        .marker-tl { top: 20px; left: 20px; } .marker-tr { top: 20px; right: 20px; }
+        .marker-bl { bottom: 20px; left: 20px; } .marker-br { bottom: 20px; right: 20px; }
+        .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px;}
+        .sheet-title { text-align: center; flex: 1; }
+        .sheet-info { width: 280px; font-size: 16px; line-height: 2; text-align: right;}
+        .omr-table { width: 100%; border-collapse: collapse; text-align: center; border: 2px solid #000; }
+        .omr-table th, .omr-table td { border: 1px solid #000; padding: 10px; font-size: 16px; }
+        .bubble { width: 22px; height: 22px; border: 2px solid #000; border-radius: 50%; margin: auto; display: inline-block;}
+
+/* --- Dropdown Styles --- */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+.dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 220px; /* زيادة العرض ليتسع للنص مرتاحاً */
+            box-shadow: 0px 10px 25px rgba(0,0,0,0.15);
+            z-index: 100; /* لضمان ظهوره فوق الجدول دائماً */
+            border-radius: 8px;
+            padding: 8px;
+            right: auto;
+            left: 0;
+            border: 1px solid var(--border);
+        }
+        .dropdown-content a {
+            color: var(--dark);
+            padding: 10px 15px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: 6px;
+            white-space: nowrap; /* 🌟 السر هنا: منع كسر النص لسطرين أبداً */
+            transition: all 0.2s ease;
+        }
+        .dropdown-content a:hover {
+            background-color: var(--light); /* لون هادئ عند مرور الماوس */
+            color: var(--primary); /* تغيير لون النص ليتناسق مع التطبيق */
+        }
+
+        /* كلاس لإظهار القائمة عند النقر */
+        .show {
+            display: block;
+        }
+
+/* --- CSS الإعدادات --- */
+        .settings-section { margin-bottom: 30px; }
+        .settings-title { font-size: 1.2rem; color: var(--primary); margin-bottom: 5px; }
+        .settings-desc { font-size: 0.85rem; color: var(--gray); margin-bottom: 15px; }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .settings-card { border: 1px solid var(--border); border-radius: 8px; padding: 15px; background: var(--light); }
+        .settings-card h4 { margin-bottom: 10px; color: var(--dark); text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+        .settings-list { list-style: none; max-height: 200px; overflow-y: auto; margin-bottom: 10px; }
+
+        /* --- تنسيقات عناصر الإعدادات المحسنة --- */
+        .settings-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid var(--border); background: white; margin-bottom: 8px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        /* استخدام white-space: nowrap يمنع كسر الكلمة إلى سطرين */
+        .settings-list label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.95rem; white-space: nowrap; color: var(--dark); font-weight: 500; margin: 0; }
+        /* تحديد حجم ثابت لزر التعليم وربطه بلون التطبيق */
+        .settings-list input[type="checkbox"] { margin: 0; width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0; }
+        
+        .settings-actions { display: flex; gap: 10px; align-items: center; }
+        .settings-actions button { background: none; border: none; cursor: pointer; font-size: 1.1rem; transition: transform 0.2s; }
+        .settings-actions button:hover { transform: scale(1.2); }
+        .btn-edit-item { color: var(--warning); }
+        .btn-del-item { color: var(--danger); }
+        
+        .flex-wrap-list { display: flex; flex-wrap: wrap; gap: 12px; }
+        .flex-wrap-list li { flex: 1 1 220px; max-width: 100%; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            /* تنسيق الخلفية الشفافة التي تغطي الشاشة */
+            .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 250; }
+            .sidebar-overlay.show { display: block; }
+            /* إجبار زر الإغلاق (X) على الظهور في الهاتف */
+            #closeMenuBtn { display: block !important; }
+            .mobile-header { display: flex; }
+            .sidebar { position: fixed; top: 0; right: 0; height: 100%; transform: translateX(100%); width: 260px; box-shadow: -5px 0 15px rgba(0,0,0,0.2); z-index: 300; }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-header { margin-top: 20px; }
+            .main-content { padding: 10px; }
+            .table-responsive { overflow-x: auto; }
+        }
+
+/* --- تنسيقات السحب والإفلات --- */
+        .draggable-row { cursor: grab; transition: background-color 0.2s; }
+        .draggable-row:active { cursor: grabbing; }
+        .draggable-row.dragging { opacity: 0.5; background-color: #e2e8f0; }
+        .drag-handle { cursor: grab; color: var(--gray); margin-left: 10px; font-size: 1.2rem; vertical-align: middle;}
+        .drag-handle:hover { color: var(--primary); }
+        .drag-over { border-top: 2px solid var(--primary); background-color: #f8fafc; }
+
+    </style>
+</head>
+<body>
+
+    <!-- الشريط العلوي للشاشات الصغيرة -->
+    <div class="mobile-header" style="position: relative; justify-content: center;">
+        
+        <!-- زر القائمة الجانبية (في أقصى اليمين) -->
+        <i class="fas fa-bars hamburger" style="position: absolute; right: 20px;" onclick="toggleMenu()"></i>
+        
+        <!-- الشعار الجذاب في المنتصف (بدون نص) -->
+        <div style="background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <i class="fas fa-check-double" style="font-size: 1.5rem; color: white;"></i>
+        </div>
+        
+    </div>
+
+<!-- خلفية شفافة تغلق القائمة عند النقر عليها -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+    <nav class="sidebar" id="sidebar">
+
+        <div class="sidebar-header">
+            <i class="fas fa-check-double" style="color: var(--success); margin-left: 5px;"></i> المصحح
+            <i class="fas fa-times" style="position:absolute; top:15px; right:15px; cursor:pointer; font-size:1.2rem; display:none;" id="closeMenuBtn" onclick="toggleMenu()"></i>
+        </div>
+
+        <ul class="nav-links">
+         <li id="nav-classes" onclick="switchTab('classes')"><i class="fas fa-users"></i> <span>لوائح الأقسام</span></li>
+            <li id="nav-create-exam" onclick="switchTab('create-exam')"><i class="fas fa-plus-circle"></i> <span>إنشاء امتحان</span></li>
+            <li id="nav-results" onclick="switchTab('results')"><i class="fas fa-chart-bar"></i> <span>تصحيح الامتحان</span></li>
+<li id="nav-settings" onclick="switchTab('settings')"><i class="fas fa-cog"></i> <span>الإعدادات</span></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn btn-dark" style="width:100%;" onclick="openBackupModal()"><i class="fas fa-database"></i> نسخة احتياطية</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+<!-- الأقسام -->
+        <section id="classes" class="tab-pane">
+            <div class="header" style="display: block;">
+                <h2 style="margin-bottom: 5px;">لوائح الأقسام</h2>
+                <p style="font-size: 0.9rem; color: var(--gray);">قم بتحديد الموسم الدراسي والقسم أولاً، ثم ابدأ في إضافة أو تعديل أو لصق أسماء التلاميذ لإنشاء لائحتك.</p>
+            </div>
+            
+            <div class="card">
+                <div class="flex-row" style="margin-bottom: 15px; align-items: flex-end;">
+                    <div style="flex:1;"><label style="font-size:12px; color:var(--gray);">الموسم الدراسي</label><select id="yearSelect" onchange="renderStudents()"></select></div>
+                    <div style="flex:1;"><label style="font-size:12px; color:var(--gray);">القسم</label><select id="classSelect" onchange="renderStudents()"></select></div>
+                </div>
+                
+                <div class="flex-row" style="margin-bottom: 15px; justify-content: flex-end;">
+                    <button class="btn btn-danger" onclick="deleteAllStudentsInClass()" style="margin-right: auto;"><i class="fas fa-trash-alt"></i> حذف اللائحة بالكامل</button>
+                    <button class="btn btn-warning" onclick="openBulkAddModal()"><i class="fas fa-paste"></i> إضافة سريعة</button>
+                    <button class="btn btn-success" onclick="openAddStudentModal()"><i class="fas fa-user-plus"></i> إضافة تلميذ</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>ر.ت</th><th>الاسم الكامل</th><th>إجراءات</th></tr></thead>
+                        <tbody id="studentsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+<!-- الإعدادات -->
+        <section id="settings" class="tab-pane">
+            <div class="header"><h2>إعدادات النظام</h2></div>
+
+             <!-- صف الموسم والمراحل -->
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <!-- الموسم الدراسي (على اليمين) -->
+                <div class="card settings-section" style="flex: 1; min-width: 250px;">
+                    <h3 class="settings-title">الموسم الدراسي</h3>
+                    <p class="settings-desc">قم بالتعليم على الموسم الدراسي الحالي.</p>
+                    <ul class="settings-list flex-wrap-list" id="settingsYearsList"></ul>
+                    <button class="btn btn-primary btn-sm" onclick="addNewSettingItem('year')"><i class="fas fa-plus"></i> إضافة موسم جديد</button>
+                </div>
+                
+                <!-- المراحل (على اليسار) -->
+                <div class="card settings-section" style="flex: 1; min-width: 250px;">
+                    <h3 class="settings-title">المراحل</h3>
+                    <p class="settings-desc">قم بالتعليم على المراحل الخمسة المستهدفة.</p>
+                    <ul class="settings-list flex-wrap-list" id="settingsStagesList"></ul>
+                    <button class="btn btn-primary btn-sm" onclick="addNewSettingItem('stage')"><i class="fas fa-plus"></i> إضافة مرحلة جديدة</button>
+                </div>
+            </div>
+            
+            <div class="card settings-section">
+                <h3 class="settings-title">الأقسام المسندة</h3>
+                <p class="settings-desc">قم بالتعليم على الأقسام المسندة إليك لكي تظهر بشكل افتراضي في الخطوات اللاحقة.. يمكنك أيضا أن تضيف أقسام جديدة في حال لم تجد قسمك.</p>
+                <div class="settings-grid" id="settingsLevelsGrid">
+                    <!-- سيتم تعبئة البطاقات الـ 3 هنا تلقائياً بواسطة الجافاسكريبت -->
+                </div>
+            </div>
+
+            <div class="card settings-section">
+                <h3 class="settings-title">المواد الدراسية</h3>
+                <p class="settings-desc">قم بالتعليم على المادة التي تدرسها.. يمكنك أيضا أن تضيف مواد جديدة في حال لم تجد مادتك.</p>
+                <ul class="settings-list flex-wrap-list" id="settingsSubjectsList"></ul>
+                <button class="btn btn-primary btn-sm" onclick="addNewSettingItem('subject')"><i class="fas fa-plus"></i> إضافة مادة جديدة</button>
+            </div>
+        </section>
+<!-- إنشاء امتحان -->
+        <section id="create-exam" class="tab-pane">
+            <div class="header" style="display: block;">
+                <h2 id="createExamTitle" style="margin-bottom: 5px;">إنشاء ورقة امتحان</h2>
+                <p style="font-size: 0.9rem; color: var(--gray);">قم بضبط إعدادات الامتحان وحدد عدد الأسئلة والخيارات، ثم انقر على "توليد الشبكة" لتحديد مفتاح الإجابة الصحيح وتعيين النقط.</p>
+            </div>
+            <input type="hidden" id="editingExamId" value="">
+
+             <div class="card exam-grid-setup">
+                <div><label>الموسم الدراسي</label><select id="examYearSelect"></select></div>
+                <div><label>المادة</label><select id="examSubjectSelect"></select></div>
+                <div><label>المرحلة</label><select id="examStageSelect"></select></div>
+                <div><label>القسم</label><select id="examClassSelect"></select></div>
+                <div><label>اسم الامتحان</label><input type="text" id="examName" placeholder="مثال: الفرض الأول"></div>
+                <div><label>عدد الأسئلة</label><input type="number" id="examQCount" value="10" min="1" max="50"></div>
+                <div>
+                    <label>عدد الخيارات</label>
+                    <select id="examOptionCount">
+                        <option value="4">4 خيارات (أ، ب، ج، د)</option>
+                        <option value="6">6 خيارات (أ، ب، ج، د، هـ، و)</option>
+                        <option value="8">8 خيارات (أ، ب، ج، د، هـ، و، ز، ح)</option>
+                        <option value="9">9 خيارات (أ، ب، ج، د، هـ، و، ز، ح، ط)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card"><button class="btn btn-primary" onclick="generateExamGrid()"><i class="fas fa-cogs"></i> توليد الشبكة</button></div>
+            <div class="card" id="examAnswerKeyContainer" style="display: none;">
+                <h3>حدد الإجابات الصحيحة (يمكنك اختيار أكثر من خيار وتحديد نقطة كل منها)</h3>
+                <div id="examQuestionsGrid" style="margin-top:15px; display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:10px;"></div>
+                <button class="btn btn-success" style="margin-top:20px;" onclick="saveExam()" id="saveExamBtn"><i class="fas fa-save"></i> حفظ الامتحان</button>
+            </div>
+        </section>
+<!-- النتائج -->
+        <section id="results" class="tab-pane">
+            <div class="header" style="display: block;">
+                <h2 style="margin-bottom: 5px;">تصحيح الامتحان</h2>
+                <p style="font-size: 0.9rem; color: var(--gray);">قم بتحديد الامتحان من القوائم العلوية لعرض ورقة الإجابة، ثم استخدم الكاميرا لمسح أوراق التلاميذ وتصحيحها تلقائياً، يمكنك أيضا التعديل على النقط يدوياً.</p>
+            </div>
+            <!-- فلاتر البحث العلوية -->
+            <div class="card flex-row" style="margin-bottom: 10px;">
+
+                <select id="resultYearSelect" onchange="updateResultExams()" style="flex:1; margin:0;"><option value="">- الموسم -</option></select>
+                <select id="resultStageSelect" onchange="updateResultExams()" style="flex:1; margin:0;"><option value="">- المرحلة -</option></select>
+                <select id="resultSubjectSelect" onchange="updateResultExams()" style="flex:1; margin:0;"><option value="">- المادة -</option></select>
+                <select id="resultClassSelect" onchange="updateResultExams()" style="flex:1; margin:0;"></select>
+            </div>
+ 
+            <!-- حقل اختيار الامتحان والبحث -->
+            <div class="card flex-row" style="margin-bottom: 15px;">
+                <select id="resultExamSelect" onchange="renderResultsTable()" style="flex:2; margin:0;"></select>
+                <input type="text" id="searchStudent" placeholder="بحث باسم التلميذ..." onkeyup="renderResultsTable()" style="flex:1; margin:0;">
+            </div>
+<div class="card flex-row" style="justify-content:space-between;">
+    <!-- معلومات الامتحان في اليمين -->
+    <div id="examInfoCard" style="text-align:right; flex:1; display:none;">
+        <h3 id="infoExamTitle" style="color:var(--primary); margin:0;"></h3>
+        <p id="infoExamDetails" style="font-size:0.9rem; color:var(--gray); margin:0;"></p>
+        <p id="infoExamStats" style="font-size:0.9rem; margin:0;"></p>
+    </div>
+
+    <!-- زر القائمة المنسدلة في اليسار -->
+    <div class="dropdown">
+        <button onclick="toggleDropdown()" class="btn btn-primary">
+            <i class="fas fa-file-alt"></i> ورقة الإجابة
+        </button>
+
+
+
+        <div id="myDropdown" class="dropdown-content">
+            <a href="#" onclick="event.preventDefault(); editCurrentExam()"><i class="fas fa-edit" style="color:var(--warning);"></i> تعديل الامتحان</a>
+            <a href="#" onclick="event.preventDefault(); deleteCurrentExam()"><i class="fas fa-trash" style="color:var(--danger);"></i> حذف الامتحان</a>
+
+<a href="#" onclick="event.preventDefault(); openBroadcastModal()"><i class="fas fa-copy" style="color:var(--secondary);"></i> تعميم الامتحان</a>
+
+            <hr style="margin: 5px 0;">
+
+            <a href="#" onclick="event.preventDefault(); printCurrentExam('pdf')"><i class="fas fa-file-pdf" style="color:var(--dark);"></i> تحميل PDF</a>
+            <a href="#" onclick="event.preventDefault(); printCurrentExam('png')"><i class="fas fa-image" style="color:var(--success);"></i> تحميل PNG</a>
+        </div>
+    </div>
+</div>
+
+    <!-- معلومات الامتحان في الوسط -->
+    <div id="examInfoCard" style="text-align:center; flex:1; display:none;">
+        <h3 id="infoExamTitle" style="color:var(--primary); margin:0;"></h3>
+        <p id="infoExamDetails" style="font-size:0.9rem; color:var(--gray); margin:0;"></p>
+        <p id="infoExamStats" style="font-size:0.9rem; margin:0;"></p>
+    </div>
+</div>
+       
+     <div class="card flex-row" style="margin-bottom: 15px;">
+                <button id="toggleCompBtn" class="btn btn-warning" onclick="toggleCompetencies()"><i class="fas fa-exchange-alt"></i> إظهار الكفايات</button>
+                <button class="btn btn-primary" onclick="showStatistics()"><i class="fas fa-chart-pie"></i> إحصائيات القسم</button>
+            </div>
+
+            <div class="table-responsive card" style="padding: 10px;">
+                <table id="resultsTable">
+                    <thead><tr id="resultsTableHead"></tr></thead>
+                    <tbody id="resultsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- النوافذ المنبثقة (Modals) -->
+    
+    <div class="modal" id="bulkAddModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>إضافة سريعة للتلاميذ</h3><button class="close-btn" onclick="closeModal('bulkAddModal')">&times;</button></div>
+            <p style="font-size: 0.9rem; color: var(--gray); margin-bottom: 12px;">قم بنسخ لائحة أسماء التلاميذ وألصقها هنا ثم انقر على حفظ.</p>
+            <textarea id="bulkStudentsText" rows="10" placeholder="محمد أحمد&#10;فاطمة علي" style="margin-bottom: 15px;"></textarea>
+            <button class="btn btn-success" onclick="saveBulkStudents()" style="width:100%;">حفظ</button>
+        </div>
+    </div>
+
+    <div class="modal" id="studentModal">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header"><h3 id="studentModalTitle">تعديل تلميذ</h3><button class="close-btn" onclick="closeModal('studentModal')">&times;</button></div>
+            <input type="hidden" id="editStudentId">
+            <label>الاسم الكامل</label><input type="text" id="editStudentName">
+            <label>الرقم الترتيبي (ر.ت)</label><input type="number" id="editStudentRoll">
+            <div id="moveClassWrapper">
+                <label>نقل إلى قسم آخر</label><select id="editStudentClass"></select>
+            </div>
+            <button class="btn btn-primary" onclick="saveStudentChanges()" style="width:100%; margin-top: 10px;">حفظ التغييرات</button>
+        </div>
+    </div>
+
+    <div class="modal" id="editScoreModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="editScoreTitle">تعديل النقط يدوياً</h3><button class="close-btn" onclick="closeModal('editScoreModal')">&times;</button></div>
+            <input type="hidden" id="editScoreSId">
+            <div id="editScoreGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap:10px; margin-bottom:15px;"></div>
+            <button class="btn btn-primary" onclick="saveManualScores()" style="width:100%;">حفظ</button>
+        </div>
+    </div>
+
+    <div class="modal" id="previewModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header"><h3>معاينة ورقة الإجابة</h3><button class="close-btn" onclick="closeModal('previewModal')">&times;</button></div>
+            <div id="previewContainer" class="preview-grid"></div>
+        </div>
+    </div>
+<!-- نافذة الكاميرا بأسلوب ZipGrade (Full Screen) -->
+    <div class="modal" id="scannerModal" style="padding: 0; background: #000;">
+        <div class="modal-content" style="width: 100vw; height: 100vh; max-width: none; max-height: none; padding: 0; border-radius: 0; display: flex; flex-direction: column; background: #000; position: relative;">
+            
+            <!-- الشريط العلوي الشفاف -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); z-index: 10;">
+                <button onclick="stopScanner()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
+                <h3 id="scannerTitle" style="color: white; margin: 0; font-size: 1.2rem;">Scanning</h3>
+                <button onclick="forceCapture()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;"><i class="fas fa-camera"></i></button>
+            </div>
+
+            <!-- حاوية الكاميرا تملأ الشاشة -->
+            <div id="camera-container" style="flex: 1; width: 100%; position: relative; overflow: hidden;">
+                <video id="video-feed" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                
+                <!-- المربع الدليلي مع التظليل المحيط (Overlay) -->
+                <div id="guide-box" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.4); box-shadow: 0 0 0 2000px rgba(0,0,0,0.6); z-index: 2; box-sizing: border-box;">
+                    
+                    <!-- المربعات الكبيرة الأربعة (Viewfinders) -->
+                    <div id="corner-tl" style="position:absolute; top:-2px; left:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
+                    <div id="corner-tr" style="position:absolute; top:-2px; right:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
+                    <div id="corner-bl" style="position:absolute; bottom:-2px; left:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
+                    <div id="corner-br" style="position:absolute; bottom:-2px; right:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
+                    
+                    <!-- خط المسح وشريط الثبات -->
+                    <div id="scan-line" style="position:absolute; top:0; left:0; width:100%; height:2px; background:rgba(34,197,94,0.8); box-shadow:0 0 10px #22c55e; display:none;"></div>
+                    <div id="stabilization-bar" style="position:absolute; bottom:-6px; left:0; height:4px; background:#22c55e; width:0%; transition:width 0.1s;"></div>
+                </div>
+            </div>
+            
+            <canvas id="preview-canvas" style="width:100%; height:100%; object-fit:contain; display:none; background:#000; position:absolute; top:0; left:0; z-index:15;"></canvas>
+            <canvas id="analysis-canvas" style="display:none;"></canvas>
+
+            <!-- الشريط السفلي للتعليمات والنتيجة -->
+            <div id="scanner-bottom-bar" style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; background: rgba(0,0,0,0.7); z-index: 20; text-align: center;">
+                <p id="scanner-instruction" style="color: white; font-weight: bold; font-size: 1.1rem; margin-bottom: 10px;">قم بمطابقة المربعات الأربعة للالتقاط</p>
+                <div id="scanned-feedback" style="color: var(--success); font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;"></div>
+                
+                <div id="scanner-actions" style="display:none; justify-content:center; gap:15px;">
+                    <button class="btn btn-warning" onclick="retakePhoto()"><i class="fas fa-redo"></i> إعادة</button>
+                    <button class="btn btn-success" onclick="confirmSaveScanned()"><i class="fas fa-check"></i> حفظ النتيجة</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="chartModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>إحصائيات الكفايات</h3><button class="close-btn" onclick="closeModal('chartModal')">&times;</button></div>
+            <canvas id="statsChart"></canvas>
+        </div>
+    </div>
+
+    <div class="modal" id="backupModal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header"><h3>النسخة الاحتياطية</h3><button class="close-btn" onclick="closeModal('backupModal')">&times;</button></div>
+            <p style="margin-bottom:20px; color:var(--gray);">احفظ بياناتك أو استعدها لتجنب الضياع.</p>
+            <button class="btn btn-primary" style="width:100%; margin-bottom:10px;" onclick="exportData()"><i class="fas fa-download"></i> تصدير البيانات (JSON)</button>
+            <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+            <button class="btn btn-warning" style="width:100%;" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> استيراد البيانات (JSON)</button>
+        </div>
+    </div>
+<!-- نافذة تعميم الامتحان -->
+    <div class="modal" id="broadcastModal">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>تعميم الامتحان</h3>
+                <button class="close-btn" onclick="closeModal('broadcastModal')">&times;</button>
+            </div>
+            <p style="font-size:0.9rem; color:var(--gray); margin-bottom:15px;">حدد الأقسام (من نفس المستوى) التي تريد نسخ هذا الامتحان إليها بنفس الإعدادات ومفتاح الإجابة:</p>
+            
+            <!-- قائمة الأقسام ستظهر هنا -->
+            <div id="broadcastClassesList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px; max-height:250px; overflow-y:auto; padding: 5px;">
+            </div>
+            
+            <button class="btn btn-primary" id="confirmBroadcastBtn" onclick="confirmBroadcastExam()" style="width:100%;"><i class="fas fa-check-circle"></i> تأكيد التعميم</button>
+        </div>
+    </div>
+<!-- صوت الكاميرا الحقيقي (ZipGrade Style) -->
+    <audio id="shutterAudio" src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"></audio>
+    <!-- Print Template -->
+    <div id="print-wrapper">
+        <div class="omr-sheet" id="omr-print-template">
+            <div class="marker marker-tl"></div> <div class="marker marker-tr"></div>
+            <div class="marker marker-bl"></div> <div class="marker marker-br"></div>
+            <div class="sheet-header">
+                <div class="sheet-info">
+                    <div>الاسم الكامل: .......................................</div>
+                    <div id="print-class-name">القسم: .......................................</div>
+                    <div>ر.ت: [.....] &nbsp;&nbsp; مسار: [ ][ ][ ][ ][ ][ ][ ]</div>
+                </div>
+                <div class="sheet-title">
+                    <h2 id="print-exam-name">اسم الامتحان</h2>
+                    <p id="print-exam-year">السنة الدراسية: 2025/2026</p>
+                </div>
+                <div id="qr-placeholder" style="width:90px; height:90px;"></div>
+            </div>
+            <p style="text-align:center; font-weight:bold; margin-bottom:15px; background:#f0f0f0; padding:10px; border:1px solid #000;">تعليمات: ظلل الدائرة بالكامل أو ضع علامة X واضحة.</p>
+            <table class="omr-table" id="omr-print-table">
+                <thead id="omr-print-thead"></thead>
+                <tbody id="omr-print-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+
+        // === IndexedDB Wrapper ===
+        const DB_NAME = 'OMR_System_V3';
+        const DB_VERSION = 1;
+        let db;
+
+        const IDB = {
+            init() {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open(DB_NAME, DB_VERSION);
+                    req.onupgradeneeded = (e) => {
+                        let db = e.target.result;
+                        if (!db.objectStoreNames.contains('classes')) db.createObjectStore('classes', { keyPath: 'id' });
+                        if (!db.objectStoreNames.contains('exams')) db.createObjectStore('exams', { keyPath: 'id' });
+                        if (!db.objectStoreNames.contains('results')) db.createObjectStore('results', { keyPath: 'id' });
+if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'id' });
+                    };
+                    req.onsuccess = (e) => { db = e.target.result; resolve(); };
+                    req.onerror = (e) => reject(e);
+                });
+            },
+            async getAll(store) {
+                return new Promise(res => { const req = db.transaction(store, 'readonly').objectStore(store).getAll(); req.onsuccess = () => res(req.result||[]); });
+            },
+            async put(store, data) {
+                return new Promise(res => { const tx = db.transaction(store, 'readwrite'); tx.objectStore(store).put(data); tx.oncomplete = () => res(); });
+            },
+            async delete(store, id) {
+                return new Promise(res => { const tx = db.transaction(store, 'readwrite'); tx.objectStore(store).delete(id); tx.oncomplete = () => res(); });
+            },
+            async clear(store) {
+                return new Promise(res => { const tx = db.transaction(store, 'readwrite'); tx.objectStore(store).clear(); tx.oncomplete = () => res(); });
+            }
+        };
+
+        // === State ===
+        const AppState = { classes:[], exams:[], results: {}, settings: null, activeScan: null, videoStream: null };
+        const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
+        const closeModal = (id) => document.getElementById(id).style.display = 'none';
+        const ARABIC_LETTERS =['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي'];
+
+        async function initApp() {
+            try {
+                await IDB.init();
+                AppState.classes = await IDB.getAll('classes');
+                AppState.exams = await IDB.getAll('exams');
+                const rawRes = await IDB.getAll('results');
+                AppState.results = {};
+                rawRes.forEach(r => {
+                    const [eId, sId] = r.id.split('___');
+                    if(!AppState.results[eId]) AppState.results[eId] = {};
+                    AppState.results[eId][sId] = r;
+                });
+// --- تحميل الإعدادات الافتراضية بطريقة آمنة ---
+                const savedSettings = await IDB.getAll('settings');
+
+// أضفنا شروطاً للتأكد من أن الإعدادات ليست فارغة أو تالفة
+                if(savedSettings.length > 0 && savedSettings[0] && savedSettings[0].levels && savedSettings[0].subjects) {
+                    AppState.settings = savedSettings[0];
+                    // تحديث هام: إضافة المواسم لقاعدة البيانات إذا لم تكن موجودة
+                    if(!AppState.settings.years) {
+                        AppState.settings.years =['2025/2026', '2026/2027', '2027/2028', '2028/2029', '2029/2030'].map(n => ({id: generateId(), name: n, checked: false}));
+                        await IDB.put('settings', AppState.settings);
+                    }
+                } else {
+
+                    AppState.settings = getDefaultSettings();
+                    await IDB.put('settings', AppState.settings);
+                }
+                // تغيير اسم الذاكرة لكي ينسى المتصفح التبويب القديم ويفتح "الإعدادات" أولاً
+                const uiState = JSON.parse(localStorage.getItem('omr_uistate_v3')) || { tab: 'settings' };
+
+                switchTab(uiState.tab, false);
+
+                if(uiState.tab === 'results' && uiState.classId) {
+                    document.getElementById('resultClassSelect').value = uiState.classId;
+                    updateResultExams();
+                    if(uiState.examId) { document.getElementById('resultExamSelect').value = uiState.examId; renderResultsTable(); }
+                }
+                if(uiState.tab === 'classes' && uiState.classId) {
+                    document.getElementById('classSelect').value = uiState.classId; renderStudents();
+                }
+                if (window.innerWidth <= 768) document.getElementById('closeMenuBtn').style.display = 'block';
+            } catch(e) { console.error(e); }
+        }
+
+        function saveUIState() {
+            const state = {
+                tab: document.querySelector('.tab-pane.active')?.id || 'classes',
+                year: document.getElementById('yearSelect')?.value || '',
+                classId: document.getElementById('classSelect')?.value || document.getElementById('resultClassSelect')?.value || '',
+                examId: document.getElementById('resultExamSelect')?.value || ''
+            };
+            localStorage.setItem('omr_uistate_v3', JSON.stringify(state));
+        }
+
+        // === Settings Logic ===
+        function getDefaultSettings() {
+            let defClasses = (prefix) => Array.from({length: 10}, (_, i) => ({id: generateId(), name: `${prefix} ${i+1}`, checked: false}));
+            return {
+                id: 'global_settings',
+                levels:[
+                    { id: generateId(), name: 'الأولى إعدادي', classes: defClasses('الأولى') },
+                    { id: generateId(), name: 'الثانية إعدادي', classes: defClasses('الثانية') },
+                    { id: generateId(), name: 'الثالثة إعدادي', classes: defClasses('الثالثة') }
+                ],
+
+               subjects:['اللغة العربية', 'اللغة الفرنسية', 'الرياضيات', 'الفيزياء', 'علوم الحياة والأرض'].map(n => ({id: generateId(), name: n, checked: false})),
+                stages:['المرحلة الأولى', 'المرحلة الثانية', 'المرحلة الثالثة', 'المرحلة الرابعة', 'المرحلة الخامسة'].map(n => ({id: generateId(), name: n, checked: false})),
+                years:['2025/2026', '2026/2027', '2027/2028', '2028/2029', '2029/2030'].map(n => ({id: generateId(), name: n, checked: false}))
+            };
+        }
+
+        function renderSettings() {
+            const lvlGrid = document.getElementById('settingsLevelsGrid'); lvlGrid.innerHTML = '';
+            AppState.settings.levels.forEach(lvl => {
+                let html = `<div class="settings-card"><h4>${lvl.name}</h4><ul class="settings-list">`;
+                lvl.classes.forEach(c => {
+                    html += `<li><label><input type="checkbox" ${c.checked?'checked':''} onchange="toggleSetting('class','${lvl.id}','${c.id}')"> ${c.name}</label>
+                        <div class="settings-actions"><button class="btn-edit-item" onclick="editSettingItem('class','${lvl.id}','${c.id}')"><i class="fas fa-edit"></i></button><button class="btn-del-item" onclick="deleteSettingItem('class','${lvl.id}','${c.id}')"><i class="fas fa-trash"></i></button></div></li>`;
+                });
+                lvlGrid.innerHTML += html + `</ul><button class="btn btn-primary btn-sm" style="width:100%" onclick="addNewSettingItem('class','${lvl.id}')"><i class="fas fa-plus"></i> إضافة قسم</button></div>`;
+            });
+
+            const renderList = (id, arr, type) => {
+                const list = document.getElementById(id); list.innerHTML = '';
+                arr.forEach(item => {
+                    list.innerHTML += `<li><label><input type="checkbox" ${item.checked?'checked':''} onchange="toggleSetting('${type}','','${item.id}')"> ${item.name}</label>
+                        <div class="settings-actions"><button class="btn-edit-item" onclick="editSettingItem('${type}','','${item.id}')"><i class="fas fa-edit"></i></button><button class="btn-del-item" onclick="deleteSettingItem('${type}','','${item.id}')"><i class="fas fa-trash"></i></button></div></li>`;
+                });
+            };
+            renderList('settingsSubjectsList', AppState.settings.subjects, 'subject');
+            renderList('settingsStagesList', AppState.settings.stages, 'stage');
+            renderList('settingsYearsList', AppState.settings.years, 'year');
+        }
+
+async function toggleSetting(type, lvlId, itemId) {
+            let item;
+            if(type === 'class') item = AppState.settings.levels.find(l=>l.id===lvlId).classes.find(c=>c.id===itemId);
+            else if(type === 'subject') item = AppState.settings.subjects.find(s=>s.id===itemId);
+            else if(type === 'year') item = AppState.settings.years.find(s=>s.id===itemId);
+            else item = AppState.settings.stages.find(s=>s.id===itemId);
+            item.checked = !item.checked;
+            await IDB.put('settings', AppState.settings);
+        }
+
+        async function editSettingItem(type, lvlId, itemId) {
+            let item, newName = prompt("أدخل الاسم الجديد:");
+            if(!newName || !newName.trim()) return;
+            if(type === 'class') item = AppState.settings.levels.find(l=>l.id===lvlId).classes.find(c=>c.id===itemId);
+            else if(type === 'subject') item = AppState.settings.subjects.find(s=>s.id===itemId);
+            else if(type === 'year') item = AppState.settings.years.find(s=>s.id===itemId);
+            else item = AppState.settings.stages.find(s=>s.id===itemId);
+            item.name = newName.trim();
+            await IDB.put('settings', AppState.settings); renderSettings();
+        }
+
+        async function deleteSettingItem(type, lvlId, itemId) {
+            if(!confirm("تأكيد الحذف؟")) return;
+            if(type === 'class') {
+                let lvl = AppState.settings.levels.find(l=>l.id===lvlId);
+                lvl.classes = lvl.classes.filter(c=>c.id!==itemId);
+            } else if(type === 'subject') { AppState.settings.subjects = AppState.settings.subjects.filter(s=>s.id!==itemId);
+            } else if(type === 'year') { AppState.settings.years = AppState.settings.years.filter(s=>s.id!==itemId);
+            } else { AppState.settings.stages = AppState.settings.stages.filter(s=>s.id!==itemId); }
+            await IDB.put('settings', AppState.settings); renderSettings();
+        }
+
+        async function addNewSettingItem(type, lvlId) {
+            let newName = prompt("أدخل الاسم الجديد:");
+            if(!newName || !newName.trim()) return;
+            let newItem = {id: generateId(), name: newName.trim(), checked: true};
+            if(type === 'class') AppState.settings.levels.find(l=>l.id===lvlId).classes.push(newItem);
+            else if(type === 'subject') AppState.settings.subjects.push(newItem);
+            else if(type === 'year') AppState.settings.years.push(newItem);
+            else AppState.settings.stages.push(newItem);
+            await IDB.put('settings', AppState.settings); renderSettings();
+        }
+
+        function populateSettingsDropdown(id, list) {
+            const sel = document.getElementById(id); const val = sel.value; sel.innerHTML = '';
+            list.filter(i=>i.checked).forEach(item => sel.innerHTML += `<option value="${item.name}">${item.name}</option>`);
+            if(val && list.find(i=>i.name===val && i.checked)) sel.value = val;
+        }
+
+         function toggleMenu() { 
+            document.getElementById('sidebar').classList.toggle('open'); 
+            if(document.getElementById('sidebarOverlay')) {
+                document.getElementById('sidebarOverlay').classList.toggle('show');
+            }
+        }
+
+         function switchTab(tId, save = true) {
+            document.querySelectorAll('.tab-pane, .nav-links li').forEach(el => el.classList.remove('active'));
+            if(document.getElementById(tId)) document.getElementById(tId).classList.add('active');
+            if(document.getElementById('nav-'+tId)) document.getElementById('nav-'+tId).classList.add('active');
+
+            if(tId==='classes') {
+                populateSettingsDropdown('yearSelect', AppState.settings.years);
+                populateClassesDropdown('classSelect');
+            }
+
+            if(tId==='create-exam') {
+                populateSettingsDropdown('examYearSelect', AppState.settings.years);
+                populateSettingsDropdown('examSubjectSelect', AppState.settings.subjects);
+                populateSettingsDropdown('examStageSelect', AppState.settings.stages);
+                populateClassesDropdown('examClassSelect');
+            }
+
+            if(tId==='results') {
+                populateSettingsDropdown('resultYearSelect', AppState.settings.years);
+                populateSettingsDropdown('resultStageSelect', AppState.settings.stages);
+                populateSettingsDropdown('resultSubjectSelect', AppState.settings.subjects);
+                populateClassesDropdown('resultClassSelect');
+            }
+
+            if(tId==='settings') renderSettings();
+
+            if(window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+                if(document.getElementById('sidebarOverlay')) {
+                    document.getElementById('sidebarOverlay').classList.remove('show');
+                }
+            }
+
+            if(save) saveUIState();
+        }
+
+// === Classes & Students ===
+        
+        function populateClassesDropdown(id) {
+            const sel = document.getElementById(id); const val = sel.value;
+            sel.innerHTML = '<option value="">-- اختر القسم --</option>';
+            let checkedClasses =[];
+            if(AppState.settings && AppState.settings.levels) {
+                AppState.settings.levels.forEach(l => l.classes.forEach(c => { if(c.checked) checkedClasses.push(c); }));
+            }
+            checkedClasses.forEach(c => {
+                sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                if(!AppState.classes.find(ac => ac.id === c.id)) {
+                    let newCls = {id: c.id, name: c.name, students:[]};
+                    AppState.classes.push(newCls); IDB.put('classes', newCls);
+                }
+            });
+            
+            // استعادة الموسم المحفوظ إذا كان التبويب هو لوائح الأقسام
+            const uiState = JSON.parse(localStorage.getItem('omr_uistate_v3')) || {};
+            if(id === 'classSelect' && uiState.year) {
+                document.getElementById('yearSelect').value = uiState.year;
+            }
+
+            if(val && checkedClasses.find(c=>c.id===val)) { sel.value = val; } 
+            else if(id==='classSelect' && checkedClasses.length > 0) { sel.value = checkedClasses[0].id; renderStudents(); }
+        }
+
+        function renderStudents() {
+            const cid = document.getElementById('classSelect').value;
+            const year = document.getElementById('yearSelect').value;
+            const tb = document.getElementById('studentsTableBody'); tb.innerHTML='';
+            
+            if(!cid || !year) return; // يجب توفر القسم والموسم
+            
+            const cls = AppState.classes.find(c=>c.id===cid);
+            // تصفية التلاميذ حسب الموسم الدراسي
+            let yearStudents = cls.students.filter(s => s.year === year);
+
+            yearStudents.sort((a,b)=>(a.roll||0)-(b.roll||0)).forEach((s,i) => {
+                s.roll = s.roll || (i+1);
+                // أضفنا خصائص السحب (draggable) وأيقونة المقبض (drag-handle)
+                tb.innerHTML += `<tr class="draggable-row" draggable="true" 
+                    ondragstart="dragStart(event, '${s.id}')" 
+                    ondragover="dragOver(event)" 
+                    ondragenter="dragEnter(event)" 
+                    ondragleave="dragLeave(event)" 
+                    ondrop="drop(event, '${cid}', '${year}', '${s.id}')">
+                    
+                    <td><i class="fas fa-grip-lines drag-handle" title="اسحب لتغيير الترتيب"></i> ${s.roll}</td>
+                    <td style="text-align:right;">${s.name}</td>
+                    <td class="actions-cell">
+                        <button class="btn btn-primary btn-icon" onclick="openEditStudent('${cid}','${s.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-icon" onclick="deleteStudent('${cid}','${s.id}')" title="حذف تلميذ"><i class="fas fa-trash"></i></button>
+                    </td></tr>`;
+            });
+            saveUIState();
+        }
+
+        function openBulkAddModal() { 
+            if(!document.getElementById('classSelect').value || !document.getElementById('yearSelect').value) return alert("اختر الموسم والقسم أولاً"); 
+            document.getElementById('bulkStudentsText').value=''; 
+            document.getElementById('bulkAddModal').style.display='flex'; 
+        }
+
+        async function saveBulkStudents() {
+            const cid = document.getElementById('classSelect').value;
+            const year = document.getElementById('yearSelect').value;
+            const cls = AppState.classes.find(c=>c.id===cid);
+            const names = document.getElementById('bulkStudentsText').value.split('\n').map(n=>n.trim()).filter(n=>n);
+            
+            let yearStudents = cls.students.filter(s => s.year === year);
+            let roll = yearStudents.length ? Math.max(...yearStudents.map(s=>s.roll||0))+1 : 1;
+            
+            names.forEach(name => cls.students.push({id: generateId(), name, roll: roll++, year: year})); // حفظ التلميذ مع الموسم
+            await IDB.put('classes', cls); closeModal('bulkAddModal'); renderStudents();
+        }
+
+        function openAddStudentModal() {
+            if(!document.getElementById('classSelect').value || !document.getElementById('yearSelect').value) return alert("اختر الموسم والقسم أولاً");
+            document.getElementById('studentModalTitle').innerText = 'إضافة تلميذ';
+            document.getElementById('editStudentId').value = ''; document.getElementById('editStudentName').value = '';
+            
+            const cls = AppState.classes.find(c=>c.id===document.getElementById('classSelect').value);
+            const year = document.getElementById('yearSelect').value;
+            let yearStudents = cls.students.filter(s => s.year === year);
+            
+            document.getElementById('editStudentRoll').value = yearStudents.length ? Math.max(...yearStudents.map(s=>s.roll||0))+1 : 1;
+            document.getElementById('moveClassWrapper').style.display = 'none';
+            document.getElementById('studentModal').style.display = 'flex';
+        }
+
+        function openEditStudent(cid, sid) {
+            const s = AppState.classes.find(c=>c.id===cid).students.find(x=>x.id===sid);
+            document.getElementById('studentModalTitle').innerText = 'تعديل تلميذ';
+            document.getElementById('editStudentId').value = sid; document.getElementById('editStudentName').value = s.name;
+            document.getElementById('editStudentRoll').value = s.roll||'';
+            document.getElementById('moveClassWrapper').style.display = 'block';
+            const sel = document.getElementById('editStudentClass'); sel.innerHTML='';
+            AppState.classes.forEach(c => sel.innerHTML += `<option value="${c.id}" ${c.id===cid?'selected':''}>${c.name}</option>`);
+            document.getElementById('studentModal').style.display = 'flex';
+        }
+
+        async function saveStudentChanges() {
+            const sid = document.getElementById('editStudentId').value;
+            const name = document.getElementById('editStudentName').value.trim();
+            const roll = parseInt(document.getElementById('editStudentRoll').value)||0;
+            const oldCid = document.getElementById('classSelect').value;
+            const year = document.getElementById('yearSelect').value;
+            
+            if(!name) return;
+            
+            if(sid) {
+                const newCid = document.getElementById('editStudentClass').value;
+                const oldCls = AppState.classes.find(c=>c.id===oldCid);
+                const sIdx = oldCls.students.findIndex(x=>x.id===sid);
+                const sData = oldCls.students[sIdx];
+                sData.name = name; sData.roll = roll;
+                
+                if(oldCid !== newCid) {
+                    oldCls.students.splice(sIdx,1); 
+                    AppState.classes.find(c=>c.id===newCid).students.push(sData);
+                    await IDB.put('classes', oldCls); 
+                    await IDB.put('classes', AppState.classes.find(c=>c.id===newCid));
+                } else {
+                    await IDB.put('classes', oldCls);
+                }
+            } else {
+                const cls = AppState.classes.find(c=>c.id===oldCid);
+                cls.students.push({id: generateId(), name, roll, year}); // إضافة التلميذ للموسم المحدد
+                await IDB.put('classes', cls);
+            }
+            closeModal('studentModal'); renderStudents();
+        }
+
+        async function deleteStudent(cid, sid) {
+            if(!confirm("هل أنت متأكد من حذف التلميذ؟")) return;
+            
+            const cls = AppState.classes.find(c=>c.id===cid);
+            
+            // 1. العثور على التلميذ لمعرفة الموسم الدراسي الخاص به قبل حذفه
+            const studentToDelete = cls.students.find(s=>s.id===sid);
+            const targetYear = studentToDelete.year;
+
+            // 2. حذف التلميذ من القسم
+            cls.students = cls.students.filter(s=>s.id!==sid); 
+            
+            // 3. إعادة الترتيب التلقائي للأرقام الترتيبية (ر.ت) لتلاميذ هذا الموسم فقط
+            let yearStudents = cls.students.filter(s => s.year === targetYear);
+            yearStudents.sort((a, b) => (a.roll || 0) - (b.roll || 0)); // ترتيبهم أولاً حسب أرقامهم السابقة
+            yearStudents.forEach((student, index) => {
+                student.roll = index + 1; // إعطاء رقم جديد متسلسل يبدأ من 1
+            });
+
+            // 4. حفظ التعديلات في قاعدة البيانات
+            await IDB.put('classes', cls);
+            
+            // 5. حذف نتائج التلميذ المحذوف من الامتحانات
+            for(let eid in AppState.results) {
+                if(AppState.results[eid][sid]) { 
+                    delete AppState.results[eid][sid]; 
+                    await IDB.delete('results', `${eid}___${sid}`); 
+                }
+            }
+            
+            // تحديث الجدول لترى الترتيب الجديد فوراً
+            renderStudents();
+        }
+
+        async function deleteAllStudentsInClass() {
+            const cid = document.getElementById('classSelect').value;
+            const year = document.getElementById('yearSelect').value;
+            if(!cid || !year) return alert("الرجاء تحديد الموسم والقسم");
+            
+            const cls = AppState.classes.find(c=>c.id===cid);
+            let yearStudentsCount = cls.students.filter(s => s.year === year).length;
+            
+            if(yearStudentsCount === 0) return alert("هذا القسم فارغ بالفعل في هذا الموسم!");
+            
+            if(confirm(`⚠️ تنبيه هام!\nهل أنت متأكد من حذف جميع تلاميذ هذا القسم للموسم الدراسي (${year})؟\nهذا الإجراء سيؤدي أيضاً إلى حذف جميع نتائجهم ولن تتمكن من التراجع عنه!`)) {
+                
+                // تحديد التلاميذ المراد حذفهم لمسح نتائجهم لاحقاً
+                let studentsToDelete = cls.students.filter(s => s.year === year);
+                
+                // الإبقاء فقط على تلاميذ المواسم الأخرى
+                cls.students = cls.students.filter(s => s.year !== year);
+                await IDB.put('classes', cls);
+                
+                // حذف نتائجهم من قاعدة البيانات
+                for(let student of studentsToDelete) {
+                    for(let eid in AppState.results) {
+                        if(AppState.results[eid][student.id]) {
+                            delete AppState.results[eid][student.id];
+                            await IDB.delete('results', `${eid}___${student.id}`);
+                        }
+                    }
+                }
+                renderStudents();
+                alert("تم مسح لائحة القسم بنجاح.");
+            }
+        }
+
+        // === Exam Creation (Multiple Options allowed) ===
+        let currentSetup = null;
+
+
+        function generateExamGrid() {
+        const name = document.getElementById('examName').value, cid = document.getElementById('examClassSelect').value;
+const qCount = parseInt(document.getElementById('examQCount').value), optCount = parseInt(document.getElementById('examOptionCount').value);
+            const year = document.getElementById('examYearSelect').value;
+            const subject = document.getElementById('examSubjectSelect').value;
+            const stage = document.getElementById('examStageSelect').value;
+            if(!name || !cid || !year || !subject || !stage || isNaN(qCount)) return alert("الرجاء تحديد الموسم والمادة والمرحلة وملء باقي البيانات");
+            
+            let options = ARABIC_LETTERS.slice(0, optCount);
+            currentSetup = { id: document.getElementById('editingExamId').value || generateId(), name, year, subject, stage, classId: cid, qCount, options, answerKey: {} };     
+            const grid = document.getElementById('examQuestionsGrid'); grid.innerHTML = '';
+            for(let i=1; i<=qCount; i++) {
+                let row = `<div class="q-row"><strong>س${i}:</strong><div style="display:flex; gap:5px;">`;
+                options.forEach(opt => row += `<div class="q-option" onclick="toggleOption(this, ${i}, '${opt}')">
+                    ${opt} <span class="q-score-badge"></span>
+                </div>`);
+                grid.innerHTML += row + `</div></div>`;
+            }
+            document.getElementById('examAnswerKeyContainer').style.display = 'block';
+            document.getElementById('createExamTitle').innerText = document.getElementById('editingExamId').value ? 'تعديل ورقة الامتحان' : 'إنشاء ورقة امتحان';
+        }
+
+        function toggleOption(el, qId, opt) {
+            const qKey = `Q${qId}`;
+            if(!currentSetup.answerKey[qKey]) currentSetup.answerKey[qKey] = {};
+            
+            if(!el.classList.contains('selected')) {
+                let pts = prompt(`أدخل النقطة للإجابة الصحيحة (${opt}):`, "1");
+                if(pts === null || isNaN(parseFloat(pts)) || pts.trim() === "") return;
+                
+                // تمت إزالة الكود الذي يحذف التحديد عن الخيارات الأخرى لتفعيل اختيار أكثر من خيار
+                currentSetup.answerKey[qKey][opt] = parseFloat(pts);
+                el.classList.add('selected');
+                el.querySelector('.q-score-badge').innerText = pts;
+            } else {
+                el.classList.remove('selected');
+                delete currentSetup.answerKey[qKey][opt];
+            }
+        }
+
+        async function saveExam() {
+            buildPrintTemplate(currentSetup);
+            setTimeout(async () => {
+                currentSetup.layout = extractBubbleCoordinates();
+                
+                const existingIdx = AppState.exams.findIndex(e => e.id === currentSetup.id);
+                if(existingIdx >= 0) AppState.exams[existingIdx] = currentSetup;
+                else AppState.exams.push(currentSetup);
+                
+                await IDB.put('exams', currentSetup);
+                alert("تم الحفظ بنجاح!");
+                document.getElementById('examAnswerKeyContainer').style.display = 'none';
+                document.getElementById('editingExamId').value = '';
+                // نقله لتبويب النتائج تلقائياً
+switchTab('results'); 
+// ضبط الحقول تلقائياً لعرض الامتحان المحفوظ
+document.getElementById('resultClassSelect').value = currentSetup.classId;
+updateResultExams(); // تحديث القائمة المنسدلة للامتحانات
+document.getElementById('resultExamSelect').value = currentSetup.id;
+updateResultExams(); // استدعاء نهائي لعرض الجدول والبطاقة
+            }, 300);
+        }
+
+        // Fix: Restoring previously selected options correctly when editing
+        function editExamSetup(id) {
+            const ex = AppState.exams.find(e => e.id === id);
+            document.getElementById('editingExamId').value = ex.id;
+            document.getElementById('examName').value = ex.name;
+            document.getElementById('examYearSelect').value = ex.year || '';
+            document.getElementById('examSubjectSelect').value = ex.subject || '';
+            document.getElementById('examStageSelect').value = ex.stage || '';
+            document.getElementById('examClassSelect').value = ex.classId;
+            document.getElementById('examQCount').value = ex.qCount;
+            document.getElementById('examOptionCount').value = ex.options.length;
+            
+            switchTab('create-exam');
+            generateExamGrid();
+            
+            // Re-apply answer key visual state
+            for(let i=1; i<=ex.qCount; i++) {
+                let qKey = `Q${i}`;
+                if(ex.answerKey[qKey]) {
+                    if(!currentSetup.answerKey[qKey]) currentSetup.answerKey[qKey] = {}; // منع مشكلة TypeError
+                    for(let opt in ex.answerKey[qKey]) {
+                        let pts = ex.answerKey[qKey][opt];
+                        currentSetup.answerKey[qKey][opt] = pts; // الاحتفاظ بالبيانات السابقة
+                        
+                        let row = document.getElementById('examQuestionsGrid').children[i-1];
+                        if(row) {
+                            let optDivs = row.querySelectorAll('.q-option');
+                            let optIndex = ex.options.indexOf(opt);
+                            if(optIndex >= 0 && optDivs[optIndex]) {
+                                optDivs[optIndex].classList.add('selected');
+                                optDivs[optIndex].querySelector('.q-score-badge').innerText = pts;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        async function deleteExam(id) {
+            // لا نسأل عن التأكيد هنا، لأن الدالة التي تستدعيها هي من يسأل
+            AppState.exams = AppState.exams.filter(e => e.id !== id);
+            await IDB.delete('exams', id);
+            
+            // حذف النتائج المرتبطة بهذا الامتحان
+            if(AppState.results[id]) {
+                for(let sid in AppState.results[id]) {
+                    await IDB.delete('results', `${id}___${sid}`);
+                }
+                delete AppState.results[id];
+            }
+            
+            // لا تقم باستدعاء renderExamCards() المحذوفة
+            // التحديث سيتم تلقائياً عبر updateResultExams()
+        }
+
+        // === Print & Render ===
+        function buildPrintTemplate(ex) {
+           document.getElementById('print-exam-name').innerHTML = `${ex.name}<br><span style="font-size:14px; color:#555;">المادة: ${ex.subject || ''} &nbsp;&nbsp;|&nbsp;&nbsp; المرحلة: ${(ex.stage || '').replace('المرحلة ', '')}</span>`;
+
+            document.getElementById('print-exam-year').innerText = `السنة الدراسية: ${ex.year || ''}`;
+            const cls = AppState.classes.find(c=>c.id===ex.classId);
+
+            document.getElementById('print-class-name').innerText = `القسم: ${cls?cls.name:''}`;
+            document.getElementById('qr-placeholder').innerHTML=''; new QRCode(document.getElementById('qr-placeholder'), {text: ex.id, width:90, height:90});
+            
+            let hHTML = `<tr><th>السؤال</th>`; ex.options.forEach(o=>hHTML+=`<th>${o}</th>`);
+            document.getElementById('omr-print-thead').innerHTML = hHTML+`</tr>`;
+            let bHTML='';
+            for(let i=1; i<=ex.qCount; i++) {
+                bHTML+=`<tr><td><strong>${i}</strong></td>`;
+                ex.options.forEach(o=> bHTML+=`<td><div class="bubble omr-bubble-mark" data-q="Q${i}" data-opt="${o}"></div></td>`);
+                bHTML+=`</tr>`;
+            }
+            document.getElementById('omr-print-tbody').innerHTML = bHTML;
+        }
+
+        function extractBubbleCoordinates() {
+            const sh = document.querySelector('.omr-sheet'); 
+            sh.style.display = 'block';
+            
+            // الحساب الدقيق يعتمد على "الحواف الخارجية" للمربعات لتطابق إطار الكاميرا
+            const tl = sh.querySelector('.marker-tl').getBoundingClientRect();
+            const br = sh.querySelector('.marker-br').getBoundingClientRect();
+            
+            const boxLeft = tl.left;
+            const boxTop = tl.top;
+            const boxWidth = br.right - tl.left;
+            const boxHeight = br.bottom - tl.top;
+            const bubbles = document.querySelectorAll('.omr-bubble-mark');
+            const layout = {};
+            bubbles.forEach(b => {
+                const rB = b.getBoundingClientRect();
+                // حساب المركز الدقيق لكل دائرة مقارنة بمساحة المربعات
+                const cx = (rB.left + rB.width/2 - boxLeft) / boxWidth;
+                const cy = (rB.top + rB.height/2 - boxTop) / boxHeight;
+                
+                const q = b.getAttribute('data-q');
+                const o = b.getAttribute('data-opt');
+                if(!layout[q]) layout[q] = {}; 
+                layout[q][o] = {x: cx, y: cy};
+            });
+            return layout;
+        }
+
+        function renderExamCards() {
+            const cont = document.getElementById('examCardsContainer'); cont.innerHTML='';
+            AppState.exams.forEach(ex => {
+                cont.innerHTML += `
+                <div class="card" style="text-align:center;">
+                    <div style="display:flex; justify-content:flex-end; gap:5px; margin-bottom:5px;">
+                        <button class="btn btn-primary btn-icon" onclick="editExamSetup('${ex.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-icon" onclick="deleteExam('${ex.id}')" title="حذف"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <h3 style="color:var(--primary);">${ex.name}</h3><p>الأسئلة: ${ex.qCount} | الخيارات: ${ex.options.length}</p>
+                    <div style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
+                        <button class="btn btn-dark" onclick="printExam('${ex.id}', 'pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
+                        <button class="btn btn-success" onclick="printExam('${ex.id}', 'png')"><i class="fas fa-image"></i> PNG</button>
+                    </div>
+                </div>`;
+            });
+        }
+        async function printExam(id, type) {
+            const ex = AppState.exams.find(e=>e.id===id); buildPrintTemplate(ex);
+            await new Promise(r=>setTimeout(r,300));
+            const cvs = await html2canvas(document.querySelector('.omr-sheet'), {scale:2});
+            const img = cvs.toDataURL('image/png');
+            if(type==='png') {
+                const a = document.createElement('a'); a.download=`${ex.name}.png`; a.href=img; a.click();
+            } else {
+                const pdf = new window.jspdf.jsPDF('p','mm','a4'); pdf.addImage(img,'PNG',0,0,210,297); pdf.save(`${ex.name}.pdf`);
+            }
+        }
+
+        // === Results & Competencies ===
+        let isCompetencyMode = false;
+        function toggleCompetencies() { 
+            isCompetencyMode = !isCompetencyMode; 
+            
+            // تغيير نص الزر بناءً على الحالة
+            const btn = document.getElementById('toggleCompBtn');
+            if(isCompetencyMode) {
+                btn.innerHTML = '<i class="fas fa-exchange-alt"></i> إظهار النقط';
+            } else {
+                btn.innerHTML = '<i class="fas fa-exchange-alt"></i> إظهار الكفايات';
+            }
+            
+            renderResultsTable(); 
+        }
+
+        function getCompData(score, max) {
+            if(max===0) return {c:'D', n:score};
+            let p = (score/max)*100;
+            return p>=90?{c:'A'}:p>=75?{c:'B'}:p>=45?{c:'C'}:{c:'D'};
+        }
+
+        function updateResultExams() {
+            const year = document.getElementById('resultYearSelect').value;
+            const stage = document.getElementById('resultStageSelect').value;
+            const subject = document.getElementById('resultSubjectSelect').value;
+            const cid = document.getElementById('resultClassSelect').value;
+            const sel = document.getElementById('resultExamSelect');
+            
+            // تحديث قائمة الامتحانات بناءً على الفلاتر
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">- اختر الامتحان -</option>';
+            
+            AppState.exams.filter(e => {
+                return (!year || e.year === year) &&
+                       (!stage || e.stage === stage) &&
+                       (!subject || e.subject === subject) &&
+                       (!cid || e.classId === cid);
+            }).forEach(e => {
+                sel.innerHTML += `<option value="${e.id}">${e.name}</option>`;
+            });
+            
+            if (AppState.exams.find(e => e.id === currentVal)) {
+                sel.value = currentVal;
+            }
+            
+            saveUIState(); 
+            // نقلنا مهمة إظهار البطاقة إلى هذه الدالة لكي تعمل دائماً
+            renderResultsTable();
+        }
+
+            function renderResultsTable() {
+            saveUIState();
+            const cid = document.getElementById('resultClassSelect').value, eid = document.getElementById('resultExamSelect').value;
+            const sq = document.getElementById('searchStudent').value.toLowerCase();
+            const head = document.getElementById('resultsTableHead'), body = document.getElementById('resultsTableBody');
+            
+            // جلب عناصر البطاقة
+            const infoDiv = document.getElementById('examInfoCard');
+            const mainCard = infoDiv ? infoDiv.parentElement : null; // البطاقة الكلية التي تضم الزر
+
+            head.innerHTML=''; body.innerHTML='';
+            
+            if(!cid || !eid) {
+                if(mainCard) mainCard.style.display = 'none'; // إخفاء البطاقة إذا لم يتم اختيار امتحان
+                return;
+            }
+            
+            const ex = AppState.exams.find(e=>e.id===eid);
+            let cls = AppState.classes.find(c=>c.id===cid);
+            
+            // --- إظهار وتنسيق البطاقة (حل مشكلة التداخل والفاصل | ) ---
+            if(ex && cls && mainCard) {
+                // دمج العنوان مع التفاصيل في سطر واحد ووضع فواصل واضحة
+                document.getElementById('infoExamTitle').innerHTML = `${ex.name} <span style="color:var(--gray); font-size:1rem; font-weight:normal;"> | ${ex.subject || ''} | ${ex.stage || ''} | ${cls.name}</span>`;
+                
+                // إخفاء سطر التفاصيل القديم لمنع التداخل
+                document.getElementById('infoExamDetails').style.display = 'none';
+                
+                // الإحصائيات
+                let seasonStudentsCount = cls.students.filter(s => s.year === ex.year).length;
+                document.getElementById('infoExamStats').innerText = `الأسئلة: ${ex.qCount} | الخيارات: ${ex.options.length} | التلاميذ: ${seasonStudentsCount}`;
+                
+                mainCard.style.display = 'flex';
+                infoDiv.style.display = 'block';
+            }
+            
+            let students = cls.students;
+            
+            // تصفية التلاميذ حسب الموسم
+            if(ex && ex.year) {
+                students = students.filter(s => s.year === ex.year);
+            }
+            if(sq) students = students.filter(s=>s.name.toLowerCase().includes(sq));
+            
+            let hHTML = `<th>الكاميرا</th><th>ر.ت</th><th style="text-align:right;">الاسم الكامل</th>`;
+
+            for(let i=1; i<=ex.qCount; i++) hHTML+=`<th>س${i}</th>`;
+            head.innerHTML = hHTML+`<th>النتيجة</th><th>إجراءات</th>`;
+
+            // حساب النقطة القصوى في حال وجود أكثر من خيار صحيح
+            let maxTotal = 0, maxQ = {};
+            for(let i=1; i<=ex.qCount; i++) {
+                let qOpts = ex.answerKey[`Q${i}`] || {};
+                let qMax = 0;
+                Object.values(qOpts).forEach(pts => qMax += pts);
+                if(qMax === 0) qMax = 1; // تفادي القسمة على صفر
+                maxQ[`Q${i}`] = qMax; 
+                maxTotal += qMax;
+            }
+
+            students.forEach(s => {
+                const res = AppState.results[eid]?.[s.id] || {scores:{}, choices:{}, total:0, id:`${eid}___${s.id}`, examId:eid, studentId:s.id};
+                let bHTML = `<td><button class="btn btn-primary btn-sm" onclick="startScanner('${eid}','${s.id}','${s.name}')"><i class="fas fa-camera"></i> Scan</button></td>`;
+                bHTML+=`<td>${s.roll||'-'}</td><td style="text-align:right;">${s.name}</td>`;
+                
+                let total=0;
+                for(let i=1; i<=ex.qCount; i++) {
+                    let sc = parseFloat(res.scores?.[`Q${i}`])||0; total+=sc;
+                    let display = isCompetencyMode ? `<span class="comp-${getCompData(sc, maxQ[`Q${i}`]).c}">${getCompData(sc, maxQ[`Q${i}`]).c}</span>` : sc;
+                    bHTML+=`<td>${display}</td>`;
+                }
+                res.total = total;
+                if(!AppState.results[eid]) AppState.results[eid]={}; AppState.results[eid][s.id] = res;
+
+                let fDisplay = isCompetencyMode ? `<span class="comp-${getCompData(total, maxTotal).c}">${getCompData(total, maxTotal).c}</span>` : `<strong>${total}</strong>`;
+                bHTML+=`<td>${fDisplay}</td><td class="actions-cell">
+                    <button class="btn btn-success btn-icon" onclick="openPreview('${eid}','${s.id}')"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-warning btn-icon" onclick="openEditScore('${eid}','${s.id}')"><i class="fas fa-edit"></i></button>
+                </td>`;
+                body.innerHTML+=`<tr>${bHTML}</tr>`;
+            });
+        }
+
+        // === Charts & Previews ===
+        let chartInst = null;
+        function showStatistics() {
+            const eid = document.getElementById('resultExamSelect').value, cid = document.getElementById('resultClassSelect').value;
+            if(!eid||!cid) return alert("اختر القسم والامتحان");
+            
+            const ex = AppState.exams.find(e=>e.id===eid);
+            let maxTotal=0; 
+            for(let q in ex.answerKey) {
+                Object.values(ex.answerKey[q]).forEach(pts => maxTotal += pts);
+            }
+            if(maxTotal===0) maxTotal = ex.qCount;
+
+            const counts = {A:0, B:0, C:0, D:0};
+            AppState.classes.find(c=>c.id===cid).students.forEach(s => {
+                let t = AppState.results[eid]?.[s.id]?.total || 0;
+                counts[getCompData(t, maxTotal).c]++;
+            });
+
+            document.getElementById('chartModal').style.display='flex';
+            if(chartInst) chartInst.destroy();
+            chartInst = new Chart(document.getElementById('statsChart').getContext('2d'), {
+                type:'doughnut', data:{ labels:['A (ممتاز)','B (جيد)','C (متوسط)','D (ضعيف)'], datasets:[{data:[counts.A,counts.B,counts.C,counts.D], backgroundColor:['#22c55e','#3b82f6','#f59e0b','#ef4444']}] }
+            });
+        }
+
+        function openPreview(eid, sid) {
+            const ex = AppState.exams.find(e=>e.id===eid), res = AppState.results[eid][sid], cont = document.getElementById('previewContainer'); cont.innerHTML='';
+            for(let i=1; i<=ex.qCount; i++) {
+                let q = `Q${i}`;
+                let sChoices = (res.choices?.[q] || "").split(', ').filter(Boolean); // خيارات التلميذ المتعددة
+                let cChoices = Object.keys(ex.answerKey[q] || {}); // الخيارات الصحيحة المتعددة
+                
+                let isPerfect = sChoices.length === cChoices.length && sChoices.every(c => cChoices.includes(c));
+                let gotSome = sChoices.some(c => cChoices.includes(c));
+                
+                let icon = isPerfect ? '<i class="fas fa-check status-c"></i>' : (gotSome ? '<i class="fas fa-minus-circle" style="color:var(--warning);"></i>' : '<i class="fas fa-times status-x"></i>');
+                
+                let row = `<div class="prev-q-row"><div class="prev-status">${icon}</div><strong>س${i}:</strong>`;
+                ex.options.forEach(o => {
+                    let cls = ['prev-bubble'];
+                    let isStudSel = sChoices.includes(o);
+                    let isCorrOpt = cChoices.includes(o);
+                    
+                    if(isStudSel && isCorrOpt) cls.push('correct-choice'); 
+                    else if(isStudSel && !isCorrOpt) cls.push('wrong-choice'); 
+                    else if(!isStudSel && isCorrOpt) cls.push('missed-choice');
+                    
+                    row+=`<div class="${cls.join(' ')}">${o}</div>`;
+                });
+                cont.innerHTML += row+'</div>';
+            }
+            document.getElementById('previewModal').style.display='flex';
+        }
+
+        function openEditScore(eid, sid) {
+            const ex=AppState.exams.find(e=>e.id===eid), res=AppState.results[eid][sid];
+            document.getElementById('editScoreSId').value = `${eid}___${sid}`;
+            const g = document.getElementById('editScoreGrid'); g.innerHTML='';
+            for(let i=1; i<=ex.qCount; i++) g.innerHTML+=`<div><label>س${i}</label><input type="number" id="es_Q${i}" value="${res.scores?.[`Q${i}`]||0}" step="0.5"></div>`;
+            document.getElementById('editScoreModal').style.display='flex';
+        }
+        async function saveManualScores() {
+            const[eid, sid] = document.getElementById('editScoreSId').value.split('___');
+            let res = AppState.results[eid][sid], ex = AppState.exams.find(e=>e.id===eid);
+            for(let i=1; i<=ex.qCount; i++) res.scores[`Q${i}`] = parseFloat(document.getElementById(`es_Q${i}`).value)||0;
+            await IDB.put('results', res); closeModal('editScoreModal'); renderResultsTable();
+        }
+
+// === Auto-Capture Camera Scanner (ZipGrade Style) ===
+        const video = document.getElementById('video-feed');
+        const canvas = document.getElementById('preview-canvas');
+        const ctx = canvas.getContext('2d');
+        const analysisCanvas = document.getElementById('analysis-canvas');
+        const analysisCtx = analysisCanvas.getContext('2d');
+        let scanAnimationFrame = null;
+        let isScanning = false;
+        let stabilizationFrames = 0;
+
+        async function startScanner(eid, sid, sName) {
+            const ex = AppState.exams.find(e=>e.id===eid); 
+            if(!ex.layout) return alert("مخطط ورقة الإجابة غير موجود. يرجى تعديل الامتحان وحفظه من جديد لتوليد المخطط.");
+            
+            AppState.activeScan = {exam:ex, studentId:sid, extChoices:{}};
+            document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; 
+            document.getElementById('scannerModal').style.display='flex';
+            
+            // إعادة ضبط واجهة الشاشة الكاملة
+            document.getElementById('camera-container').style.display='block'; 
+            document.getElementById('preview-canvas').style.display='none';
+            document.getElementById('scanner-actions').style.display='none';
+            document.getElementById('scanned-feedback').innerText='';
+            document.getElementById('scanner-instruction').innerText = 'قم بمطابقة المربعات الأربعة للالتقاط';['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'].forEach(id => {
+                document.getElementById(id).style.borderColor = 'rgba(255,255,255,0.8)';
+                document.getElementById(id).style.backgroundColor = 'rgba(255,255,255,0.1)';
+            });
+
+            try {
+                AppState.videoStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment', width:{ideal:1920}, height:{ideal:1080}}});
+                const video = document.getElementById('video-feed');
+                video.srcObject = AppState.videoStream;
+                
+                video.onloadedmetadata = () => {
+                    // حساب حجم المربع بناء على شاشة الهاتف بالكامل
+                    const cw = window.innerWidth;
+                    const ch = window.innerHeight;
+                    const markerRatio = 1.435; // نسبة الورقة
+                    const guideBox = document.getElementById('guide-box');
+                    
+                    let gw, gh; 
+                    if (ch / cw > markerRatio) { 
+                        gw = cw * 0.85; // يترك هامش 15% يميناً ويساراً
+                        gh = gw * markerRatio; 
+                    } else { 
+                        gh = ch * 0.75; // يترك هامش أعلى وأسفل
+                        gw = gh / markerRatio; 
+                    }
+                    
+                    guideBox.style.width = gw + 'px';
+                    guideBox.style.height = gh + 'px';
+
+                    setTimeout(() => {
+                        isScanning = true;
+                        scanLoop();
+                    }, 800); // تأخير بسيط لتأقلم الكاميرا
+                };
+            } catch(e) { alert("تعذر فتح الكاميرا. تأكد من منح الصلاحيات."); stopScanner(); }
+        }
+
+        function scanLoop() {
+            if(!isScanning) return;
+            
+            const video = document.getElementById('video-feed');
+            const analysisCanvas = document.getElementById('analysis-canvas');
+            const analysisCtx = analysisCanvas.getContext('2d');
+            
+            analysisCanvas.width = video.videoWidth;
+            analysisCanvas.height = video.videoHeight;
+            analysisCtx.drawImage(video, 0, 0, analysisCanvas.width, analysisCanvas.height);
+            
+            let alignedCount = 0;
+            const corners =['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'];
+            
+            const rv = video.getBoundingClientRect();
+            const rg = document.getElementById('guide-box').getBoundingClientRect();
+            const sx = video.videoWidth / rv.width;
+            const sy = video.videoHeight / rv.height;
+
+            // نقاط الفحص هي زوايا المربع الدليلي
+            const guideCorners =[
+                {x: (rg.left - rv.left) * sx, y: (rg.top - rv.top) * sy},
+                {x: (rg.right - rv.left) * sx, y: (rg.top - rv.top) * sy},
+                {x: (rg.left - rv.left) * sx, y: (rg.bottom - rv.top) * sy},
+                {x: (rg.right - rv.left) * sx, y: (rg.bottom - rv.top) * sy}
+            ];
+
+            corners.forEach((id, index) => {
+                const el = document.getElementById(id);
+                // منطقة فحص أوسع لتسهيل الالتقاط
+                const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.02; 
+                
+                const insetX = (index % 2 === 0) ? checkRad : -checkRad;
+                const insetY = (index < 2) ? checkRad : -checkRad;
+                const cx = guideCorners[index].x + insetX;
+                const cy = guideCorners[index].y + insetY;
+                
+                // فحص سواد المربع
+                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad) > 0.35; 
+
+                if(isDark) {
+                    el.style.borderColor = '#22c55e'; // أخضر
+                    el.style.backgroundColor = 'rgba(34, 197, 94, 0.3)';
+                    alignedCount++;
+                } else {
+                    el.style.borderColor = 'rgba(255,255,255,0.8)'; // أبيض
+                    el.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                }
+            });
+
+            const stabBar = document.getElementById('stabilization-bar');
+            
+            if(alignedCount === 4) {
+                stabilizationFrames++;
+                stabBar.style.width = (stabilizationFrames / 15 * 100) + '%';
+                
+                if(stabilizationFrames >= 15) {
+                    isScanning = false;
+                    playShutterSound();
+                    stabBar.style.width = '0%';
+                    setTimeout(() => captureAndProcess(), 100);
+                } else {
+                    scanAnimationFrame = requestAnimationFrame(scanLoop);
+                }
+            } else {
+                stabilizationFrames = 0;
+                stabBar.style.width = '0%';
+                scanAnimationFrame = requestAnimationFrame(scanLoop);
+            }
+        }
+
+        function captureAndProcess() {
+            const rv = video.getBoundingClientRect();
+            const rg = document.getElementById('guide-box').getBoundingClientRect();
+            const sx = video.videoWidth / rv.width;
+            const sy = video.videoHeight / rv.height;
+            
+            // القص يبدأ من حواف المربع الدليلي تماماً
+            const cropX = (rg.left - rv.left) * sx;
+            const cropY = (rg.top - rv.top) * sy;
+            const cropW = rg.width * sx;
+            const cropH = rg.height * sy;
+            
+            canvas.width = cropW; 
+            canvas.height = cropH;
+            ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+            
+            video.style.display='none'; document.getElementById('guide-box').style.display='none'; canvas.style.display='block';
+            document.getElementById('retake-btn').style.display='inline-flex'; document.getElementById('save-score-btn').style.display='inline-flex';
+
+            const lay=AppState.activeScan.exam.layout, key=AppState.activeScan.exam.answerKey; 
+            let fc={}, tot=0; 
+            
+            for(let q in lay) {
+                let selectedOpts =[];
+                for(let o in lay[q]) {
+                    // التطابق الرياضي الدقيق 100%
+                    const px = lay[q][o].x * cropW;
+                    const py = lay[q][o].y * cropH;
+                    const rad = (11/800) * cropW * 1.2; 
+                    
+                    // رسم دائرة زرقاء دليلة للتحقق البصري
+                    ctx.beginPath(); ctx.arc(px, py, rad, 0, 2*Math.PI); 
+                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
+
+                    // عتبة التقاط حساسة للقلم
+                    let d = measureDarkness(ctx, px, py, rad); 
+                    if(d > 0.18) { 
+                        selectedOpts.push({opt: o, px, py, rad});
+                    }
+                }
+                
+                if(selectedOpts.length > 0) {
+                    fc[q] = selectedOpts.map(so => so.opt).join(', ');
+                    let ptsEarned = 0;
+                    selectedOpts.forEach(so => {
+                        let isCorrect = key[q] && key[q][so.opt];
+                        ctx.beginPath(); ctx.arc(so.px, so.py, so.rad, 0, 2*Math.PI);
+                        ctx.lineWidth = 4;
+                        if(isCorrect) {
+                            ptsEarned += key[q][so.opt];
+                            ctx.strokeStyle='#22c55e'; // صحيح (أخضر)
+                        } else {
+                            ctx.strokeStyle='#ef4444'; // خاطئ (أحمر)
+                        }
+                        ctx.stroke();
+                    });
+                    tot += ptsEarned;
+                }
+            }
+            AppState.activeScan.extChoices=fc; 
+            document.getElementById('scanned-feedback').innerText = `النتيجة المقدرة: ${tot}`;
+            document.getElementById('scanner-instruction').innerText = "تأكد من تطابق الدوائر، ثم اضغط حفظ.";
+        }
+
+        function measureDarkness(ctx, cx, cy, rad) {
+            if(cx-rad<0 || cy-rad<0 || cx+rad>ctx.canvas.width || cy+rad>ctx.canvas.height) return 0;
+            const img = ctx.getImageData(cx-rad, cy-rad, rad*2, rad*2).data; let dC=0, t=0, rSq=rad*rad;
+            for(let i=0; i<img.length; i+=4) {
+                const px=(i/4)%(rad*2)-rad, py=Math.floor((i/4)/(rad*2))-rad;
+                if(px*px+py*py<=rSq) { 
+                    t++; 
+                    // رفعنا حساسية التقاط اللون الداكن من 120 إلى 150 (لتلتقط القلم الرصاص والأزرق بسهولة)
+                    if(0.299*img[i]+0.587*img[i+1]+0.114*img[i+2] < 150) dC++; 
+                }
+            } return t===0 ? 0 : dC/t;
+        }    
+
+        function retakePhoto() { 
+            document.getElementById('preview-canvas').style.display='none'; 
+            document.getElementById('camera-container').style.display='block'; 
+            document.getElementById('scanner-actions').style.display='none'; 
+            document.getElementById('scanned-feedback').innerText=''; 
+            document.getElementById('scanner-instruction').innerText = "قم بمطابقة المربعات الأربعة للالتقاط";
+            isScanning = true;
+            scanLoop();
+        }
+
+        async function confirmSaveScanned() {
+            const {exam, studentId, extChoices} = AppState.activeScan, eid=exam.id;
+            let res = AppState.results[eid]?.[studentId] || {id:`${eid}___${studentId}`, examId:eid, studentId:studentId};
+            res.choices=extChoices; res.scores={};
+            
+            for(let i=1; i<=exam.qCount; i++) { 
+                let q=`Q${i}`, cStr=extChoices[q]; 
+                let score = 0;
+                if(cStr && exam.answerKey[q]) {
+                    let choices = cStr.split(', ');
+                    choices.forEach(c => {
+                        if(exam.answerKey[q][c]) score += exam.answerKey[q][c];
+                    });
+                }
+                res.scores[q] = score; 
+            }
+            await IDB.put('results', res); stopScanner(); renderResultsTable();
+        }
+
+        // === Backup System ===
+        function openBackupModal() { document.getElementById('backupModal').style.display = 'flex'; }
+        
+        function exportData() {
+            const data = { classes: AppState.classes, exams: AppState.exams, results:[] };
+            for(let e in AppState.results) {
+                for(let s in AppState.results[e]) {
+                    data.results.push(AppState.results[e][s]);
+                }
+            }
+            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(blob); 
+            a.download = `OMR_Backup_${new Date().toISOString().split('T')[0]}.json`; 
+            a.click();
+        }
+
+        function importData(e) {
+            const file = e.target.files[0]; 
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    await IDB.clear('classes'); 
+                    await IDB.clear('exams'); 
+                    await IDB.clear('results');
+                    
+                    const classesArray = data.classes ? data.classes :[];
+                    const examsArray = data.exams ? data.exams : [];
+                    const resultsArray = data.results ? data.results :[];
+                    
+                    for(let i = 0; i < classesArray.length; i++) await IDB.put('classes', classesArray[i]);
+                    for(let i = 0; i < examsArray.length; i++) await IDB.put('exams', examsArray[i]);
+                    for(let i = 0; i < resultsArray.length; i++) await IDB.put('results', resultsArray[i]);
+                    
+                    alert("تم استيراد البيانات بنجاح! سيتم تحديث الصفحة الآن.");
+                    window.location.reload(); 
+                } catch (err) {
+                    alert("حدث خطأ أثناء الاستيراد. يرجى التأكد من الملف.");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+/* دالة لفتح وإغلاق القائمة المنسدلة */
+        function toggleDropdown() {
+            document.getElementById("myDropdown").classList.toggle("show");
+        }
+
+        // إغلاق القائمة إذا نقر المستخدم خارجها
+        window.onclick = function(event) {
+          if (!event.target.matches('.btn')) {
+            var dropdowns = document.getElementsByClassName("dropdown-content");
+            for (var i = 0; i < dropdowns.length; i++) {
+              var openDropdown = dropdowns[i];
+              if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+              }
+            }
+          }
+        }
+
+function editCurrentExam() {
+            const eid = document.getElementById('resultExamSelect').value;
+            if(eid) editExamSetup(eid);
+        }
+        async function deleteCurrentExam() {
+            const eid = document.getElementById('resultExamSelect').value;
+            if(eid && confirm("هل أنت متأكد من حذف هذا الامتحان وكل نتائجه؟")) {
+                await deleteExam(eid);
+                // تحديث الواجهة لإزالة الامتحان المحذوف من القائمة
+                updateResultExams(); 
+            }
+        }
+
+function printCurrentExam(type) {
+            const eid = document.getElementById('resultExamSelect').value;
+            if (eid) {
+                printExam(eid, type);
+            } else {
+                alert("يرجى اختيار امتحان أولاً!");
+            }
+        }
+
+// === Broadcast / Duplicate Exam ===
+        function openBroadcastModal() {
+            const eid = document.getElementById('resultExamSelect').value;
+            if(!eid) return alert("الرجاء اختيار امتحان أولاً!");
+            
+            const currentExam = AppState.exams.find(e => e.id === eid);
+            
+            // البحث عن المستوى الذي ينتمي إليه القسم الحالي
+            let targetLevel = null;
+            if(AppState.settings && AppState.settings.levels) {
+                targetLevel = AppState.settings.levels.find(lvl => 
+                    lvl.classes.some(c => c.id === currentExam.classId)
+                );
+            }
+            
+            if(!targetLevel) return alert("لم يتم العثور على المستوى الخاص بهذا القسم في الإعدادات.");
+
+            const listDiv = document.getElementById('broadcastClassesList');
+            const confirmBtn = document.getElementById('confirmBroadcastBtn');
+            listDiv.innerHTML = '';
+            let classesFound = 0;
+
+            // جلب باقي أقسام نفس المستوى
+            targetLevel.classes.forEach(c => {
+                // استثناء القسم الحالي (لأنه يملك الامتحان أصلاً) واستثناء الأقسام غير المفعلة
+                if(c.id === currentExam.classId || !c.checked) return;
+
+                // التحقق مما إذا كان هذا القسم يمتلك بالفعل نسخة من هذا الامتحان (لتجنب التكرار)
+                const alreadyExists = AppState.exams.some(e => 
+                    e.classId === c.id && e.name === currentExam.name && 
+                    e.year === currentExam.year && e.subject === currentExam.subject && e.stage === currentExam.stage
+                );
+
+                if(!alreadyExists) {
+                    listDiv.innerHTML += `
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; background:var(--light); border:1px solid var(--border); border-radius:5px;">
+                        <input type="checkbox" class="broadcast-checkbox" value="${c.id}" style="width:auto; margin:0;"> 
+                        <strong>${c.name}</strong>
+                    </label>`;
+                    classesFound++;
+                }
+            });
+
+            // عرض رسالة إذا لم توجد أقسام متاحة
+            if(classesFound === 0) {
+                listDiv.innerHTML = '<p style="color:var(--danger); text-align:center; font-weight:bold;">جميع الأقسام المفعلة في هذا المستوى تمتلك هذا الامتحان بالفعل!</p>';
+                confirmBtn.style.display = 'none';
+            } else {
+                confirmBtn.style.display = 'block';
+            }
+
+            document.getElementById('broadcastModal').style.display = 'flex';
+        }
+
+        async function confirmBroadcastExam() {
+            const eid = document.getElementById('resultExamSelect').value;
+            const currentExam = AppState.exams.find(e => e.id === eid);
+            const checkboxes = document.querySelectorAll('.broadcast-checkbox:checked');
+
+            if(checkboxes.length === 0) return alert("الرجاء تحديد قسم واحد على الأقل.");
+
+            for (let cb of checkboxes) {
+                const newClassId = cb.value;
+                
+                // إنشاء نسخة عميقة (Deep Copy) للامتحان لكي لا تتداخل البيانات
+                const newExam = JSON.parse(JSON.stringify(currentExam));
+                newExam.id = generateId(); // إعطاء معرف جديد للنسخة
+                newExam.classId = newClassId; // ربطها بالقسم الجديد
+                
+                AppState.exams.push(newExam);
+                await IDB.put('exams', newExam); // حفظ النسخة في قاعدة البيانات
+            }
+
+            alert(`تم تعميم الامتحان بنجاح على (${checkboxes.length}) قسم/أقسام!`);
+            closeModal('broadcastModal');
+            updateResultExams(); // تحديث الواجهة
+        }
+
+
+// === Drag and Drop Logic (ترتيب التلاميذ) ===
+        let draggedStudentId = null;
+
+        function dragStart(event, id) {
+            draggedStudentId = id;
+            event.target.classList.add('dragging');
+            // تأخير بسيط لكي لا تختفي الصورة أثناء السحب
+            setTimeout(() => event.target.style.display = 'none', 0);
+        }
+
+        function dragOver(event) {
+            event.preventDefault(); // ضروري للسماح بالإفلات
+        }
+
+        function dragEnter(event) {
+            event.preventDefault();
+            let tr = event.target.closest('tr');
+            if(tr && tr.classList.contains('draggable-row')) tr.classList.add('drag-over');
+        }
+
+        function dragLeave(event) {
+            let tr = event.target.closest('tr');
+            if(tr) tr.classList.remove('drag-over');
+        }
+
+        async function drop(event, cid, year, targetId) {
+            event.preventDefault();
+            
+            // تنظيف التنسيقات بعد الإفلات
+            document.querySelectorAll('.draggable-row').forEach(row => {
+                row.classList.remove('dragging', 'drag-over');
+                row.style.display = ''; // إظهار الصف المخفي
+            });
+
+            // إذا أُفلت التلميذ في نفس مكانه، لا تفعل شيئاً
+            if (!draggedStudentId || draggedStudentId === targetId) return;
+
+            const cls = AppState.classes.find(c => c.id === cid);
+            if (!cls) return;
+
+            // جلب تلاميذ هذا الموسم فقط وترتيبهم
+            let yearStudents = cls.students.filter(s => s.year === year).sort((a,b) => (a.roll || 0) - (b.roll || 0));
+            let otherStudents = cls.students.filter(s => s.year !== year);
+
+            // البحث عن مكان التلميذ المسحوب والمكان المستهدف
+            const draggedIndex = yearStudents.findIndex(s => s.id === draggedStudentId);
+            const targetIndex = yearStudents.findIndex(s => s.id === targetId);
+
+            if (draggedIndex === -1 || targetIndex === -1) return;
+
+            // عملية القص واللصق (إزالة التلميذ من مكانه القديم ووضعه في المكان الجديد)
+            const [draggedItem] = yearStudents.splice(draggedIndex, 1);
+            yearStudents.splice(targetIndex, 0, draggedItem);
+
+            // إعادة تعيين الأرقام الترتيبية (ر.ت) تلقائياً من 1 إلى آخر تلميذ
+            yearStudents.forEach((student, index) => {
+                student.roll = index + 1;
+            });
+
+            // دمج التلاميذ مجدداً وحفظهم في قاعدة البيانات
+            cls.students = [...otherStudents, ...yearStudents];
+            await IDB.put('classes', cls);
+            
+            // تحديث الجدول ليظهر الترتيب الجديد
+            renderStudents();
+            draggedStudentId = null;
+        }
+
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
