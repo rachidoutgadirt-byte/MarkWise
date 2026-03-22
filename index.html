@@ -1425,12 +1425,11 @@ function editExamSetup(id) {
         let isScanning = false;
         let stabilizationFrames = 0;
 
-function playShutterSound() {
+        function playShutterSound() {
             // 🌟 توليد صوت (كرت كشت) ميكانيكي عالي جداً وواقعي
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if(audioCtx.state === 'suspended') audioCtx.resume();
 
-            // صوت "كرت" (النقرة الميكانيكية)
             const osc = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             osc.type = 'square';
@@ -1442,7 +1441,6 @@ function playShutterSound() {
             osc.start(audioCtx.currentTime);
             osc.stop(audioCtx.currentTime + 0.05);
 
-            // صوت "كشت" (وميض الفلاش والصوت الأبيض)
             const bufferSize = audioCtx.sampleRate * 0.15;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -1456,13 +1454,6 @@ function playShutterSound() {
             noiseSource.start(audioCtx.currentTime + 0.04);
         }
 
-
-
-
-
-
-
-
         async function startScanner(eid, sid, sName) {
             const ex = AppState.exams.find(e=>e.id===eid); 
             if(!ex.layout) return alert("مخطط ورقة الإجابة غير موجود. يرجى تعديل الامتحان وحفظه من جديد لتوليد المخطط.");
@@ -1471,36 +1462,36 @@ function playShutterSound() {
             document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; 
             document.getElementById('scannerModal').style.display='flex';
            
-// 🌟 إعادة ضبط واجهة الشاشة الكاملة بشكل صحيح
+            // 🌟 إعادة ضبط واجهة الشاشة الكاملة بشكل صحيح
             document.getElementById('camera-container').style.display='block'; 
             document.getElementById('preview-canvas').style.display='none';
             document.getElementById('scanner-actions').style.display='none';
             document.getElementById('scanned-feedback').innerText='';
             document.getElementById('scanner-instruction').innerText = 'قم بمطابقة المربعات الأربعة للالتقاط';
-            document.getElementById('scan-line').style.display='block'; // إظهار خط المسح
-            document.getElementById('guide-box').style.display='block'; // إظهار المربع الدليلي['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'].forEach(id => {
+            document.getElementById('scan-line').style.display='block'; 
+            document.getElementById('guide-box').style.display='block'; 
+            
+            // 🌟 السطر الذي كان فيه المشكل تم إصلاحه هنا بفصل الكود عن التعليق['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'].forEach(id => {
                 document.getElementById(id).style.borderColor = 'rgba(255,255,255,0.8)';
                 document.getElementById(id).style.backgroundColor = 'rgba(255,255,255,0.1)';
             });
 
             try {
                 AppState.videoStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment', width:{ideal:1920}, height:{ideal:1080}}});
-                const video = document.getElementById('video-feed');
                 video.srcObject = AppState.videoStream;
                 
                 video.onloadedmetadata = () => {
-                    // حساب حجم المربع بناء على شاشة الهاتف بالكامل
                     const cw = window.innerWidth;
                     const ch = window.innerHeight;
-                    const markerRatio = 1.435; // نسبة الورقة
+                    const markerRatio = 1.435; 
                     const guideBox = document.getElementById('guide-box');
                     
                     let gw, gh; 
                     if (ch / cw > markerRatio) { 
-                        gw = cw * 0.85; // يترك هامش 15% يميناً ويساراً
+                        gw = cw * 0.85; 
                         gh = gw * markerRatio; 
                     } else { 
-                        gh = ch * 0.75; // يترك هامش أعلى وأسفل
+                        gh = ch * 0.75; 
                         gw = gh / markerRatio; 
                     }
                     
@@ -1510,17 +1501,13 @@ function playShutterSound() {
                     setTimeout(() => {
                         isScanning = true;
                         scanLoop();
-                    }, 800); // تأخير بسيط لتأقلم الكاميرا
+                    }, 800); 
                 };
             } catch(e) { alert("تعذر فتح الكاميرا. تأكد من منح الصلاحيات."); stopScanner(); }
         }
 
-function scanLoop() {
+        function scanLoop() {
             if(!isScanning) return;
-            
-            const video = document.getElementById('video-feed');
-            const analysisCanvas = document.getElementById('analysis-canvas');
-            const analysisCtx = analysisCanvas.getContext('2d');
             
             analysisCanvas.width = video.videoWidth;
             analysisCanvas.height = video.videoHeight;
@@ -1541,44 +1528,36 @@ function scanLoop() {
                 {x: (rg.right - rv.left) * sx, y: (rg.bottom - rv.top) * sy}
             ];
 
-            // تكبير مساحة الفحص لتلتقط المربعات حتى لو اهتزت اليد
-            const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.035;
+            const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.025;
 
             corners.forEach((id, index) => {
                 const el = document.getElementById(id);
-                
-                // نقطة المنتصف للمربع الأسود (موجودة داخل زاوية الإطار)
                 const insetX = (index % 2 === 0) ? checkRad : -checkRad;
                 const insetY = (index < 2) ? checkRad : -checkRad;
                 const cx = guideCorners[index].x + insetX;
                 const cy = guideCorners[index].y + insetY;
 
-                // 1. فحص وجود المربع الأسود (يكفي 15% سواد للقبول لسرعة الالتقاط)
-                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad, 130) > 0.15; 
+                // فحص المربع بمرونة عالية (عتبة 140، سواد 8%) لسرعة الالتقاط
+                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad, 140) > 0.08; 
 
-                // 2. 🌟 حماية قوية: فحص البياض بجانب المربع (نحو داخل الورقة)
-                // هذا يضمن أن الكاميرا لا تنخدع برمز الـ QR كود أو الحواف المظلمة!
-                const innerX = guideCorners[index].x + (insetX * 3.5);
-                const innerY = guideCorners[index].y + (insetY * 3.5);
-                let isInnerLight = measureDarkness(analysisCtx, innerX, innerY, checkRad, 130) < 0.10;
-
-                // يجب أن يكون المربع أسود، وما بجانبه أبيض
-                if(isDark && isInnerLight) {
-                    el.classList.add('aligned'); // يتحول للأخضر
+                if(isDark) {
+                    el.style.borderColor = '#22c55e'; 
+                    el.style.backgroundColor = 'rgba(34, 197, 94, 0.3)';
                     alignedCount++;
                 } else {
-                    el.classList.remove('aligned'); // يبقى أبيض
+                    el.style.borderColor = 'rgba(255,255,255,0.8)'; 
+                    el.style.backgroundColor = 'rgba(255,255,255,0.1)';
                 }
             });
 
             const stabBar = document.getElementById('stabilization-bar');
             
-            // 🌟 الالتقاط السريع! 6 إطارات متتالية فقط (حوالي 0.2 ثانية) ليتم الالتقاط
+            // ثبات 4 إطارات فقط لتسريع الالتقاط (سريع جداً)
             if(alignedCount === 4) {
                 stabilizationFrames++;
-                stabBar.style.width = (stabilizationFrames / 6 * 100) + '%';
+                stabBar.style.width = (stabilizationFrames / 4 * 100) + '%';
                 
-                if(stabilizationFrames >= 6) {
+                if(stabilizationFrames >= 4) {
                     isScanning = false;
                     playShutterSound();
                     stabBar.style.width = '0%';
@@ -1592,7 +1571,8 @@ function scanLoop() {
                 scanAnimationFrame = requestAnimationFrame(scanLoop);
             }
         }
-// دالة الالتقاط اليدوي الإجباري (تم ربطها بزر الكاميرا العلوي)
+
+        // دالة الالتقاط اليدوي
         function forceCapture() {
             if(!isScanning) return;
             isScanning = false;
@@ -1617,12 +1597,10 @@ function scanLoop() {
             canvas.height = cropH;
             ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
             
-            // إخفاء الكاميرا الحية وعرض الصورة الملتقطة
             video.style.display='none'; 
             document.getElementById('guide-box').style.display='none'; 
             canvas.style.display='block';
             
-            // إظهار أزرار الحفظ والإعادة
             document.getElementById('retake-btn').style.display='inline-flex'; 
             document.getElementById('save-score-btn').style.display='inline-flex';
 
@@ -1632,18 +1610,17 @@ function scanLoop() {
             for(let q in lay) {
                 let selectedOpts =[];
                 for(let o in lay[q]) {
-                    // 🌟 الحساب الدقيق لمكان الدائرة في الصورة المقصوصة
                     const px = lay[q][o].x * cropW;
                     const py = lay[q][o].y * cropH;
                     const rad = (11/800) * cropW * 1.3; 
                     
-                    // رسم دائرة زرقاء شفافة للتحقق البصري من مكان بحث الكاميرا
+                    // رسم دوائر زرقاء استدلالية
                     ctx.beginPath(); ctx.arc(px, py, rad, 0, 2*Math.PI); 
                     ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'; ctx.lineWidth = 2; ctx.stroke();
 
-                    // فحص التلوين داخل الدائرة (يجب أن يكون داكناً بنسبة 25% على الأقل)
-                    let d = measureDarkness(ctx, px, py, rad, 140); 
-                    if(d > 0.25) { 
+                    // عتبة 110 لكي لا يحسب الظلال كأنها قلم (يجب تلوين 30% من الدائرة)
+                    let d = measureDarkness(ctx, px, py, rad, 110); 
+                    if(d > 0.30) { 
                         selectedOpts.push({opt: o, px, py, rad});
                     }
                 }
@@ -1653,15 +1630,13 @@ function scanLoop() {
                     let ptsEarned = 0;
                     selectedOpts.forEach(so => {
                         let isCorrect = key[q] && key[q][so.opt];
-                        
-                        // 🌟 رسم الدوائر الحمراء والخضراء الغليظة فوق اختيار التلميذ
                         ctx.beginPath(); ctx.arc(so.px, so.py, so.rad, 0, 2*Math.PI);
                         ctx.lineWidth = 5;
                         if(isCorrect) {
                             ptsEarned += key[q][so.opt] || 1;
-                            ctx.strokeStyle='#22c55e'; // أخضر
+                            ctx.strokeStyle='#22c55e'; // صحيح أخضر
                         } else {
-                            ctx.strokeStyle='#ef4444'; // أحمر
+                            ctx.strokeStyle='#ef4444'; // خاطئ أحمر
                         }
                         ctx.stroke();
                     });
@@ -1673,7 +1648,6 @@ function scanLoop() {
             document.getElementById('scanner-instruction').innerText = "تأكد من تطابق الدوائر الملونة، ثم اضغط حفظ النتيجة.";
         }
 
-        // 🌟 قمنا بإضافة (threshold) كمتغير لنتحكم في حساسية الضوء لكل جزء على حدة
         function measureDarkness(ctx, cx, cy, rad, threshold = 130) {
             if(cx-rad<0 || cy-rad<0 || cx+rad>ctx.canvas.width || cy+rad>ctx.canvas.height) return 0;
             const img = ctx.getImageData(cx-rad, cy-rad, rad*2, rad*2).data; let dC=0, t=0, rSq=rad*rad;
@@ -1686,9 +1660,9 @@ function scanLoop() {
             } return t===0 ? 0 : dC/t;
         }
 
-function retakePhoto() { 
+        function retakePhoto() { 
             document.getElementById('preview-canvas').style.display='none'; 
-            document.getElementById('guide-box').style.display='block'; // إظهار المربعات
+            document.getElementById('guide-box').style.display='block'; 
             document.getElementById('camera-container').style.display='block'; 
             document.getElementById('scanner-actions').style.display='none'; 
             document.getElementById('scanned-feedback').innerText=''; 
