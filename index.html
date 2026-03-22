@@ -569,7 +569,6 @@
                     <h2 id="print-exam-name">اسم الامتحان</h2>
                     <p id="print-exam-year">السنة الدراسية: 2025/2026</p>
                 </div>
-                <div id="qr-placeholder" style="width:90px; height:90px;"></div>
             </div>
             <p style="text-align:center; font-weight:bold; margin-bottom:15px; background:#f0f0f0; padding:10px; border:1px solid #000;">تعليمات: ظلل الدائرة بالكامل أو ضع علامة X واضحة.</p>
             <table class="omr-table" id="omr-print-table">
@@ -1077,7 +1076,9 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
         }
 
         // Fix: Restoring previously selected options correctly when editing
-        function editExamSetup(id) {
+
+
+function editExamSetup(id) {
             const ex = AppState.exams.find(e => e.id === id);
             document.getElementById('editingExamId').value = ex.id;
             document.getElementById('examName').value = ex.name;
@@ -1089,17 +1090,20 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             document.getElementById('examOptionCount').value = ex.options.length;
             
             switchTab('create-exam');
+            
+            // توليد الشبكة فارغة أولاً
             generateExamGrid();
             
-            // Re-apply answer key visual state
+            // 🌟 الإصلاح: استعادة مفتاح الإجابة القديم بدلاً من مسحه
+            currentSetup.id = ex.id;
+            currentSetup.answerKey = JSON.parse(JSON.stringify(ex.answerKey)); 
+            
+            // إعادة تلوين الدوائر التي تم اختيارها سابقاً
             for(let i=1; i<=ex.qCount; i++) {
                 let qKey = `Q${i}`;
                 if(ex.answerKey[qKey]) {
-                    if(!currentSetup.answerKey[qKey]) currentSetup.answerKey[qKey] = {}; // منع مشكلة TypeError
                     for(let opt in ex.answerKey[qKey]) {
                         let pts = ex.answerKey[qKey][opt];
-                        currentSetup.answerKey[qKey][opt] = pts; // الاحتفاظ بالبيانات السابقة
-                        
                         let row = document.getElementById('examQuestionsGrid').children[i-1];
                         if(row) {
                             let optDivs = row.querySelectorAll('.q-option');
@@ -1113,6 +1117,8 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
                 }
             }
         }
+
+
         async function deleteExam(id) {
             // لا نسأل عن التأكيد هنا، لأن الدالة التي تستدعيها هي من يسأل
             AppState.exams = AppState.exams.filter(e => e.id !== id);
@@ -1138,8 +1144,6 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             const cls = AppState.classes.find(c=>c.id===ex.classId);
 
             document.getElementById('print-class-name').innerText = `القسم: ${cls?cls.name:''}`;
-            document.getElementById('qr-placeholder').innerHTML=''; new QRCode(document.getElementById('qr-placeholder'), {text: ex.id, width:90, height:90});
-            
             let hHTML = `<tr><th>السؤال</th>`; ex.options.forEach(o=>hHTML+=`<th>${o}</th>`);
             document.getElementById('omr-print-thead').innerHTML = hHTML+`</tr>`;
             let bHTML='';
@@ -1452,6 +1456,13 @@ function playShutterSound() {
             noiseSource.start(audioCtx.currentTime + 0.04);
         }
 
+
+
+
+
+
+
+
         async function startScanner(eid, sid, sName) {
             const ex = AppState.exams.find(e=>e.id===eid); 
             if(!ex.layout) return alert("مخطط ورقة الإجابة غير موجود. يرجى تعديل الامتحان وحفظه من جديد لتوليد المخطط.");
@@ -1459,13 +1470,15 @@ function playShutterSound() {
             AppState.activeScan = {exam:ex, studentId:sid, extChoices:{}};
             document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; 
             document.getElementById('scannerModal').style.display='flex';
-            
-            // إعادة ضبط واجهة الشاشة الكاملة
+           
+// 🌟 إعادة ضبط واجهة الشاشة الكاملة بشكل صحيح
             document.getElementById('camera-container').style.display='block'; 
             document.getElementById('preview-canvas').style.display='none';
             document.getElementById('scanner-actions').style.display='none';
             document.getElementById('scanned-feedback').innerText='';
-            document.getElementById('scanner-instruction').innerText = 'قم بمطابقة المربعات الأربعة للالتقاط';['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'].forEach(id => {
+            document.getElementById('scanner-instruction').innerText = 'قم بمطابقة المربعات الأربعة للالتقاط';
+            document.getElementById('scan-line').style.display='block'; // إظهار خط المسح
+            document.getElementById('guide-box').style.display='block'; // إظهار المربع الدليلي['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'].forEach(id => {
                 document.getElementById(id).style.borderColor = 'rgba(255,255,255,0.8)';
                 document.getElementById(id).style.backgroundColor = 'rgba(255,255,255,0.1)';
             });
@@ -1579,14 +1592,13 @@ function scanLoop() {
                 scanAnimationFrame = requestAnimationFrame(scanLoop);
             }
         }
-
-        // دالة الالتقاط اليدوي الإجباري
+// دالة الالتقاط اليدوي الإجباري (تم ربطها بزر الكاميرا العلوي)
         function forceCapture() {
             if(!isScanning) return;
             isScanning = false;
             playShutterSound();
             document.getElementById('stabilization-bar').style.width = '0%';
-            captureAndProcess();
+            setTimeout(() => captureAndProcess(), 50);
         }
 
         function captureAndProcess() {
@@ -1605,8 +1617,14 @@ function scanLoop() {
             canvas.height = cropH;
             ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
             
-            video.style.display='none'; document.getElementById('guide-box').style.display='none'; canvas.style.display='block';
-            document.getElementById('retake-btn').style.display='inline-flex'; document.getElementById('save-score-btn').style.display='inline-flex';
+            // إخفاء الكاميرا الحية وعرض الصورة الملتقطة
+            video.style.display='none'; 
+            document.getElementById('guide-box').style.display='none'; 
+            canvas.style.display='block';
+            
+            // إظهار أزرار الحفظ والإعادة
+            document.getElementById('retake-btn').style.display='inline-flex'; 
+            document.getElementById('save-score-btn').style.display='inline-flex';
 
             const lay=AppState.activeScan.exam.layout, key=AppState.activeScan.exam.answerKey; 
             let fc={}, tot=0; 
@@ -1614,18 +1632,18 @@ function scanLoop() {
             for(let q in lay) {
                 let selectedOpts =[];
                 for(let o in lay[q]) {
+                    // 🌟 الحساب الدقيق لمكان الدائرة في الصورة المقصوصة
                     const px = lay[q][o].x * cropW;
                     const py = lay[q][o].y * cropH;
-                    const rad = (11/800) * cropW * 1.2; 
+                    const rad = (11/800) * cropW * 1.3; 
                     
-                    // رسم دائرة زرقاء شفافة فوق الدائرة لتتأكد من دقة التموضع
+                    // رسم دائرة زرقاء شفافة للتحقق البصري من مكان بحث الكاميرا
                     ctx.beginPath(); ctx.arc(px, py, rad, 0, 2*Math.PI); 
-                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'; ctx.lineWidth = 2; ctx.stroke();
 
-                    // 🌟 فحص إجابة التلميذ بصرامة عالية (عتبة 110 لكي لا يحسب الظلال كأنها قلم)
-                    // يجب أن يكون التلميذ قد لوّن 30% من الدائرة على الأقل
-                    let d = measureDarkness(ctx, px, py, rad, 110); 
-                    if(d > 0.30) { 
+                    // فحص التلوين داخل الدائرة (يجب أن يكون داكناً بنسبة 25% على الأقل)
+                    let d = measureDarkness(ctx, px, py, rad, 140); 
+                    if(d > 0.25) { 
                         selectedOpts.push({opt: o, px, py, rad});
                     }
                 }
@@ -1635,10 +1653,12 @@ function scanLoop() {
                     let ptsEarned = 0;
                     selectedOpts.forEach(so => {
                         let isCorrect = key[q] && key[q][so.opt];
+                        
+                        // 🌟 رسم الدوائر الحمراء والخضراء الغليظة فوق اختيار التلميذ
                         ctx.beginPath(); ctx.arc(so.px, so.py, so.rad, 0, 2*Math.PI);
-                        ctx.lineWidth = 4;
+                        ctx.lineWidth = 5;
                         if(isCorrect) {
-                            ptsEarned += key[q][so.opt];
+                            ptsEarned += key[q][so.opt] || 1;
                             ctx.strokeStyle='#22c55e'; // أخضر
                         } else {
                             ctx.strokeStyle='#ef4444'; // أحمر
@@ -1650,7 +1670,7 @@ function scanLoop() {
             }
             AppState.activeScan.extChoices=fc; 
             document.getElementById('scanned-feedback').innerText = `النتيجة المقدرة: ${tot}`;
-            document.getElementById('scanner-instruction').innerText = "تأكد من تطابق الدوائر، ثم اضغط حفظ.";
+            document.getElementById('scanner-instruction').innerText = "تأكد من تطابق الدوائر الملونة، ثم اضغط حفظ النتيجة.";
         }
 
         // 🌟 قمنا بإضافة (threshold) كمتغير لنتحكم في حساسية الضوء لكل جزء على حدة
@@ -1666,11 +1686,13 @@ function scanLoop() {
             } return t===0 ? 0 : dC/t;
         }
 
-        function retakePhoto() { 
+function retakePhoto() { 
             document.getElementById('preview-canvas').style.display='none'; 
+            document.getElementById('guide-box').style.display='block'; // إظهار المربعات
             document.getElementById('camera-container').style.display='block'; 
             document.getElementById('scanner-actions').style.display='none'; 
             document.getElementById('scanned-feedback').innerText=''; 
+            document.getElementById('scan-line').style.display='block';
             document.getElementById('scanner-instruction').innerText = "قم بمطابقة المربعات الأربعة للالتقاط";
             isScanning = true;
             scanLoop();
