@@ -1496,40 +1496,39 @@ function scanLoop() {
                 {x: (rg.right - rv.left) * sx, y: (rg.bottom - rv.top) * sy}
             ];
 
-            // 🌟 تكبير مساحة الفحص لتكون متسامحة مع اهتزاز يد المستخدم
             const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.025;
 
             corners.forEach((id, index) => {
                 const el = document.getElementById(id);
                 
-                // توجيه نقطة الفحص نحو الداخل لاصطياد المربع الأسود
                 const insetX = (index % 2 === 0) ? checkRad : -checkRad;
                 const insetY = (index < 2) ? checkRad : -checkRad;
-                
                 const cx = guideCorners[index].x + insetX;
                 const cy = guideCorners[index].y + insetY;
 
-                // 🌟 فحص المربع بمرونة عالية (عتبة 140، ويكفي أن يكون 20% منه داكناً)
-                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad, 140) > 0.20; 
+                // 🌟 التعديل الأول: خفضنا نسبة السواد المطلوبة إلى 8% فقط! 
+                // المربع الأسود صغير، لذا يكفي أن نلمح سواداً بنسبة 8% في الزاوية لنعتبره المربع المطلوب دون أن يفقد التركيز بهزة اليد.
+                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad, 130) > 0.08; 
 
                 if(isDark) {
-                    el.style.borderColor = '#22c55e'; // أخضر
+                    el.style.borderColor = '#22c55e'; 
                     el.style.backgroundColor = 'rgba(34, 197, 94, 0.3)';
                     alignedCount++;
                 } else {
-                    el.style.borderColor = 'rgba(255,255,255,0.8)'; // أبيض
+                    el.style.borderColor = 'rgba(255,255,255,0.8)'; 
                     el.style.backgroundColor = 'rgba(255,255,255,0.1)';
                 }
             });
 
             const stabBar = document.getElementById('stabilization-bar');
             
-            // 🌟 تقليل عدد الإطارات المطلوبة للثبات من 15 إلى 8 لتسريع الالتقاط (نصف ثانية)
+            // 🌟 التعديل الثاني: تقليل وقت الثبات إلى 4 إطارات (أجزاء من الثانية)
+            // بمجرد أن تتطابق المربعات الأربعة، سيمتلئ الشريط بسرعة البرق ويلتقط الصورة!
             if(alignedCount === 4) {
                 stabilizationFrames++;
-                stabBar.style.width = (stabilizationFrames / 8 * 100) + '%';
+                stabBar.style.width = (stabilizationFrames / 4 * 100) + '%';
                 
-                if(stabilizationFrames >= 8) {
+                if(stabilizationFrames >= 4) {
                     isScanning = false;
                     playShutterSound();
                     stabBar.style.width = '0%';
