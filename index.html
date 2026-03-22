@@ -90,24 +90,9 @@
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
         .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--danger); }
 
-        /* --- تصميم كاميرا الالتقاط التلقائي الدقيق --- */
         #camera-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto 15px auto; overflow: hidden; background: #000; border-radius: 10px;}
-
-        #video-feed { width: 100%; height: 100%; display: block; object-fit: fill; border-radius: 10px; }
-
-        #guide-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 85%; border: 2px dashed rgba(255,255,255,0.4); box-sizing: border-box; box-shadow: 0 0 0 2000px rgba(0,0,0,0.7); z-index: 2;}  
-        /* الزوايا الأربع مطابقة تماماً لأماكنها في الورقة المطبوعة */
-        .target-corner { position: absolute; width: 35px; height: 35px; border: 3px solid rgba(255, 255, 255, 0.8); z-index: 5; transition: all 0.2s; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
-        .target-corner.aligned { border-color: var(--success); background-color: rgba(34, 197, 94, 0.4); transform: scale(1.1); }
-       
-        #corner-tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
-        #corner-tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
-        #corner-bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
-        #corner-br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
-
-        #scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: rgba(34, 197, 94, 0.8); z-index: 4; box-shadow: 0 0 10px var(--success); animation: scanAnim 2s infinite linear; display: none; }
-        @keyframes scanAnim { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
-
+        #video-feed { width: 100%; display: block; object-fit: cover;}
+        #guide-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 3px solid #22c55e; box-sizing: border-box; box-shadow: 0 0 0 2000px rgba(0,0,0,0.5); z-index: 2;}
         #preview-canvas { max-width: 100%; border: 1px solid #ccc; margin-top: 15px; border-radius: 5px; display: none;}
 
         .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; text-align: left; direction: rtl;}
@@ -472,49 +457,18 @@
             <div id="previewContainer" class="preview-grid"></div>
         </div>
     </div>
-<!-- نافذة الكاميرا بأسلوب ZipGrade (Full Screen) -->
-    <div class="modal" id="scannerModal" style="padding: 0; background: #000;">
-        <div class="modal-content" style="width: 100vw; height: 100vh; max-width: none; max-height: none; padding: 0; border-radius: 0; display: flex; flex-direction: column; background: #000; position: relative;">
-            
-            <!-- الشريط العلوي الشفاف -->
-            <div style="position: absolute; top: 0; left: 0; width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); z-index: 10;">
-                <button onclick="stopScanner()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
-                <h3 id="scannerTitle" style="color: white; margin: 0; font-size: 1.2rem;">Scanning</h3>
-                <button onclick="forceCapture()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;"><i class="fas fa-camera"></i></button>
-            </div>
 
-            <!-- حاوية الكاميرا تملأ الشاشة -->
-            <div id="camera-container" style="flex: 1; width: 100%; position: relative; overflow: hidden;">
-                <video id="video-feed" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
-                
-                <!-- المربع الدليلي مع التظليل المحيط (Overlay) -->
-                <div id="guide-box" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.4); box-shadow: 0 0 0 2000px rgba(0,0,0,0.6); z-index: 2; box-sizing: border-box;">
-                    
-                    <!-- المربعات الكبيرة الأربعة (Viewfinders) -->
-                    <div id="corner-tl" style="position:absolute; top:-2px; left:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
-                    <div id="corner-tr" style="position:absolute; top:-2px; right:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
-                    <div id="corner-bl" style="position:absolute; bottom:-2px; left:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
-                    <div id="corner-br" style="position:absolute; bottom:-2px; right:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
-                    
-                    <!-- خط المسح وشريط الثبات -->
-                    <div id="scan-line" style="position:absolute; top:0; left:0; width:100%; height:2px; background:rgba(34,197,94,0.8); box-shadow:0 0 10px #22c55e; display:none;"></div>
-                    <div id="stabilization-bar" style="position:absolute; bottom:-6px; left:0; height:4px; background:#22c55e; width:0%; transition:width 0.1s;"></div>
-                </div>
+    <div class="modal" id="scannerModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="scannerTitle">تصحيح الكاميرا</h3><button class="close-btn" onclick="stopScanner()">&times;</button></div>
+            <div id="camera-container"><video id="video-feed" autoplay playsinline></video><div id="guide-box"></div></div>
+            <canvas id="preview-canvas"></canvas>
+            <div style="display:flex; justify-content:center; gap:10px; margin-top:15px;">
+                <button class="btn btn-primary" id="capture-btn" onclick="captureAndProcess()"><i class="fas fa-camera"></i> التقط</button>
+                <button class="btn btn-warning" id="retake-btn" onclick="retakePhoto()" style="display:none;"><i class="fas fa-redo"></i> إعادة</button>
+                <button class="btn btn-success" id="save-score-btn" onclick="confirmSaveScanned()" style="display:none;"><i class="fas fa-check"></i> حفظ</button>
             </div>
-            
-            <canvas id="preview-canvas" style="width:100%; height:100%; object-fit:contain; display:none; background:#000; position:absolute; top:0; left:0; z-index:15;"></canvas>
-            <canvas id="analysis-canvas" style="display:none;"></canvas>
-
-            <!-- الشريط السفلي للتعليمات والنتيجة -->
-            <div id="scanner-bottom-bar" style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; background: rgba(0,0,0,0.7); z-index: 20; text-align: center;">
-                <p id="scanner-instruction" style="color: white; font-weight: bold; font-size: 1.1rem; margin-bottom: 10px;">قم بمطابقة المربعات الأربعة للالتقاط</p>
-                <div id="scanned-feedback" style="color: var(--success); font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;"></div>
-                
-                <div id="scanner-actions" style="display:none; justify-content:center; gap:15px;">
-                    <button class="btn btn-warning" onclick="retakePhoto()"><i class="fas fa-redo"></i> إعادة</button>
-                    <button class="btn btn-success" onclick="confirmSaveScanned()"><i class="fas fa-check"></i> حفظ النتيجة</button>
-                </div>
-            </div>
+            <div id="scanned-feedback" style="margin-top:10px; text-align:center; font-weight:bold; color:var(--primary);"></div>
         </div>
     </div>
 
@@ -551,8 +505,7 @@
             <button class="btn btn-primary" id="confirmBroadcastBtn" onclick="confirmBroadcastExam()" style="width:100%;"><i class="fas fa-check-circle"></i> تأكيد التعميم</button>
         </div>
     </div>
-<!-- صوت الكاميرا الحقيقي (ZipGrade Style) -->
-    <audio id="shutterAudio" src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"></audio>
+
     <!-- Print Template -->
     <div id="print-wrapper">
         <div class="omr-sheet" id="omr-print-template">
@@ -1151,29 +1104,12 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
         }
 
         function extractBubbleCoordinates() {
-            const sh = document.querySelector('.omr-sheet'); 
-            sh.style.display = 'block';
-            
-            // الحساب الدقيق يعتمد على "الحواف الخارجية" للمربعات لتطابق إطار الكاميرا
-            const tl = sh.querySelector('.marker-tl').getBoundingClientRect();
-            const br = sh.querySelector('.marker-br').getBoundingClientRect();
-            
-            const boxLeft = tl.left;
-            const boxTop = tl.top;
-            const boxWidth = br.right - tl.left;
-            const boxHeight = br.bottom - tl.top;
-            const bubbles = document.querySelectorAll('.omr-bubble-mark');
-            const layout = {};
+            const sh = document.querySelector('.omr-sheet'); sh.style.display='block';
+            const rectS = sh.getBoundingClientRect(), bubbles = document.querySelectorAll('.omr-bubble-mark'), layout={};
             bubbles.forEach(b => {
-                const rB = b.getBoundingClientRect();
-                // حساب المركز الدقيق لكل دائرة مقارنة بمساحة المربعات
-                const cx = (rB.left + rB.width/2 - boxLeft) / boxWidth;
-                const cy = (rB.top + rB.height/2 - boxTop) / boxHeight;
-                
-                const q = b.getAttribute('data-q');
-                const o = b.getAttribute('data-opt');
-                if(!layout[q]) layout[q] = {}; 
-                layout[q][o] = {x: cx, y: cy};
+                const rB = b.getBoundingClientRect(), cx = (rB.left-rectS.left+rB.width/2)/rectS.width, cy = (rB.top-rectS.top+rB.height/2)/rectS.height;
+                const q=b.getAttribute('data-q'), o=b.getAttribute('data-opt');
+                if(!layout[q]) layout[q]={}; layout[q][o] = {x:cx,y:cy};
             });
             return layout;
         }
@@ -1410,235 +1346,78 @@ updateResultExams(); // استدعاء نهائي لعرض الجدول والب
             await IDB.put('results', res); closeModal('editScoreModal'); renderResultsTable();
         }
 
-// === Auto-Capture Camera Scanner (ZipGrade Style) ===
-        const video = document.getElementById('video-feed');
-        const canvas = document.getElementById('preview-canvas');
-        const ctx = canvas.getContext('2d');
-        const analysisCanvas = document.getElementById('analysis-canvas');
-        const analysisCtx = analysisCanvas.getContext('2d');
-        let scanAnimationFrame = null;
-        let isScanning = false;
-        let stabilizationFrames = 0;
-
+        // === Camera Scanner (تحديث لدعم الخيارات المتعددة) ===
+        const video = document.getElementById('video-feed'), canvas = document.getElementById('preview-canvas'), ctx = canvas.getContext('2d');
         async function startScanner(eid, sid, sName) {
-            const ex = AppState.exams.find(e=>e.id===eid); 
-            if(!ex.layout) return alert("مخطط ورقة الإجابة غير موجود. يرجى تعديل الامتحان وحفظه من جديد لتوليد المخطط.");
-            
+            const ex = AppState.exams.find(e=>e.id===eid); if(!ex.layout) return alert("مخطط غير موجود. احفظ الامتحان أولاً.");
             AppState.activeScan = {exam:ex, studentId:sid, extChoices:{}};
-            document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; 
-            document.getElementById('scannerModal').style.display='flex';
-            
-            // إعادة ضبط واجهة الشاشة الكاملة
-            document.getElementById('camera-container').style.display='block'; 
-            document.getElementById('preview-canvas').style.display='none';
-            document.getElementById('scanner-actions').style.display='none';
+            document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; document.getElementById('scannerModal').style.display='flex';
+            video.style.display='block'; document.getElementById('guide-box').style.display='block'; canvas.style.display='none';
+            document.getElementById('capture-btn').style.display='inline-flex'; document.getElementById('retake-btn').style.display='none'; document.getElementById('save-score-btn').style.display='none';
             document.getElementById('scanned-feedback').innerText='';
-            document.getElementById('scanner-instruction').innerText = 'قم بمطابقة المربعات الأربعة للالتقاط';['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'].forEach(id => {
-                document.getElementById(id).style.borderColor = 'rgba(255,255,255,0.8)';
-                document.getElementById(id).style.backgroundColor = 'rgba(255,255,255,0.1)';
-            });
-
             try {
                 AppState.videoStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment', width:{ideal:1920}, height:{ideal:1080}}});
-                const video = document.getElementById('video-feed');
                 video.srcObject = AppState.videoStream;
-                
                 video.onloadedmetadata = () => {
-                    // حساب حجم المربع بناء على شاشة الهاتف بالكامل
-                    const cw = window.innerWidth;
-                    const ch = window.innerHeight;
-                    const markerRatio = 1.435; // نسبة الورقة
-                    const guideBox = document.getElementById('guide-box');
-                    
-                    let gw, gh; 
-                    if (ch / cw > markerRatio) { 
-                        gw = cw * 0.85; // يترك هامش 15% يميناً ويساراً
-                        gh = gw * markerRatio; 
-                    } else { 
-                        gh = ch * 0.75; // يترك هامش أعلى وأسفل
-                        gw = gh / markerRatio; 
-                    }
-                    
-                    guideBox.style.width = gw + 'px';
-                    guideBox.style.height = gh + 'px';
-
-                    setTimeout(() => {
-                        isScanning = true;
-                        scanLoop();
-                    }, 800); // تأخير بسيط لتأقلم الكاميرا
+                    const cw = document.getElementById('camera-container').offsetWidth, ch = 400; document.getElementById('camera-container').style.height=ch+'px';
+                    let gw, gh; if(ch/cw > 1.414) {gw=cw*0.85; gh=gw*1.414;} else {gh=ch*0.85; gw=gh/1.414;}
+                    document.getElementById('guide-box').style.width=gw+'px'; document.getElementById('guide-box').style.height=gh+'px';
                 };
-            } catch(e) { alert("تعذر فتح الكاميرا. تأكد من منح الصلاحيات."); stopScanner(); }
+            } catch(e) { alert("تعذر فتح الكاميرا."); stopScanner(); }
         }
-
-function scanLoop() {
-            if(!isScanning) return;
-            
-            const video = document.getElementById('video-feed');
-            const analysisCanvas = document.getElementById('analysis-canvas');
-            const analysisCtx = analysisCanvas.getContext('2d');
-            
-            analysisCanvas.width = video.videoWidth;
-            analysisCanvas.height = video.videoHeight;
-            analysisCtx.drawImage(video, 0, 0, analysisCanvas.width, analysisCanvas.height);
-            
-            let alignedCount = 0;
-            const corners =['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'];
-            
-            const rv = video.getBoundingClientRect();
-            const rg = document.getElementById('guide-box').getBoundingClientRect();
-            const sx = video.videoWidth / rv.width;
-            const sy = video.videoHeight / rv.height;
-
-            const guideCorners =[
-                {x: (rg.left - rv.left) * sx, y: (rg.top - rv.top) * sy},
-                {x: (rg.right - rv.left) * sx, y: (rg.top - rv.top) * sy},
-                {x: (rg.left - rv.left) * sx, y: (rg.bottom - rv.top) * sy},
-                {x: (rg.right - rv.left) * sx, y: (rg.bottom - rv.top) * sy}
-            ];
-
-            const checkRad = Math.max(video.videoWidth, video.videoHeight) * 0.025;
-
-            corners.forEach((id, index) => {
-                const el = document.getElementById(id);
-                
-                const insetX = (index % 2 === 0) ? checkRad : -checkRad;
-                const insetY = (index < 2) ? checkRad : -checkRad;
-                const cx = guideCorners[index].x + insetX;
-                const cy = guideCorners[index].y + insetY;
-
-                // 🌟 التعديل الأول: خفضنا نسبة السواد المطلوبة إلى 8% فقط! 
-                // المربع الأسود صغير، لذا يكفي أن نلمح سواداً بنسبة 8% في الزاوية لنعتبره المربع المطلوب دون أن يفقد التركيز بهزة اليد.
-                let isDark = measureDarkness(analysisCtx, cx, cy, checkRad, 130) > 0.08; 
-
-                if(isDark) {
-                    el.style.borderColor = '#22c55e'; 
-                    el.style.backgroundColor = 'rgba(34, 197, 94, 0.3)';
-                    alignedCount++;
-                } else {
-                    el.style.borderColor = 'rgba(255,255,255,0.8)'; 
-                    el.style.backgroundColor = 'rgba(255,255,255,0.1)';
-                }
-            });
-
-            const stabBar = document.getElementById('stabilization-bar');
-            
-            // 🌟 التعديل الثاني: تقليل وقت الثبات إلى 4 إطارات (أجزاء من الثانية)
-            // بمجرد أن تتطابق المربعات الأربعة، سيمتلئ الشريط بسرعة البرق ويلتقط الصورة!
-            if(alignedCount === 4) {
-                stabilizationFrames++;
-                stabBar.style.width = (stabilizationFrames / 4 * 100) + '%';
-                
-                if(stabilizationFrames >= 4) {
-                    isScanning = false;
-                    playShutterSound();
-                    stabBar.style.width = '0%';
-                    setTimeout(() => captureAndProcess(), 100);
-                } else {
-                    scanAnimationFrame = requestAnimationFrame(scanLoop);
-                }
-            } else {
-                stabilizationFrames = 0;
-                stabBar.style.width = '0%';
-                scanAnimationFrame = requestAnimationFrame(scanLoop);
-            }
-        }
-
-        // دالة الالتقاط اليدوي الإجباري
-        function forceCapture() {
-            if(!isScanning) return;
-            isScanning = false;
-            playShutterSound();
-            document.getElementById('stabilization-bar').style.width = '0%';
-            captureAndProcess();
-        }
-
+        function stopScanner() { if(AppState.videoStream) AppState.videoStream.getTracks().forEach(t=>t.stop()); document.getElementById('scannerModal').style.display='none'; }
+        
         function captureAndProcess() {
-            const rv = video.getBoundingClientRect();
-            const rg = document.getElementById('guide-box').getBoundingClientRect();
-            const sx = video.videoWidth / rv.width;
-            const sy = video.videoHeight / rv.height;
-            
-            // القص يبدأ من حواف المربع الدليلي تماماً
-            const cropX = (rg.left - rv.left) * sx;
-            const cropY = (rg.top - rv.top) * sy;
-            const cropW = rg.width * sx;
-            const cropH = rg.height * sy;
-            
-            canvas.width = cropW; 
-            canvas.height = cropH;
-            ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-            
+            const rv = video.getBoundingClientRect(), rg = document.getElementById('guide-box').getBoundingClientRect();
+            const sx = video.videoWidth/rv.width, sy = video.videoHeight/rv.height;
+            const cx = (rg.left-rv.left)*sx, cy = (rg.top-rv.top)*sy, cw = rg.width*sx, ch = rg.height*sy;
+            canvas.width=cw; canvas.height=ch; ctx.drawImage(video, cx,cy,cw,ch, 0,0,cw,ch);
             video.style.display='none'; document.getElementById('guide-box').style.display='none'; canvas.style.display='block';
-            document.getElementById('retake-btn').style.display='inline-flex'; document.getElementById('save-score-btn').style.display='inline-flex';
+            document.getElementById('capture-btn').style.display='none'; document.getElementById('retake-btn').style.display='inline-flex'; document.getElementById('save-score-btn').style.display='inline-flex';
 
             const lay=AppState.activeScan.exam.layout, key=AppState.activeScan.exam.answerKey; 
             let fc={}, tot=0; 
+            ctx.lineWidth=4;
             
             for(let q in lay) {
                 let selectedOpts =[];
                 for(let o in lay[q]) {
-                    const px = lay[q][o].x * cropW;
-                    const py = lay[q][o].y * cropH;
-                    const rad = (11/800) * cropW * 1.2; 
-                    
-                    // رسم دائرة زرقاء شفافة فوق الدائرة لتتأكد من دقة التموضع
-                    ctx.beginPath(); ctx.arc(px, py, rad, 0, 2*Math.PI); 
-                    ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
-
-                    // 🌟 فحص إجابة التلميذ بصرامة عالية (عتبة 110 لكي لا يحسب الظلال كأنها قلم)
-                    // يجب أن يكون التلميذ قد لوّن 30% من الدائرة على الأقل
-                    let d = measureDarkness(ctx, px, py, rad, 110); 
-                    if(d > 0.30) { 
+                    const px=lay[q][o].x*cw, py=lay[q][o].y*ch, rad=(11/800)*cw; 
+                    let d = measDark(ctx, px,py,rad); 
+                    if(d > 0.15) { // يتم حفظ كل الخيارات التي تتجاوز العتبة
                         selectedOpts.push({opt: o, px, py, rad});
                     }
                 }
                 
                 if(selectedOpts.length > 0) {
-                    fc[q] = selectedOpts.map(so => so.opt).join(', ');
+                    fc[q] = selectedOpts.map(so => so.opt).join(', '); // دمج الخيارات بنص (مثال: "أ, ج")
                     let ptsEarned = 0;
                     selectedOpts.forEach(so => {
                         let isCorrect = key[q] && key[q][so.opt];
-                        ctx.beginPath(); ctx.arc(so.px, so.py, so.rad, 0, 2*Math.PI);
-                        ctx.lineWidth = 4;
                         if(isCorrect) {
                             ptsEarned += key[q][so.opt];
-                            ctx.strokeStyle='#22c55e'; // أخضر
+                            ctx.beginPath(); ctx.arc(so.px, so.py, so.rad, 0, 2*Math.PI); ctx.strokeStyle='#22c55e'; ctx.stroke();
                         } else {
-                            ctx.strokeStyle='#ef4444'; // أحمر
+                            // إجابة خاطئة
+                            ctx.beginPath(); ctx.arc(so.px, so.py, so.rad, 0, 2*Math.PI); ctx.strokeStyle='#ef4444'; ctx.stroke();
                         }
-                        ctx.stroke();
                     });
                     tot += ptsEarned;
                 }
             }
             AppState.activeScan.extChoices=fc; 
             document.getElementById('scanned-feedback').innerText = `النتيجة المقدرة: ${tot}`;
-            document.getElementById('scanner-instruction').innerText = "تأكد من تطابق الدوائر، ثم اضغط حفظ.";
         }
-
-        // 🌟 قمنا بإضافة (threshold) كمتغير لنتحكم في حساسية الضوء لكل جزء على حدة
-        function measureDarkness(ctx, cx, cy, rad, threshold = 130) {
-            if(cx-rad<0 || cy-rad<0 || cx+rad>ctx.canvas.width || cy+rad>ctx.canvas.height) return 0;
+        function measDark(ctx, cx, cy, rad) {
+            if(cx-rad<0 || cy-rad<0 || cx+rad>canvas.width || cy+rad>canvas.height) return 0;
             const img = ctx.getImageData(cx-rad, cy-rad, rad*2, rad*2).data; let dC=0, t=0, rSq=rad*rad;
             for(let i=0; i<img.length; i+=4) {
                 const px=(i/4)%(rad*2)-rad, py=Math.floor((i/4)/(rad*2))-rad;
-                if(px*px+py*py<=rSq) { 
-                    t++; 
-                    if(0.299*img[i]+0.587*img[i+1]+0.114*img[i+2] < threshold) dC++; 
-                }
-            } return t===0 ? 0 : dC/t;
+                if(px*px+py*py<=rSq) { t++; if(0.299*img[i]+0.587*img[i+1]+0.114*img[i+2]<120) dC++; }
+            } return t===0?0:dC/t;
         }
-
-        function retakePhoto() { 
-            document.getElementById('preview-canvas').style.display='none'; 
-            document.getElementById('camera-container').style.display='block'; 
-            document.getElementById('scanner-actions').style.display='none'; 
-            document.getElementById('scanned-feedback').innerText=''; 
-            document.getElementById('scanner-instruction').innerText = "قم بمطابقة المربعات الأربعة للالتقاط";
-            isScanning = true;
-            scanLoop();
-        }
-
+        function retakePhoto() { canvas.style.display='none'; video.style.display='block'; document.getElementById('guide-box').style.display='block'; document.getElementById('capture-btn').style.display='inline-flex'; document.getElementById('retake-btn').style.display='none'; document.getElementById('save-score-btn').style.display='none'; document.getElementById('scanned-feedback').innerText=''; }
+        
         async function confirmSaveScanned() {
             const {exam, studentId, extChoices} = AppState.activeScan, eid=exam.id;
             let res = AppState.results[eid]?.[studentId] || {id:`${eid}___${studentId}`, examId:eid, studentId:studentId};
