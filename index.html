@@ -1669,11 +1669,14 @@ function editExamSetup(id) {
                     // العتبة الأساسية 35% (مثل ZipGrade) + التحقق من الخلفية المحيطة
                     let bgDarkness = measureDarkness(ctx, px - rad * 2.5, py, rad * 0.5, 128);
                     let adaptiveThreshold = 0.35 + (bgDarkness * 0.1); // تعديل ديناميكي بناءً على الإضاءة
-                    if(d > adaptiveThreshold) { 
+
+if(d > adaptiveThreshold) { 
                         selectedOpts.push({opt: o, px, py, rad, darkness: d});
                     }
-  
+                }
+                
                 if(selectedOpts.length > 0) {
+
                     fc[q] = selectedOpts.map(so => so.opt).join(', ');
                     let ptsEarned = 0;
                     selectedOpts.forEach(so => {
