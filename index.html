@@ -1462,14 +1462,15 @@ function editExamSetup(id) {
             AppState.activeScan = {exam:ex, studentId:sid, extChoices:{}};
             document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; 
             document.getElementById('scannerModal').style.display='flex';
-           
             document.getElementById('camera-container').style.display='block'; 
             document.getElementById('preview-canvas').style.display='none';
-            document.getElementById('scanner-actions').style.display='none';
+            document.getElementById('video-feed').style.display='block';
+            document.getElementById('result-top-bar').style.display='none';
+            document.getElementById('scanner-bottom-bar').style.display='block';
             document.getElementById('scanned-feedback').innerText='';
             document.getElementById('scanner-instruction').innerText = 'قم بمطابقة المربعات الأربعة للالتقاط';
             document.getElementById('scan-line').style.display='block'; 
-            document.getElementById('guide-box').style.display='block'; 
+            document.getElementById('guide-box').style.display='block';
             
             const cornersArray =['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'];
             cornersArray.forEach(id => {
