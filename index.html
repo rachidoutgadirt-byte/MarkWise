@@ -1549,20 +1549,20 @@ function editExamSetup(id) {
                 const cx = guideCorners[index].x + insetX;
                 const cy = guideCorners[index].y + insetY;
 
-             // فحص المربع بـ 9 نقاط (شبكة 3x3) لدقة أعلى
+// فحص المربع الأسود: نظام نقاط مرن يتكيف مع الإضاءة
                 let darkPoints = 0;
-                const offsets = [-checkRad*0.5, 0, checkRad*0.5];
+                const offsets = [-checkRad*0.4, 0, checkRad*0.4];
                 for(let dx of offsets) {
                     for(let dy of offsets) {
-                        if(measureDarkness(analysisCtx, cx+dx, cy+dy, checkRad*0.4, 110) > 0.40) darkPoints++;
+                        if(measureDarkness(analysisCtx, cx+dx, cy+dy, checkRad*0.45, 140) > 0.30) darkPoints++;
                     }
                 }
-                let isDark = darkPoints >= 6; // 6 من 9 نقاط يجب أن تكون داكنة
+                let isDark = darkPoints >= 4; // يكفي 4 من 9 نقاط (أكثر مرونة)
                 
-                // فحص الحماية (المنطقة الداخلية بيضاء)
-                const innerX = guideCorners[index].x + (insetX * 4);
-                const innerY = guideCorners[index].y + (insetY * 4);
-                let isInnerLight = measureDarkness(analysisCtx, innerX, innerY, checkRad, 110) < 0.12;
+                // فحص الحماية: المنطقة الداخلية يجب أن تكون أفتح من المربع
+                const innerX = guideCorners[index].x + (insetX * 3.5);
+                const innerY = guideCorners[index].y + (insetY * 3.5);
+                let isInnerLight = measureDarkness(analysisCtx, innerX, innerY, checkRad, 140) < 0.25;
 
                 if(isDark && isInnerLight) {
                     el.style.borderColor = '#22c55e'; 
