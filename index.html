@@ -1624,11 +1624,11 @@ function editExamSetup(id) {
             const cropW = brNative.x - tlNative.x;
             const cropH = brNative.y - tlNative.y;
 
-            // === المرحلة 1: رسم الصورة الخام وحفظ بياناتها قبل أي رسم ===
+            // === المرحلة 1: رسم الصورة ثم حفظ نسخة نظيفة فوراً قبل أي رسم ===
             canvas.width = cropW; canvas.height = cropH;
             ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-            // حفظ بيانات البكسل الخام في canvas مؤقت نظيف للقراءة فقط
+            // نسخة نظيفة للقراءة فقط — لن يُرسم عليها شيء أبداً
             const cleanCanvas = document.createElement('canvas');
             cleanCanvas.width = cropW; cleanCanvas.height = cropH;
             const cleanCtx = cleanCanvas.getContext('2d');
@@ -1642,41 +1642,33 @@ function editExamSetup(id) {
             const key = AppState.activeScan.exam.answerKey;
             let fc = {}, tot = 0;
 
-            // === المرحلة 2: حساب نصف القطر مرة واحدة من الـ layout ===
-            let globalRad = (11 / 800) * cropW * 1.8;
-            const firstQ = Object.keys(lay)[0];
-            if (firstQ) {
-                const opts = Object.keys(lay[firstQ]);
-                if (opts.length >= 2) {
-                    const x1 = lay[firstQ][opts[0]].x * cropW;
-                    const x2 = lay[firstQ][opts[1]].x * cropW;
-                    const dist = Math.abs(x2 - x1);
-                    if (dist > 0) globalRad = Math.max(dist * 0.40, 10);
-                }
-            }
+            // === المرحلة 2: حساب نصف القطر الصحيح ===
+            // الدائرة في ورقة الإجابة = 22px من أصل عرض الورقة 800px
+            // نصف القطر الحقيقي في الصورة الملتقطة = (11 / 800) * cropW
+            // نضرب في 0.85 لكي لا تتداخل الدوائر مع بعضها
+            const bubbleRadius = Math.max(Math.round((11 / 800) * cropW * 0.85), 6);
 
-            // === المرحلة 3: المرور على الأسئلة والقراءة من الـ canvas النظيف ===
+            // === المرحلة 3: المرور على كل سؤال وخياراته ===
             for (let q in lay) {
                 let selectedOpts = [];
 
                 for (let o in lay[q]) {
                     const px = Math.round(lay[q][o].x * cropW);
                     const py = Math.round(lay[q][o].y * cropH);
-                    const rad = globalRad;
 
-                    // قراءة الظلام من الـ canvas النظيف (بدون أي رسومات)
-                    const darkness = measureDarkness(cleanCtx, px, py, rad, 128);
+                    // قراءة الظلام من النسخة النظيفة فقط
+                    const darkness = measureDarkness(cleanCtx, px, py, bubbleRadius, 128);
 
-                    // رسم دائرة رمادية شفافة على الصورة المعروضة للتحقق البصري
-                    ctx.beginPath(); ctx.arc(px, py, rad, 0, 2 * Math.PI);
-                    ctx.strokeStyle = 'rgba(100, 100, 255, 0.4)';
-                    ctx.lineWidth = 2; ctx.stroke();
+                    // رسم دائرة دليلية صغيرة على الصورة المعروضة
+                    ctx.beginPath(); ctx.arc(px, py, bubbleRadius, 0, 2 * Math.PI);
+                    ctx.strokeStyle = 'rgba(100, 149, 237, 0.5)';
+                    ctx.lineWidth = 1.5; ctx.stroke();
 
-                    // عتبة بسيطة وثابتة: 15% من الدائرة داكنة تكفي
-                    if (darkness > 0.15) {
-                        selectedOpts.push({ opt: o, px, py, rad });
+                    // عتبة الكشف: 12% من الدائرة داكنة = مملوءة
+                    if (darkness > 0.12) {
+                        selectedOpts.push({ opt: o, px, py });
                     }
-                } // إغلاق for(let o in lay[q])
+                }
 
                 if (selectedOpts.length > 0) {
                     fc[q] = selectedOpts.map(so => so.opt).join(', ');
@@ -1684,16 +1676,16 @@ function editExamSetup(id) {
                     selectedOpts.forEach(so => {
                         const isCorrect = key[q] && key[q][so.opt];
                         if (isCorrect) ptsEarned += key[q][so.opt] || 1;
-                        // رسم دائرة ملونة سميكة فوق الدائرة المحددة
-                        ctx.beginPath(); ctx.arc(so.px, so.py, so.rad, 0, 2 * Math.PI);
+                        // دائرة ملونة سميكة فوق الخيار المحدد
+                        ctx.beginPath(); ctx.arc(so.px, so.py, bubbleRadius, 0, 2 * Math.PI);
                         ctx.strokeStyle = isCorrect ? '#22c55e' : '#ef4444';
-                        ctx.lineWidth = 6; ctx.stroke();
+                        ctx.lineWidth = 5; ctx.stroke();
                     });
                     tot += ptsEarned;
                 }
-            } // إغلاق for(let q in lay)
+            }
 
-            // === المرحلة 4: عرض النتيجة وإظهار أزرار الحفظ ===
+            // === المرحلة 4: عرض النتيجة وإظهار الأزرار ===
             AppState.activeScan.extChoices = fc;
             AppState.activeScan.tot = tot;
             document.getElementById('scanned-feedback').innerText = `✅ النتيجة: ${tot} نقطة`;
