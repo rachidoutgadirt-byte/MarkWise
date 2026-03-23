@@ -507,20 +507,20 @@
             
             <canvas id="preview-canvas" style="width:100%; height:100%; object-fit:contain; display:none; background:#000; position:absolute; top:0; left:0; z-index:15;"></canvas>
             <canvas id="analysis-canvas" style="display:none;"></canvas>
-<!-- شريط التعليمات في الأسفل (أثناء المسح فقط) -->
+
+            <!-- شريط التعليمات في الأسفل (أثناء المسح فقط) -->
             <div id="scanner-bottom-bar" style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px; background: rgba(0,0,0,0.7); z-index: 20; text-align: center;">
                 <p id="scanner-instruction" style="color: white; font-weight: bold; font-size: 1rem; margin: 0;">قم بمطابقة المربعات الأربعة للالتقاط</p>
             </div>
 
             <!-- شريط النتيجة والأزرار في الأعلى (يظهر بعد الالتقاط) -->
-            <div id="result-top-bar" style="display:none; position: absolute; top: 0; left: 0; width: 100%; padding: 70px 15px 15px 15px; background: rgba(0,0,0,0.85); z-index: 25; text-align: center;">
-                <div id="scanned-feedback" style="color: #22c55e; font-size: 1.5rem; font-weight: bold; margin-bottom: 15px;"></div>
+            <div id="result-top-bar" style="display:none; position: absolute; top: 0; left: 0; width: 100%; padding: 70px 15px 15px 15px; background: rgba(0,0,0,0.88); z-index: 25; text-align: center;">
+                <div id="scanned-feedback" style="color: #22c55e; font-size: 1.6rem; font-weight: bold; margin-bottom: 18px;"></div>
                 <div style="display:flex; justify-content:center; gap:15px;">
-                    <button class="btn btn-warning" onclick="retakePhoto()" style="padding: 12px 25px; font-size: 1rem;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
-                    <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding: 12px 25px; font-size: 1rem;"><i class="fas fa-check"></i> حفظ النتيجة</button>
+                    <button class="btn btn-warning" onclick="retakePhoto()" style="padding:12px 28px; font-size:1rem;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
+                    <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding:12px 28px; font-size:1rem;"><i class="fas fa-check"></i> حفظ النتيجة</button>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -1462,6 +1462,7 @@ function editExamSetup(id) {
             AppState.activeScan = {exam:ex, studentId:sid, extChoices:{}};
             document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; 
             document.getElementById('scannerModal').style.display='flex';
+           
             document.getElementById('camera-container').style.display='block'; 
             document.getElementById('preview-canvas').style.display='none';
             document.getElementById('video-feed').style.display='block';
@@ -1470,7 +1471,7 @@ function editExamSetup(id) {
             document.getElementById('scanned-feedback').innerText='';
             document.getElementById('scanner-instruction').innerText = 'قم بمطابقة المربعات الأربعة للالتقاط';
             document.getElementById('scan-line').style.display='block'; 
-            document.getElementById('guide-box').style.display='block';
+            document.getElementById('guide-box').style.display='block'; 
             
             const cornersArray =['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'];
             cornersArray.forEach(id => {
@@ -1612,89 +1613,87 @@ function editExamSetup(id) {
             captureAndProcess();
         }
 
-function captureAndProcess() {
+        function captureAndProcess() {
             const rv = video.getBoundingClientRect();
             const rg = document.getElementById('guide-box').getBoundingClientRect();
-            const vw = video.videoWidth;
-            const vh = video.videoHeight;
+            const vw = video.videoWidth, vh = video.videoHeight;
             
             const tlNative = getNativeCoords(rg.left - rv.left, rg.top - rv.top, rv, vw, vh);
             const brNative = getNativeCoords(rg.right - rv.left, rg.bottom - rv.top, rv, vw, vh);
             const cropX = tlNative.x, cropY = tlNative.y;
             const cropW = brNative.x - tlNative.x;
             const cropH = brNative.y - tlNative.y;
-            
-            // الخطوة 1: رسم الصورة الخام على الـ canvas
-            canvas.width = cropW; 
-            canvas.height = cropH;
+
+            // === المرحلة 1: رسم الصورة الخام وحفظ بياناتها قبل أي رسم ===
+            canvas.width = cropW; canvas.height = cropH;
             ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-            
-            // الخطوة 2: حفظ بيانات البكسل الخام قبل أي رسم
-            const rawImageData = ctx.getImageData(0, 0, cropW, cropH);
 
-// الخطوة 3: إنشاء canvas مؤقت للقراءة النظيفة فقط
-            const readCanvas = document.createElement('canvas');
-            readCanvas.width = cropW; readCanvas.height = cropH;
-            const readCtx = readCanvas.getContext('2d');
-            readCtx.putImageData(rawImageData, 0, 0);
+            // حفظ بيانات البكسل الخام في canvas مؤقت نظيف للقراءة فقط
+            const cleanCanvas = document.createElement('canvas');
+            cleanCanvas.width = cropW; cleanCanvas.height = cropH;
+            const cleanCtx = cleanCanvas.getContext('2d');
+            cleanCtx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-            video.style.display='none'; 
-            document.getElementById('guide-box').style.display='none'; 
-            canvas.style.display='block';
+            video.style.display = 'none';
+            document.getElementById('guide-box').style.display = 'none';
+            canvas.style.display = 'block';
 
             const lay = AppState.activeScan.exam.layout;
-            const key = AppState.activeScan.exam.answerKey; 
-            let fc = {}, tot = 0; 
-// الخطوة 4: حساب نصف القطر مرة واحدة من أول سؤال
-            let globalRad = (11/800) * cropW * 1.5;
+            const key = AppState.activeScan.exam.answerKey;
+            let fc = {}, tot = 0;
+
+            // === المرحلة 2: حساب نصف القطر مرة واحدة من الـ layout ===
+            let globalRad = (11 / 800) * cropW * 1.8;
             const firstQ = Object.keys(lay)[0];
-            if(firstQ) {
+            if (firstQ) {
                 const opts = Object.keys(lay[firstQ]);
-                if(opts.length >= 2) {
-                    const dist = Math.abs(lay[firstQ][opts[1]].x - lay[firstQ][opts[0]].x) * cropW;
-                    globalRad = Math.max(dist * 0.38, 8);
+                if (opts.length >= 2) {
+                    const x1 = lay[firstQ][opts[0]].x * cropW;
+                    const x2 = lay[firstQ][opts[1]].x * cropW;
+                    const dist = Math.abs(x2 - x1);
+                    if (dist > 0) globalRad = Math.max(dist * 0.40, 10);
                 }
             }
-// الخطوة 5: المرور على كل سؤال وخياراته
-            for(let q in lay) {
+
+            // === المرحلة 3: المرور على الأسئلة والقراءة من الـ canvas النظيف ===
+            for (let q in lay) {
                 let selectedOpts = [];
-                
-                for(let o in lay[q]) {
+
+                for (let o in lay[q]) {
                     const px = Math.round(lay[q][o].x * cropW);
                     const py = Math.round(lay[q][o].y * cropH);
                     const rad = globalRad;
 
-                    // قراءة من الـ canvas النظيف (بدون رسومات)
-                    const darkness = measureDarkness(readCtx, px, py, rad, 128);
-                    const bgDarkness = measureDarkness(readCtx, px - rad * 2.5, py, rad * 0.5, 128);
-                    const threshold = 0.30 + (bgDarkness * 0.08);
+                    // قراءة الظلام من الـ canvas النظيف (بدون أي رسومات)
+                    const darkness = measureDarkness(cleanCtx, px, py, rad, 128);
 
-                    // رسم دائرة رمادية على الـ canvas المعروض (للتحقق البصري)
-                    ctx.beginPath(); ctx.arc(px, py, rad, 0, 2*Math.PI);
-                    ctx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
-                    ctx.lineWidth = 1.5; ctx.stroke();
+                    // رسم دائرة رمادية شفافة على الصورة المعروضة للتحقق البصري
+                    ctx.beginPath(); ctx.arc(px, py, rad, 0, 2 * Math.PI);
+                    ctx.strokeStyle = 'rgba(100, 100, 255, 0.4)';
+                    ctx.lineWidth = 2; ctx.stroke();
 
-                    if(darkness > threshold) {
-                        selectedOpts.push({opt: o, px, py, rad});
+                    // عتبة بسيطة وثابتة: 15% من الدائرة داكنة تكفي
+                    if (darkness > 0.15) {
+                        selectedOpts.push({ opt: o, px, py, rad });
                     }
- } // إغلاق for(let o in lay[q])
-                
-                if(selectedOpts.length > 0) {
+                } // إغلاق for(let o in lay[q])
+
+                if (selectedOpts.length > 0) {
                     fc[q] = selectedOpts.map(so => so.opt).join(', ');
                     let ptsEarned = 0;
                     selectedOpts.forEach(so => {
                         const isCorrect = key[q] && key[q][so.opt];
-                        if(isCorrect) ptsEarned += key[q][so.opt] || 1;
-                        // رسم دائرة ملونة للنتيجة
-                        ctx.beginPath(); ctx.arc(so.px, so.py, so.rad, 0, 2*Math.PI);
+                        if (isCorrect) ptsEarned += key[q][so.opt] || 1;
+                        // رسم دائرة ملونة سميكة فوق الدائرة المحددة
+                        ctx.beginPath(); ctx.arc(so.px, so.py, so.rad, 0, 2 * Math.PI);
                         ctx.strokeStyle = isCorrect ? '#22c55e' : '#ef4444';
-                        ctx.lineWidth = 5; ctx.stroke();
+                        ctx.lineWidth = 6; ctx.stroke();
                     });
                     tot += ptsEarned;
                 }
             } // إغلاق for(let q in lay)
 
-// الخطوة 6: عرض النتيجة وإظهار أزرار الحفظ والإعادة
+            // === المرحلة 4: عرض النتيجة وإظهار أزرار الحفظ ===
             AppState.activeScan.extChoices = fc;
             AppState.activeScan.tot = tot;
             document.getElementById('scanned-feedback').innerText = `✅ النتيجة: ${tot} نقطة`;
