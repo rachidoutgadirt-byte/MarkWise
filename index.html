@@ -478,12 +478,16 @@
     <div class="modal" id="scannerModal" style="padding: 0; background: #000;">
         <div class="modal-content" style="width: 100vw; height: 100vh; max-width: none; max-height: none; padding: 0; border-radius: 0; display: flex; flex-direction: column; background: #000; position: relative; overflow: hidden;">
             
-            <!-- الشريط العلوي الشفاف -->
-            <div style="position: absolute; top: 0; left: 0; width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); z-index: 30;">
-
-                <button onclick="stopScanner()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
-                <h3 id="scannerTitle" style="color: white; margin: 0; font-size: 1.2rem;">Scanning</h3>
-                <button onclick="forceCapture()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;"><i class="fas fa-camera"></i></button>
+            <!-- الشريط العلوي -->
+            <div style="position:absolute;top:0;left:0;width:100%;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.55);z-index:30;">
+                <button onclick="stopScanner()" style="background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
+                <h3 id="scannerTitle" style="color:white;margin:0;font-size:1.1rem;">Scanning</h3>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button id="autoModeBtn" onclick="toggleScanMode()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;font-size:0.75rem;cursor:pointer;border-radius:6px;padding:5px 10px;display:flex;align-items:center;gap:5px;">
+                        <i class="fas fa-magic"></i><span id="autoModeLabel">تلقائي</span>
+                    </button>
+                    <button id="manualCaptureBtn" onclick="forceCapture()" style="display:none;background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;"><i class="fas fa-camera"></i></button>
+                </div>
             </div>
 
             <!-- حاوية الكاميرا تملأ الشاشة -->
@@ -510,14 +514,14 @@
 
             <!-- شريط التعليمات أثناء المسح -->
             <div id="scanner-bottom-bar" style="position:absolute;bottom:0;left:0;width:100%;padding:15px;background:rgba(0,0,0,0.75);z-index:20;text-align:center;">
-                <p id="scanner-instruction" style="color:white;font-weight:bold;font-size:1rem;margin:0;">قم بمطابقة المربعات الأربعة للالتقاط</p>
+                <p id="scanner-instruction" style="color:white;font-weight:bold;font-size:1rem;margin:0;">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p>
             </div>
             <!-- شريط النتيجة بعد الالتقاط -->
-            <div id="result-top-bar" style="display:none;position:absolute;top:0;left:0;width:100%;padding:70px 15px 20px;background:rgba(0,0,0,0.9);z-index:25;text-align:center;">
-                <div id="scanned-feedback" style="color:#22c55e;font-size:1.6rem;font-weight:bold;margin-bottom:20px;"></div>
+            <div id="result-top-bar" style="display:none;position:absolute;top:0;left:0;width:100%;padding:70px 15px 20px;background:rgba(0,0,0,0.92);z-index:25;text-align:center;">
+                <div id="scanned-feedback" style="color:#22c55e;font-size:1.7rem;font-weight:bold;margin-bottom:22px;"></div>
                 <div style="display:flex;justify-content:center;gap:15px;">
-                    <button class="btn btn-warning" onclick="retakePhoto()" style="padding:14px 30px;font-size:1rem;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
-                    <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding:14px 30px;font-size:1rem;"><i class="fas fa-check"></i> حفظ النتيجة</button>
+                    <button class="btn btn-warning" onclick="retakePhoto()" style="padding:14px 28px;font-size:1rem;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
+                    <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding:14px 28px;font-size:1rem;"><i class="fas fa-check"></i> حفظ النتيجة</button>
                 </div>
             </div>
         </div>
@@ -1159,52 +1163,30 @@ function editExamSetup(id) {
         }
 
         function extractBubbleCoordinates() {
-            // حساب رياضي مباشر — يتجنب مشكلة print-wrapper خارج الشاشة (-9999px)
-            // أبعاد الورقة المعروفة ثابتة في CSS
-            const SHEET_W    = 800;
-            const SHEET_H    = 1131;
-            const MRK_MARGIN = 20;    // هامش المربع من حافة الورقة
-            const BUBBLE_D   = 22;    // قطر الدائرة
-
-            // المنطقة المرجعية = من الحافة الخارجية لـ tl إلى الحافة الخارجية لـ br
-            const refLeft   = MRK_MARGIN;
-            const refTop    = MRK_MARGIN;
-            const refWidth  = SHEET_W - MRK_MARGIN * 2;  // 760
-            const refHeight = SHEET_H - MRK_MARGIN * 2;  // 1091
-
-            const bubbleRadiusRatio = (BUBBLE_D / 2) / refWidth;  // ~0.01447
-
-            // نقل الورقة لمكان مرئي مؤقتاً لقراءة getBoundingClientRect بشكل صحيح
             const wrapper = document.getElementById('print-wrapper');
             const sh = document.querySelector('.omr-sheet');
-            const origWrapperStyle = wrapper.getAttribute('style') || '';
-            wrapper.setAttribute('style', 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;z-index:-1;');
+            const origStyle = wrapper.getAttribute('style') || '';
+            wrapper.setAttribute('style','position:fixed;top:0;left:0;opacity:0;pointer-events:none;z-index:-1;width:800px;');
             sh.style.display = 'block';
-
-            const shRect   = sh.getBoundingClientRect();
-            const scaleX   = shRect.width  / SHEET_W;
-            const scaleY   = shRect.height / SHEET_H;
-
-            const boxLeft   = shRect.left + refLeft  * scaleX;
-            const boxTop    = shRect.top  + refTop   * scaleY;
-            const boxWidth  = refWidth  * scaleX;
-            const boxHeight = refHeight * scaleY;
-
+            const tl  = sh.querySelector('.marker-tl').getBoundingClientRect();
+            const tr  = sh.querySelector('.marker-tr').getBoundingClientRect();
+            const bl  = sh.querySelector('.marker-bl').getBoundingClientRect();
+            const boxLeft = tl.left, boxTop = tl.top;
+            const boxWidth = tr.right - tl.left, boxHeight = bl.bottom - tl.top;
+            const sB = sh.querySelector('.omr-bubble-mark');
+            const bW = sB ? sB.getBoundingClientRect().width : 22;
+            const bubbleRadiusRatio = (bW / 2) / boxWidth;
             const bubbles = document.querySelectorAll('.omr-bubble-mark');
-            const layout  = { _bubbleRadiusRatio: bubbleRadiusRatio };
+            const layout = { _bubbleRadiusRatio: bubbleRadiusRatio };
             bubbles.forEach(b => {
                 const rB = b.getBoundingClientRect();
                 const cx = (rB.left + rB.width/2  - boxLeft) / boxWidth;
                 const cy = (rB.top  + rB.height/2 - boxTop)  / boxHeight;
-                const q  = b.getAttribute('data-q');
-                const o  = b.getAttribute('data-opt');
+                const q = b.getAttribute('data-q'), o = b.getAttribute('data-opt');
                 if (!layout[q]) layout[q] = {};
                 layout[q][o] = { x: cx, y: cy };
             });
-
-            // إعادة الورقة لمكانها الأصلي
-            wrapper.setAttribute('style', origWrapperStyle);
-
+            wrapper.setAttribute('style', origStyle);
             return layout;
         }
 
@@ -1449,6 +1431,23 @@ function editExamSetup(id) {
         let scanAnimationFrame = null;
         let isScanning = false;
         let stabilizationFrames = 0;
+        let isAutoMode = true;
+
+        function toggleScanMode() {
+            isAutoMode = !isAutoMode;
+            const label  = document.getElementById('autoModeLabel');
+            const btn    = document.getElementById('autoModeBtn');
+            const camBtn = document.getElementById('manualCaptureBtn');
+            if (isAutoMode) {
+                label.innerText = 'تلقائي'; btn.style.background = 'rgba(255,255,255,0.15)';
+                camBtn.style.display = 'none';
+                document.getElementById('scanner-instruction').innerText = 'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';
+            } else {
+                label.innerText = 'يدوي'; btn.style.background = 'rgba(245,158,11,0.6)';
+                camBtn.style.display = 'block';
+                document.getElementById('scanner-instruction').innerText = 'اضغط أيقونة الكاميرا للتقاط الصورة يدوياً';
+            }
+        }
 
         function playShutterSound() {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1484,14 +1483,16 @@ function editExamSetup(id) {
             document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; 
             document.getElementById('scannerModal').style.display='flex';
            
-            document.getElementById('camera-container').style.display='block'; 
+            document.getElementById('camera-container').style.display='block';
             document.getElementById('preview-canvas').style.display='none';
-            document.getElementById('result-top-bar').style.display='none';
             document.getElementById('video-feed').style.display='block';
+            document.getElementById('result-top-bar').style.display='none';
+            document.getElementById('scanner-bottom-bar').style.display='block';
             document.getElementById('scanned-feedback').innerText='';
-            document.getElementById('scanner-instruction').innerText = 'قم بمطابقة المربعات الأربعة للالتقاط';
-            document.getElementById('scan-line').style.display='block'; 
-            document.getElementById('guide-box').style.display='block'; 
+            document.getElementById('scanner-instruction').innerText = isAutoMode ? 'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر' : 'اضغط أيقونة الكاميرا للتقاط الصورة يدوياً';
+            document.getElementById('scan-line').style.display='block';
+            document.getElementById('guide-box').style.display='block';
+            document.getElementById('manualCaptureBtn').style.display = isAutoMode ? 'none' : 'block';
             
             const cornersArray =['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'];
             cornersArray.forEach(id => {
@@ -1603,23 +1604,20 @@ function editExamSetup(id) {
             const stabBar = document.getElementById('stabilization-bar');
 
 
-// مدة الثبات: 22 إطار (حوالي 0.73 ثانية) للتأكد من ثبات الصورة تماماً
-            if(alignedCount === 4) {
+            if (!isAutoMode) {
+                stabilizationFrames = 0; stabBar.style.width = '0%';
+                scanAnimationFrame = requestAnimationFrame(scanLoop); return;
+            }
+            if (alignedCount === 4) {
                 stabilizationFrames++;
-                stabBar.style.width = (stabilizationFrames / 22 * 100) + '%';
-                
-                if(stabilizationFrames >= 22) {
-
-                    isScanning = false;
-                    playShutterSound();
+                stabBar.style.width = (stabilizationFrames / 35 * 100) + '%';
+                if (stabilizationFrames >= 35) {
+                    isScanning = false; playShutterSound();
                     stabBar.style.width = '0%';
                     setTimeout(() => captureAndProcess(), 100);
-                } else {
-                    scanAnimationFrame = requestAnimationFrame(scanLoop);
-                }
+                } else { scanAnimationFrame = requestAnimationFrame(scanLoop); }
             } else {
-                stabilizationFrames = 0;
-                stabBar.style.width = '0%';
+                stabilizationFrames = 0; stabBar.style.width = '0%';
                 scanAnimationFrame = requestAnimationFrame(scanLoop);
             }
         }
@@ -1637,76 +1635,80 @@ function editExamSetup(id) {
             const rv = video.getBoundingClientRect();
             const rg = document.getElementById('guide-box').getBoundingClientRect();
             const vw = video.videoWidth, vh = video.videoHeight;
-
-            const tlNative = getNativeCoords(rg.left - rv.left, rg.top - rv.top, rv, vw, vh);
-            const brNative = getNativeCoords(rg.right - rv.left, rg.bottom - rv.top, rv, vw, vh);
-            const cropX = tlNative.x, cropY = tlNative.y;
-            const cropW = brNative.x - tlNative.x;
-            const cropH = brNative.y - tlNative.y;
-
-            // رسم الصورة الخام على canvas المعروض
-            canvas.width = cropW; canvas.height = cropH;
+            const tlN = getNativeCoords(rg.left-rv.left, rg.top-rv.top, rv, vw, vh);
+            const brN = getNativeCoords(rg.right-rv.left, rg.bottom-rv.top, rv, vw, vh);
+            const cropX=tlN.x, cropY=tlN.y, cropW=brN.x-tlN.x, cropH=brN.y-tlN.y;
+            canvas.width=cropW; canvas.height=cropH;
             ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-
-            // نسخة نظيفة للقراءة فقط بدون أي رسومات
             const cleanCanvas = document.createElement('canvas');
-            cleanCanvas.width = cropW; cleanCanvas.height = cropH;
+            cleanCanvas.width=cropW; cleanCanvas.height=cropH;
             const cleanCtx = cleanCanvas.getContext('2d');
             cleanCtx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-
-            video.style.display = 'none';
-            document.getElementById('guide-box').style.display = 'none';
-            canvas.style.display = 'block';
-
-            const lay = AppState.activeScan.exam.layout;
-            const key = AppState.activeScan.exam.answerKey;
-            let fc = {}, tot = 0;
-
-            // حساب نصف القطر من النسبة المحفوظة في layout
-            const ratio = (lay._bubbleRadiusRatio && lay._bubbleRadiusRatio > 0)
-                          ? lay._bubbleRadiusRatio : (11/800);
-            const bubbleRadius = Math.max(Math.round(ratio * cropW), 5);
-
-            for (let q in lay) {
-                if (q === '_bubbleRadiusRatio') continue;
-                let selectedOpts = [];
-
-                for (let o in lay[q]) {
-                    const px = Math.round(lay[q][o].x * cropW);
-                    const py = Math.round(lay[q][o].y * cropH);
-
-                    // قراءة الظلام من النسخة النظيفة فقط
-                    const darkness = measureDarkness(cleanCtx, px, py, bubbleRadius, 128);
-
-                    // دائرة زرقاء خفيفة للتحقق البصري
-                    ctx.beginPath(); ctx.arc(px, py, bubbleRadius, 0, 2*Math.PI);
-                    ctx.strokeStyle = 'rgba(100,149,237,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
-
-                    if (darkness > 0.12) {
-                        selectedOpts.push({opt: o, px, py});
+            video.style.display='none';
+            document.getElementById('guide-box').style.display='none';
+            canvas.style.display='block';
+            const lay=AppState.activeScan.exam.layout, key=AppState.activeScan.exam.answerKey;
+            let fc={}, tot=0;
+            const ratio=(lay._bubbleRadiusRatio&&lay._bubbleRadiusRatio>0)?lay._bubbleRadiusRatio:(11/800);
+            const bubbleRadius=Math.max(Math.round(ratio*cropW*1.3),8);
+            // رسم دوائر صفراء للإجابات الصحيحة (مثل ZipGrade)
+            for(let q in lay){
+                if(q==='_bubbleRadiusRatio')continue;
+                const cOpts=Object.keys(key[q]||{});
+                for(let o in lay[q]){
+                    const px=Math.round(lay[q][o].x*cropW), py=Math.round(lay[q][o].y*cropH);
+                    if(cOpts.includes(o)){
+                        ctx.beginPath();ctx.arc(px,py,bubbleRadius,0,2*Math.PI);
+                        ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.stroke();
                     }
                 }
-
-                if (selectedOpts.length > 0) {
-                    fc[q] = selectedOpts.map(s => s.opt).join(', ');
-                    let ptsEarned = 0;
-                    selectedOpts.forEach(so => {
-                        const isCorrect = key[q] && key[q][so.opt];
-                        if (isCorrect) ptsEarned += key[q][so.opt] || 1;
-                        ctx.beginPath(); ctx.arc(so.px, so.py, bubbleRadius, 0, 2*Math.PI);
-                        ctx.strokeStyle = isCorrect ? '#22c55e' : '#ef4444';
-                        ctx.lineWidth = 5; ctx.stroke();
+            }
+            // تحليل الإجابات
+            for(let q in lay){
+                if(q==='_bubbleRadiusRatio')continue;
+                let filled=[];
+                for(let o in lay[q]){
+                    const px=Math.round(lay[q][o].x*cropW), py=Math.round(lay[q][o].y*cropH);
+                    if(measureDarkness(cleanCtx,px,py,bubbleRadius,128)>0.12)
+                        filled.push({opt:o,px,py});
+                }
+                if(filled.length>0){
+                    fc[q]=filled.map(s=>s.opt).join(', ');
+                    const cOpts=Object.keys(key[q]||{});
+                    filled.forEach(so=>{
+                        const ok=cOpts.includes(so.opt);
+                        ctx.beginPath();ctx.arc(so.px,so.py,bubbleRadius,0,2*Math.PI);
+                        ctx.strokeStyle=ok?'#22c55e':'#ef4444';ctx.lineWidth=5;ctx.stroke();
+                        if(ok){ctx.beginPath();ctx.arc(so.px,so.py,bubbleRadius-3,0,2*Math.PI);
+                               ctx.fillStyle='rgba(34,197,94,0.25)';ctx.fill();}
                     });
-                    tot += ptsEarned;
                 }
             }
+            tot=calculateScore(fc,key,lay);
+            AppState.activeScan.extChoices=fc; AppState.activeScan.tot=tot;
+            const emoji=String.fromCodePoint(0x2705);
+            document.getElementById('scanned-feedback').innerText=emoji+' النتيجة: '+tot+' نقطة';
+            document.getElementById('scanner-bottom-bar').style.display='none';
+            document.getElementById('result-top-bar').style.display='block';
+        }
 
-            AppState.activeScan.extChoices = fc;
-            AppState.activeScan.tot = tot;
-            const emoji = String.fromCodePoint(0x2705);
-            document.getElementById('scanned-feedback').innerText = emoji + ' النتيجة: ' + tot + ' نقطة';
-            document.getElementById('scanner-bottom-bar').style.display = 'none';
-            document.getElementById('result-top-bar').style.display = 'block';
+        function calculateScore(choices, answerKey, lay) {
+            let total=0;
+            for(let q in answerKey){
+                if(q==='_bubbleRadiusRatio')continue;
+                const cOpts=Object.keys(answerKey[q]), cCount=cOpts.length;
+                const sOpts=(choices[q]||'').split(', ').filter(Boolean);
+                if(sOpts.length===0)continue;
+                if(cCount===1){
+                    if(sOpts.length===1&&sOpts[0]===cOpts[0])total+=answerKey[q][cOpts[0]];
+                } else {
+                    const ptEach=answerKey[q][cOpts[0]]||1;
+                    let earned=0, wrong=0;
+                    sOpts.forEach(o=>{cOpts.includes(o)?earned+=ptEach:wrong++;});
+                    total+=Math.max(0,earned-wrong*ptEach);
+                }
+            }
+            return Math.round(total*10)/10;
         }
 
 
@@ -1739,20 +1741,21 @@ function editExamSetup(id) {
         }
 
 function retakePhoto() {
-            canvas.style.display = 'none';
-            document.getElementById('video-feed').style.display = 'block';
-            document.getElementById('guide-box').style.display = 'block';
-            document.getElementById('camera-container').style.display = 'block';
-            document.getElementById('result-top-bar').style.display = 'none';
-            document.getElementById('scanner-bottom-bar').style.display = 'block';
-            document.getElementById('scanned-feedback').innerText = '';
-            document.getElementById('scan-line').style.display = 'block';
-            document.getElementById('scanner-instruction').innerText = "قم بمطابقة المربعات الأربعة للالتقاط";
-            stabilizationFrames = 0;
-            isScanning = true;
-            scanLoop();
+            canvas.style.display='none';
+            document.getElementById('video-feed').style.display='block';
+            document.getElementById('guide-box').style.display='block';
+            document.getElementById('camera-container').style.display='block';
+            document.getElementById('result-top-bar').style.display='none';
+            document.getElementById('scanner-bottom-bar').style.display='block';
+            document.getElementById('scanned-feedback').innerText='';
+            document.getElementById('scan-line').style.display='block';
+            document.getElementById('scanner-instruction').innerText=isAutoMode
+                ?'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر'
+                :'اضغط أيقونة الكاميرا للتقاط الصورة يدوياً';
+            stabilizationFrames=0; isScanning=true; scanLoop();
         }
 
+        
         function stopScanner() { 
             isScanning = false;
             if(scanAnimationFrame) cancelAnimationFrame(scanAnimationFrame);
@@ -1761,22 +1764,17 @@ function retakePhoto() {
         }
 
         async function confirmSaveScanned() {
-            const {exam, studentId, extChoices} = AppState.activeScan, eid=exam.id;
-            let res = AppState.results[eid]?.[studentId] || {id:`${eid}___${studentId}`, examId:eid, studentId:studentId};
+            const {exam,studentId,extChoices}=AppState.activeScan, eid=exam.id;
+            let res=AppState.results[eid]?.[studentId]||{id:`${eid}___${studentId}`,examId:eid,studentId};
             res.choices=extChoices; res.scores={};
-            
-            for(let i=1; i<=exam.qCount; i++) { 
-                let q=`Q${i}`, cStr=extChoices[q]; 
-                let score = 0;
-                if(cStr && exam.answerKey[q]) {
-                    let choices = cStr.split(', ');
-                    choices.forEach(c => {
-                        if(exam.answerKey[q][c]) score += exam.answerKey[q][c];
-                    });
-                }
-                res.scores[q] = score; 
+            for(let i=1;i<=exam.qCount;i++){
+                const q='Q'+i;
+                res.scores[q]=calculateScore({[q]:extChoices[q]||''},{[q]:exam.answerKey[q]||{}},{[q]:exam.layout?.[q]||{}});
             }
-            await IDB.put('results', res); stopScanner(); renderResultsTable();
+            res.total=Math.round(Object.values(res.scores).reduce((a,b)=>a+b,0)*10)/10;
+            if(!AppState.results[eid])AppState.results[eid]={};
+            AppState.results[eid][studentId]=res;
+            await IDB.put('results',res); stopScanner(); renderResultsTable();
         }
 
 
