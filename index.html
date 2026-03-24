@@ -509,15 +509,15 @@
             <canvas id="analysis-canvas" style="display:none;"></canvas>
 
             <!-- شريط التعليمات أثناء المسح -->
-            <div id="scanner-bottom-bar" style="position:absolute; bottom:0; left:0; width:100%; padding:15px; background:rgba(0,0,0,0.7); z-index:20; text-align:center;">
-                <p id="scanner-instruction" style="color:white; font-weight:bold; font-size:1rem; margin:0;">قم بمطابقة المربعات الأربعة للالتقاط</p>
+            <div id="scanner-bottom-bar" style="position:absolute;bottom:0;left:0;width:100%;padding:15px;background:rgba(0,0,0,0.75);z-index:20;text-align:center;">
+                <p id="scanner-instruction" style="color:white;font-weight:bold;font-size:1rem;margin:0;">قم بمطابقة المربعات الأربعة للالتقاط</p>
             </div>
-            <!-- شريط النتيجة والأزرار بعد الالتقاط -->
-            <div id="result-top-bar" style="display:none; position:absolute; top:0; left:0; width:100%; padding:70px 15px 15px; background:rgba(0,0,0,0.88); z-index:25; text-align:center;">
-                <div id="scanned-feedback" style="color:#22c55e; font-size:1.6rem; font-weight:bold; margin-bottom:18px;"></div>
-                <div style="display:flex; justify-content:center; gap:15px;">
-                    <button class="btn btn-warning" onclick="retakePhoto()" style="padding:12px 28px; font-size:1rem;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
-                    <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding:12px 28px; font-size:1rem;"><i class="fas fa-check"></i> حفظ النتيجة</button>
+            <!-- شريط النتيجة بعد الالتقاط -->
+            <div id="result-top-bar" style="display:none;position:absolute;top:0;left:0;width:100%;padding:70px 15px 20px;background:rgba(0,0,0,0.9);z-index:25;text-align:center;">
+                <div id="scanned-feedback" style="color:#22c55e;font-size:1.6rem;font-weight:bold;margin-bottom:20px;"></div>
+                <div style="display:flex;justify-content:center;gap:15px;">
+                    <button class="btn btn-warning" onclick="retakePhoto()" style="padding:14px 30px;font-size:1rem;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
+                    <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding:14px 30px;font-size:1rem;"><i class="fas fa-check"></i> حفظ النتيجة</button>
                 </div>
             </div>
         </div>
@@ -1159,36 +1159,52 @@ function editExamSetup(id) {
         }
 
         function extractBubbleCoordinates() {
-            const sh = document.querySelector('.omr-sheet'); 
+            // حساب رياضي مباشر — يتجنب مشكلة print-wrapper خارج الشاشة (-9999px)
+            // أبعاد الورقة المعروفة ثابتة في CSS
+            const SHEET_W    = 800;
+            const SHEET_H    = 1131;
+            const MRK_MARGIN = 20;    // هامش المربع من حافة الورقة
+            const BUBBLE_D   = 22;    // قطر الدائرة
+
+            // المنطقة المرجعية = من الحافة الخارجية لـ tl إلى الحافة الخارجية لـ br
+            const refLeft   = MRK_MARGIN;
+            const refTop    = MRK_MARGIN;
+            const refWidth  = SHEET_W - MRK_MARGIN * 2;  // 760
+            const refHeight = SHEET_H - MRK_MARGIN * 2;  // 1091
+
+            const bubbleRadiusRatio = (BUBBLE_D / 2) / refWidth;  // ~0.01447
+
+            // نقل الورقة لمكان مرئي مؤقتاً لقراءة getBoundingClientRect بشكل صحيح
+            const wrapper = document.getElementById('print-wrapper');
+            const sh = document.querySelector('.omr-sheet');
+            const origWrapperStyle = wrapper.getAttribute('style') || '';
+            wrapper.setAttribute('style', 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;z-index:-1;');
             sh.style.display = 'block';
-            
-            // المرجع: الحواف الخارجية للمربعات الأربعة (تطابق ما يقطعه captureAndProcess)
-            const tl = sh.querySelector('.marker-tl').getBoundingClientRect();
-            const tr = sh.querySelector('.marker-tr').getBoundingClientRect();
-            const bl = sh.querySelector('.marker-bl').getBoundingClientRect();
-            const br = sh.querySelector('.marker-br').getBoundingClientRect();
-            
-            const boxLeft   = tl.left;
-            const boxTop    = tl.top;
-            const boxWidth  = tr.right - tl.left;
-            const boxHeight = bl.bottom - tl.top;
-            
-            // حفظ نسبة نصف قطر الدائرة لاستخدامها لاحقاً
-            const sampleBubble = sh.querySelector('.omr-bubble-mark');
-            const bubbleW = sampleBubble ? sampleBubble.getBoundingClientRect().width : 22;
-            const bubbleRadiusRatio = (bubbleW / 2) / boxWidth;
-            
+
+            const shRect   = sh.getBoundingClientRect();
+            const scaleX   = shRect.width  / SHEET_W;
+            const scaleY   = shRect.height / SHEET_H;
+
+            const boxLeft   = shRect.left + refLeft  * scaleX;
+            const boxTop    = shRect.top  + refTop   * scaleY;
+            const boxWidth  = refWidth  * scaleX;
+            const boxHeight = refHeight * scaleY;
+
             const bubbles = document.querySelectorAll('.omr-bubble-mark');
-            const layout = { _bubbleRadiusRatio: bubbleRadiusRatio };
+            const layout  = { _bubbleRadiusRatio: bubbleRadiusRatio };
             bubbles.forEach(b => {
                 const rB = b.getBoundingClientRect();
                 const cx = (rB.left + rB.width/2  - boxLeft) / boxWidth;
                 const cy = (rB.top  + rB.height/2 - boxTop)  / boxHeight;
-                const q = b.getAttribute('data-q');
-                const o = b.getAttribute('data-opt');
-                if(!layout[q]) layout[q] = {}; 
-                layout[q][o] = {x: cx, y: cy};
+                const q  = b.getAttribute('data-q');
+                const o  = b.getAttribute('data-opt');
+                if (!layout[q]) layout[q] = {};
+                layout[q][o] = { x: cx, y: cy };
             });
+
+            // إعادة الورقة لمكانها الأصلي
+            wrapper.setAttribute('style', origWrapperStyle);
+
             return layout;
         }
 
@@ -1468,15 +1484,14 @@ function editExamSetup(id) {
             document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; 
             document.getElementById('scannerModal').style.display='flex';
            
-            document.getElementById('camera-container').style.display='block';
+            document.getElementById('camera-container').style.display='block'; 
             document.getElementById('preview-canvas').style.display='none';
-            document.getElementById('video-feed').style.display='block';
             document.getElementById('result-top-bar').style.display='none';
-            document.getElementById('scanner-bottom-bar').style.display='block';
+            document.getElementById('video-feed').style.display='block';
             document.getElementById('scanned-feedback').innerText='';
             document.getElementById('scanner-instruction').innerText = 'قم بمطابقة المربعات الأربعة للالتقاط';
-            document.getElementById('scan-line').style.display='block';
-            document.getElementById('guide-box').style.display='block';
+            document.getElementById('scan-line').style.display='block'; 
+            document.getElementById('guide-box').style.display='block'; 
             
             const cornersArray =['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'];
             cornersArray.forEach(id => {
@@ -1622,13 +1637,14 @@ function editExamSetup(id) {
             const rv = video.getBoundingClientRect();
             const rg = document.getElementById('guide-box').getBoundingClientRect();
             const vw = video.videoWidth, vh = video.videoHeight;
+
             const tlNative = getNativeCoords(rg.left - rv.left, rg.top - rv.top, rv, vw, vh);
             const brNative = getNativeCoords(rg.right - rv.left, rg.bottom - rv.top, rv, vw, vh);
             const cropX = tlNative.x, cropY = tlNative.y;
             const cropW = brNative.x - tlNative.x;
             const cropH = brNative.y - tlNative.y;
 
-            // رسم الصورة على canvas الرئيسي
+            // رسم الصورة الخام على canvas المعروض
             canvas.width = cropW; canvas.height = cropH;
             ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
@@ -1647,27 +1663,30 @@ function editExamSetup(id) {
             let fc = {}, tot = 0;
 
             // حساب نصف القطر من النسبة المحفوظة في layout
-            let bubbleRadius;
-            if (lay._bubbleRadiusRatio && lay._bubbleRadiusRatio > 0) {
-                bubbleRadius = Math.round(lay._bubbleRadiusRatio * cropW);
-            } else {
-                bubbleRadius = Math.round((11 / 800) * cropW);
-            }
-            bubbleRadius = Math.max(bubbleRadius, 5);
+            const ratio = (lay._bubbleRadiusRatio && lay._bubbleRadiusRatio > 0)
+                          ? lay._bubbleRadiusRatio : (11/800);
+            const bubbleRadius = Math.max(Math.round(ratio * cropW), 5);
 
             for (let q in lay) {
                 if (q === '_bubbleRadiusRatio') continue;
                 let selectedOpts = [];
+
                 for (let o in lay[q]) {
                     const px = Math.round(lay[q][o].x * cropW);
                     const py = Math.round(lay[q][o].y * cropH);
+
                     // قراءة الظلام من النسخة النظيفة فقط
                     const darkness = measureDarkness(cleanCtx, px, py, bubbleRadius, 128);
-                    // دائرة زرقاء للتحقق البصري
+
+                    // دائرة زرقاء خفيفة للتحقق البصري
                     ctx.beginPath(); ctx.arc(px, py, bubbleRadius, 0, 2*Math.PI);
                     ctx.strokeStyle = 'rgba(100,149,237,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
-                    if (darkness > 0.12) { selectedOpts.push({opt: o, px, py}); }
+
+                    if (darkness > 0.12) {
+                        selectedOpts.push({opt: o, px, py});
+                    }
                 }
+
                 if (selectedOpts.length > 0) {
                     fc[q] = selectedOpts.map(s => s.opt).join(', ');
                     let ptsEarned = 0;
@@ -1681,12 +1700,15 @@ function editExamSetup(id) {
                     tot += ptsEarned;
                 }
             }
+
             AppState.activeScan.extChoices = fc;
             AppState.activeScan.tot = tot;
-            document.getElementById('scanned-feedback').innerText = '✅ النتيجة: ' + tot + ' نقطة';
+            const emoji = String.fromCodePoint(0x2705);
+            document.getElementById('scanned-feedback').innerText = emoji + ' النتيجة: ' + tot + ' نقطة';
             document.getElementById('scanner-bottom-bar').style.display = 'none';
             document.getElementById('result-top-bar').style.display = 'block';
         }
+
 
         function measureDarkness(ctx, cx, cy, rad, threshold = 128) {
             cx = Math.round(cx); cy = Math.round(cy); rad = Math.round(rad);
@@ -1716,15 +1738,15 @@ function editExamSetup(id) {
             return t===0 ? 0 : dC/t;
         }
 
-function retakePhoto() { 
-            document.getElementById('preview-canvas').style.display='none';
-            document.getElementById('video-feed').style.display='block';
-            document.getElementById('guide-box').style.display='block'; 
-            document.getElementById('camera-container').style.display='block'; 
-            document.getElementById('result-top-bar').style.display='none';
-            document.getElementById('scanner-bottom-bar').style.display='block';
-            document.getElementById('scanned-feedback').innerText=''; 
-            document.getElementById('scan-line').style.display='block';
+function retakePhoto() {
+            canvas.style.display = 'none';
+            document.getElementById('video-feed').style.display = 'block';
+            document.getElementById('guide-box').style.display = 'block';
+            document.getElementById('camera-container').style.display = 'block';
+            document.getElementById('result-top-bar').style.display = 'none';
+            document.getElementById('scanner-bottom-bar').style.display = 'block';
+            document.getElementById('scanned-feedback').innerText = '';
+            document.getElementById('scan-line').style.display = 'block';
             document.getElementById('scanner-instruction').innerText = "قم بمطابقة المربعات الأربعة للالتقاط";
             stabilizationFrames = 0;
             isScanning = true;
