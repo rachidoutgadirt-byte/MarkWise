@@ -128,16 +128,25 @@
         .comp-D { background: var(--danger); color: white; padding: 2px 6px; border-radius: 4px; font-weight:bold; }
 
         #print-wrapper { position: absolute; top: -9999px; left: -9999px; }
-        .omr-sheet { width: 800px; height: 1131px; background: white; position: relative; padding: 50px; color: black; font-family: Arial, sans-serif; box-sizing: border-box; direction: rtl;}
-        .marker { position: absolute; width: 30px; height: 30px; background: black; }
-        .marker-tl { top: 20px; left: 20px; } .marker-tr { top: 20px; right: 20px; }
-        .marker-bl { bottom: 20px; left: 20px; } .marker-br { bottom: 20px; right: 20px; }
-        .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px;}
-        .sheet-title { text-align: center; flex: 1; }
-        .sheet-info { width: 280px; font-size: 16px; line-height: 2; text-align: right;}
-        .omr-table { width: 100%; border-collapse: collapse; text-align: center; border: 2px solid #000; }
-        .omr-table th, .omr-table td { border: 1px solid #000; padding: 10px; font-size: 16px; }
-        .bubble { width: 22px; height: 22px; border: 2px solid #000; border-radius: 50%; margin: auto; display: inline-block;}
+        /* ورقة إجابة ZipGrade-Style: أبعاد A4 بدقة 96dpi */
+        .omr-sheet { 
+            width: 794px; height: 1123px; 
+            background: white; position: relative; 
+            font-family: Arial, sans-serif; box-sizing: border-box; 
+            overflow: hidden;
+        }
+        /* المربعات السوداء في الزوايا — 25×25px مع هامش 15px */
+        .marker { position: absolute; width: 25px; height: 25px; background: black; }
+        .marker-tl { top: 15px; left: 15px; }
+        .marker-tr { top: 15px; right: 15px; }
+        .marker-bl { bottom: 15px; left: 15px; }
+        .marker-br { bottom: 15px; right: 15px; }
+        /* دوائر الإجابة: ثابتة الحجم 20×20px */
+        .omr-bubble-mark {
+            width: 20px; height: 20px;
+            border: 2px solid #333; border-radius: 50%;
+            display: inline-block; box-sizing: border-box;
+        }
 
 /* --- Dropdown Styles --- */
         .dropdown {
@@ -479,7 +488,7 @@
         <div class="modal-content" style="width: 100vw; height: 100vh; max-width: none; max-height: none; padding: 0; border-radius: 0; display: flex; flex-direction: column; background: #000; position: relative; overflow: hidden;">
             
             <!-- الشريط العلوي -->
-            <div style="position:absolute;top:0;left:0;width:100%;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.55);z-index:30;">
+            <div style="position:absolute;top:0;left:0;width:100%;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.6);z-index:30;">
                 <button onclick="stopScanner()" style="background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
                 <h3 id="scannerTitle" style="color:white;margin:0;font-size:1.1rem;">Scanning</h3>
                 <div style="display:flex;align-items:center;gap:8px;">
@@ -561,27 +570,15 @@
         </div>
     </div>
 
-    <!-- Print Template -->
+    <!-- Print Template: ZipGrade-Style — دوائر بمواضع رياضية ثابتة -->
     <div id="print-wrapper">
         <div class="omr-sheet" id="omr-print-template">
-            <div class="marker marker-tl"></div> <div class="marker marker-tr"></div>
-            <div class="marker marker-bl"></div> <div class="marker marker-br"></div>
-            <div class="sheet-header">
-                <div class="sheet-info">
-                    <div>الاسم الكامل: .......................................</div>
-                    <div id="print-class-name">القسم: .......................................</div>
-                    <div>ر.ت: [.....] &nbsp;&nbsp; مسار: [ ][ ][ ][ ][ ][ ][ ]</div>
-                </div>
-                <div class="sheet-title">
-                    <h2 id="print-exam-name">اسم الامتحان</h2>
-                    <p id="print-exam-year">السنة الدراسية: 2025/2026</p>
-                </div>
-            </div>
-            <p style="text-align:center; font-weight:bold; margin-bottom:15px; background:#f0f0f0; padding:10px; border:1px solid #000;">تعليمات: ظلل الدائرة بالكامل أو ضع علامة X واضحة.</p>
-            <table class="omr-table" id="omr-print-table">
-                <thead id="omr-print-thead"></thead>
-                <tbody id="omr-print-tbody"></tbody>
-            </table>
+            <div class="marker marker-tl"></div>
+            <div class="marker marker-tr"></div>
+            <div class="marker marker-bl"></div>
+            <div class="marker marker-br"></div>
+            <!-- محتوى الورقة يُبنى بـ JS في buildPrintTemplate -->
+            <div id="omr-sheet-content" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
         </div>
     </div>
 
@@ -1062,6 +1059,7 @@ const qCount = parseInt(document.getElementById('examQCount').value), optCount =
         async function saveExam() {
             buildPrintTemplate(currentSetup);
             setTimeout(async () => {
+                AppState._lastSavedExam = currentSetup;
                 currentSetup.layout = extractBubbleCoordinates();
                 
                 const existingIdx = AppState.exams.findIndex(e => e.id === currentSetup.id);
@@ -1143,50 +1141,107 @@ function editExamSetup(id) {
             // التحديث سيتم تلقائياً عبر updateResultExams()
         }
 
-        // === Print & Render ===
+        // === Print & Render (ZipGrade-Style) ===
+        // أبعاد الورقة الثابتة (بالبكسل عند 96dpi)
+        const SHEET = {
+            W: 794, H: 1123,       // A4
+            MRK: 25, MRK_OFF: 15,  // مربع أسود 25px، هامش 15px
+            BUBBLE_D: 20,           // قطر الدائرة
+            HEADER_H: 110,          // ارتفاع رأس الورقة
+            COL_GAP: 32,            // المسافة الأفقية بين مراكز الدوائر
+            ROW_GAP: 32,            // المسافة العمودية بين الأسئلة
+            LEFT_PAD: 55,           // هامش أيسر للأسئلة
+            COLS_PER_BLOCK: 2,      // عدد أعمدة الأسئلة في الورقة
+        };
+
         function buildPrintTemplate(ex) {
-           document.getElementById('print-exam-name').innerHTML = `${ex.name}<br><span style="font-size:14px; color:#555;">المادة: ${ex.subject || ''} &nbsp;&nbsp;|&nbsp;&nbsp; المرحلة: ${(ex.stage || '').replace('المرحلة ', '')}</span>`;
-
-            document.getElementById('print-exam-year').innerText = `السنة الدراسية: ${ex.year || ''}`;
             const cls = AppState.classes.find(c=>c.id===ex.classId);
+            const optCount = ex.options.length;
+            // حساب عرض كتلة السؤال: رقم + خيارات
+            const blockW = 40 + optCount * SHEET.COL_GAP;
+            const questionsPerCol = Math.ceil(ex.qCount / SHEET.COLS_PER_BLOCK);
+            const usableW = SHEET.W - SHEET.MRK_OFF*2 - SHEET.MRK - 20;
+            const colWidth = Math.floor(usableW / SHEET.COLS_PER_BLOCK);
 
-            document.getElementById('print-class-name').innerText = `القسم: ${cls?cls.name:''}`;
-            let hHTML = `<tr><th>السؤال</th>`; ex.options.forEach(o=>hHTML+=`<th>${o}</th>`);
-            document.getElementById('omr-print-thead').innerHTML = hHTML+`</tr>`;
-            let bHTML='';
-            for(let i=1; i<=ex.qCount; i++) {
-                bHTML+=`<tr><td><strong>${i}</strong></td>`;
-                ex.options.forEach(o=> bHTML+=`<td><div class="bubble omr-bubble-mark" data-q="Q${i}" data-opt="${o}"></div></td>`);
-                bHTML+=`</tr>`;
+            // بناء HTML الورقة
+            let html = `
+            <div style="position:absolute;top:${SHEET.MRK_OFF+5}px;left:${SHEET.MRK_OFF+SHEET.MRK+10}px;right:${SHEET.MRK_OFF+SHEET.MRK+10}px;">
+                <div style="border:2px solid #000;border-radius:4px;padding:6px 10px;margin-bottom:8px;display:flex;gap:10px;align-items:center;">
+                    <span style="font-weight:bold;font-size:13px;">الاسم:</span>
+                    <span style="flex:1;border-bottom:1px solid #999;min-height:18px;"></span>
+                    <span style="font-weight:bold;font-size:13px;">ر.ت:</span>
+                    <span style="width:40px;border-bottom:1px solid #999;"></span>
+                </div>
+                <div style="text-align:center;font-size:14px;font-weight:bold;margin-bottom:4px;">${ex.name} — ${ex.subject||''} — ${ex.stage||''}</div>
+                <div style="text-align:center;font-size:12px;color:#555;margin-bottom:6px;">${cls?cls.name:''} | ${ex.year||''}</div>
+                <div style="text-align:center;font-size:11px;background:#f0f0f0;padding:4px;border:1px solid #ccc;margin-bottom:8px;">ظلّل الدائرة بالكامل أو ضع علامة X واضحة</div>
+            </div>`;
+
+            // رسم الأسئلة في عمودين
+            for (let col = 0; col < SHEET.COLS_PER_BLOCK; col++) {
+                const startQ = col * questionsPerCol + 1;
+                const endQ   = Math.min(startQ + questionsPerCol - 1, ex.qCount);
+                const colX   = SHEET.MRK_OFF + SHEET.MRK + 10 + col * colWidth;
+
+                // رأس الخيارات
+                let headerX = colX + 38;
+                let headerHtml = '';
+                ex.options.forEach((o, oi) => {
+                    headerHtml += `<div style="position:absolute;left:${headerX + oi*SHEET.COL_GAP - 6}px;top:${SHEET.HEADER_H - 14}px;font-size:12px;font-weight:bold;width:20px;text-align:center;">${o}</div>`;
+                });
+                html += headerHtml;
+
+                for (let q = startQ; q <= endQ; q++) {
+                    const rowIdx = q - startQ;
+                    const rowY   = SHEET.HEADER_H + rowIdx * SHEET.ROW_GAP;
+                    // رقم السؤال
+                    html += `<div style="position:absolute;left:${colX}px;top:${rowY}px;font-size:12px;font-weight:bold;width:35px;text-align:left;line-height:20px;">${q}</div>`;
+                    // الدوائر
+                    ex.options.forEach((o, oi) => {
+                        const cx = colX + 38 + oi * SHEET.COL_GAP;
+                        const cy = rowY;
+                        html += `<div class="omr-bubble-mark" data-q="Q${q}" data-opt="${o}"
+                            style="position:absolute;left:${cx - SHEET.BUBBLE_D/2}px;top:${cy}px;
+                                   width:${SHEET.BUBBLE_D}px;height:${SHEET.BUBBLE_D}px;"></div>`;
+                    });
+                }
             }
-            document.getElementById('omr-print-tbody').innerHTML = bHTML;
+
+            document.getElementById('omr-sheet-content').innerHTML = html;
         }
 
         function extractBubbleCoordinates() {
-            const wrapper = document.getElementById('print-wrapper');
-            const sh = document.querySelector('.omr-sheet');
-            const origStyle = wrapper.getAttribute('style') || '';
-            wrapper.setAttribute('style','position:fixed;top:0;left:0;opacity:0;pointer-events:none;z-index:-1;width:800px;');
-            sh.style.display = 'block';
-            const tl  = sh.querySelector('.marker-tl').getBoundingClientRect();
-            const tr  = sh.querySelector('.marker-tr').getBoundingClientRect();
-            const bl  = sh.querySelector('.marker-bl').getBoundingClientRect();
-            const boxLeft = tl.left, boxTop = tl.top;
-            const boxWidth = tr.right - tl.left, boxHeight = bl.bottom - tl.top;
-            const sB = sh.querySelector('.omr-bubble-mark');
-            const bW = sB ? sB.getBoundingClientRect().width : 22;
-            const bubbleRadiusRatio = (bW / 2) / boxWidth;
-            const bubbles = document.querySelectorAll('.omr-bubble-mark');
-            const layout = { _bubbleRadiusRatio: bubbleRadiusRatio };
+            // ============================================================
+            // حساب رياضي صرف من الثوابت المعروفة — بدون getBoundingClientRect
+            // المرجع: المنطقة بين الحواف الخارجية للمربعات الأربعة
+            // tl.left=15, tl.top=15, br.right=794-15=779, br.bottom=1123-15=1108
+            // ============================================================
+            const refLeft   = SHEET.MRK_OFF;                    // 15
+            const refTop    = SHEET.MRK_OFF;                    // 15
+            const refRight  = SHEET.W - SHEET.MRK_OFF;         // 779
+            const refBottom = SHEET.H - SHEET.MRK_OFF;         // 1108
+            const refWidth  = refRight  - refLeft;              // 764
+            const refHeight = refBottom - refTop;               // 1093
+
+            // نصف قطر الدائرة نسبةً إلى العرض المرجعي
+            const bubbleRadiusRatio = (SHEET.BUBBLE_D / 2) / refWidth;
+
+            const ex = AppState.exams.find(e => e.id === document.getElementById('editingExamId').value) || AppState._lastSavedExam;
+            const layout = { _bubbleRadiusRatio: bubbleRadiusRatio, _refData: {refLeft,refTop,refWidth,refHeight} };
+
+            // قراءة مواضع الدوائر من DOM (الآن في مكانها الصحيح بعد buildPrintTemplate)
+            const bubbles = document.querySelectorAll('#omr-sheet-content .omr-bubble-mark');
             bubbles.forEach(b => {
-                const rB = b.getBoundingClientRect();
-                const cx = (rB.left + rB.width/2  - boxLeft) / boxWidth;
-                const cy = (rB.top  + rB.height/2 - boxTop)  / boxHeight;
-                const q = b.getAttribute('data-q'), o = b.getAttribute('data-opt');
+                const styleLeft = parseFloat(b.style.left) + SHEET.BUBBLE_D/2;
+                const styleTop  = parseFloat(b.style.top)  + SHEET.BUBBLE_D/2;
+                // الإحداثيات النسبية من المنطقة المرجعية
+                const cx = (styleLeft - refLeft) / refWidth;
+                const cy = (styleTop  - refTop)  / refHeight;
+                const q  = b.getAttribute('data-q');
+                const o  = b.getAttribute('data-opt');
                 if (!layout[q]) layout[q] = {};
                 layout[q][o] = { x: cx, y: cy };
             });
-            wrapper.setAttribute('style', origStyle);
             return layout;
         }
 
@@ -1439,13 +1494,13 @@ function editExamSetup(id) {
             const btn    = document.getElementById('autoModeBtn');
             const camBtn = document.getElementById('manualCaptureBtn');
             if (isAutoMode) {
-                label.innerText = 'تلقائي'; btn.style.background = 'rgba(255,255,255,0.15)';
-                camBtn.style.display = 'none';
-                document.getElementById('scanner-instruction').innerText = 'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';
+                label.innerText='تلقائي'; btn.style.background='rgba(255,255,255,0.15)';
+                camBtn.style.display='none';
+                document.getElementById('scanner-instruction').innerText='وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';
             } else {
-                label.innerText = 'يدوي'; btn.style.background = 'rgba(245,158,11,0.6)';
-                camBtn.style.display = 'block';
-                document.getElementById('scanner-instruction').innerText = 'اضغط أيقونة الكاميرا للتقاط الصورة يدوياً';
+                label.innerText='يدوي'; btn.style.background='rgba(245,158,11,0.6)';
+                camBtn.style.display='block';
+                document.getElementById('scanner-instruction').innerText='اضغط أيقونة الكاميرا للتقاط الصورة يدوياً';
             }
         }
 
@@ -1489,10 +1544,10 @@ function editExamSetup(id) {
             document.getElementById('result-top-bar').style.display='none';
             document.getElementById('scanner-bottom-bar').style.display='block';
             document.getElementById('scanned-feedback').innerText='';
-            document.getElementById('scanner-instruction').innerText = isAutoMode ? 'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر' : 'اضغط أيقونة الكاميرا للتقاط الصورة يدوياً';
+            document.getElementById('scanner-instruction').innerText=isAutoMode?'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر':'اضغط أيقونة الكاميرا للتقاط الصورة يدوياً';
             document.getElementById('scan-line').style.display='block';
             document.getElementById('guide-box').style.display='block';
-            document.getElementById('manualCaptureBtn').style.display = isAutoMode ? 'none' : 'block';
+            document.getElementById('manualCaptureBtn').style.display=isAutoMode?'none':'block';
             
             const cornersArray =['corner-tl', 'corner-tr', 'corner-bl', 'corner-br'];
             cornersArray.forEach(id => {
@@ -1605,20 +1660,20 @@ function editExamSetup(id) {
 
 
             if (!isAutoMode) {
-                stabilizationFrames = 0; stabBar.style.width = '0%';
-                scanAnimationFrame = requestAnimationFrame(scanLoop); return;
+                stabilizationFrames=0; stabBar.style.width='0%';
+                scanAnimationFrame=requestAnimationFrame(scanLoop); return;
             }
-            if (alignedCount === 4) {
+            if (alignedCount===4) {
                 stabilizationFrames++;
-                stabBar.style.width = (stabilizationFrames / 35 * 100) + '%';
-                if (stabilizationFrames >= 35) {
-                    isScanning = false; playShutterSound();
-                    stabBar.style.width = '0%';
-                    setTimeout(() => captureAndProcess(), 100);
-                } else { scanAnimationFrame = requestAnimationFrame(scanLoop); }
+                stabBar.style.width=(stabilizationFrames/35*100)+'%';
+                if (stabilizationFrames>=35) {
+                    isScanning=false; playShutterSound();
+                    stabBar.style.width='0%';
+                    setTimeout(()=>captureAndProcess(),100);
+                } else { scanAnimationFrame=requestAnimationFrame(scanLoop); }
             } else {
-                stabilizationFrames = 0; stabBar.style.width = '0%';
-                scanAnimationFrame = requestAnimationFrame(scanLoop);
+                stabilizationFrames=0; stabBar.style.width='0%';
+                scanAnimationFrame=requestAnimationFrame(scanLoop);
             }
         }
 
@@ -1632,45 +1687,59 @@ function editExamSetup(id) {
         }
 
         function captureAndProcess() {
-            const rv = video.getBoundingClientRect();
-            const rg = document.getElementById('guide-box').getBoundingClientRect();
-            const vw = video.videoWidth, vh = video.videoHeight;
+            const rv  = video.getBoundingClientRect();
+            const rg  = document.getElementById('guide-box').getBoundingClientRect();
+            const vw  = video.videoWidth, vh = video.videoHeight;
             const tlN = getNativeCoords(rg.left-rv.left, rg.top-rv.top, rv, vw, vh);
             const brN = getNativeCoords(rg.right-rv.left, rg.bottom-rv.top, rv, vw, vh);
-            const cropX=tlN.x, cropY=tlN.y, cropW=brN.x-tlN.x, cropH=brN.y-tlN.y;
+            const cropX=tlN.x, cropY=tlN.y;
+            const cropW=brN.x-tlN.x, cropH=brN.y-tlN.y;
+
+            // رسم الصورة
             canvas.width=cropW; canvas.height=cropH;
-            ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-            const cleanCanvas = document.createElement('canvas');
+            ctx.drawImage(video,cropX,cropY,cropW,cropH,0,0,cropW,cropH);
+
+            // نسخة نظيفة للقراءة فقط
+            const cleanCanvas=document.createElement('canvas');
             cleanCanvas.width=cropW; cleanCanvas.height=cropH;
-            const cleanCtx = cleanCanvas.getContext('2d');
-            cleanCtx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+            const cleanCtx=cleanCanvas.getContext('2d');
+            cleanCtx.drawImage(video,cropX,cropY,cropW,cropH,0,0,cropW,cropH);
+
             video.style.display='none';
             document.getElementById('guide-box').style.display='none';
             canvas.style.display='block';
-            const lay=AppState.activeScan.exam.layout, key=AppState.activeScan.exam.answerKey;
+
+            const lay=AppState.activeScan.exam.layout;
+            const key=AppState.activeScan.exam.answerKey;
             let fc={}, tot=0;
-            const ratio=(lay._bubbleRadiusRatio&&lay._bubbleRadiusRatio>0)?lay._bubbleRadiusRatio:(11/800);
-            const bubbleRadius=Math.max(Math.round(ratio*cropW*1.3),8);
-            // رسم دوائر صفراء للإجابات الصحيحة (مثل ZipGrade)
+
+            // حساب نصف القطر من النسبة المحفوظة
+            const ratio=(lay._bubbleRadiusRatio&&lay._bubbleRadiusRatio>0)?lay._bubbleRadiusRatio:(10/764);
+            // نضرب × 1.4 لجعل الدوائر واضحة مثل ZipGrade مع هامش كافٍ للقراءة
+            const bubbleRadius=Math.max(Math.round(ratio*cropW*1.4),7);
+
+            // رسم دوائر صفراء للإجابات الصحيحة (المفتاح)
             for(let q in lay){
-                if(q==='_bubbleRadiusRatio')continue;
+                if(q==='_bubbleRadiusRatio'||q==='_refData') continue;
                 const cOpts=Object.keys(key[q]||{});
                 for(let o in lay[q]){
-                    const px=Math.round(lay[q][o].x*cropW), py=Math.round(lay[q][o].y*cropH);
-                    if(cOpts.includes(o)){
-                        ctx.beginPath();ctx.arc(px,py,bubbleRadius,0,2*Math.PI);
-                        ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.stroke();
-                    }
+                    if(!cOpts.includes(o)) continue;
+                    const px=Math.round(lay[q][o].x*cropW);
+                    const py=Math.round(lay[q][o].y*cropH);
+                    ctx.beginPath();ctx.arc(px,py,bubbleRadius,0,2*Math.PI);
+                    ctx.strokeStyle='#f59e0b';ctx.lineWidth=3;ctx.stroke();
                 }
             }
+
             // تحليل الإجابات
             for(let q in lay){
-                if(q==='_bubbleRadiusRatio')continue;
+                if(q==='_bubbleRadiusRatio'||q==='_refData') continue;
                 let filled=[];
                 for(let o in lay[q]){
-                    const px=Math.round(lay[q][o].x*cropW), py=Math.round(lay[q][o].y*cropH);
-                    if(measureDarkness(cleanCtx,px,py,bubbleRadius,128)>0.12)
-                        filled.push({opt:o,px,py});
+                    const px=Math.round(lay[q][o].x*cropW);
+                    const py=Math.round(lay[q][o].y*cropH);
+                    const darkness=measureDarkness(cleanCtx,px,py,bubbleRadius,128);
+                    if(darkness>0.12) filled.push({opt:o,px,py});
                 }
                 if(filled.length>0){
                     fc[q]=filled.map(s=>s.opt).join(', ');
@@ -1679,15 +1748,18 @@ function editExamSetup(id) {
                         const ok=cOpts.includes(so.opt);
                         ctx.beginPath();ctx.arc(so.px,so.py,bubbleRadius,0,2*Math.PI);
                         ctx.strokeStyle=ok?'#22c55e':'#ef4444';ctx.lineWidth=5;ctx.stroke();
-                        if(ok){ctx.beginPath();ctx.arc(so.px,so.py,bubbleRadius-3,0,2*Math.PI);
-                               ctx.fillStyle='rgba(34,197,94,0.25)';ctx.fill();}
+                        if(ok){
+                            ctx.beginPath();ctx.arc(so.px,so.py,bubbleRadius-3,0,2*Math.PI);
+                            ctx.fillStyle='rgba(34,197,94,0.3)';ctx.fill();
+                        }
                     });
                 }
             }
+
             tot=calculateScore(fc,key,lay);
             AppState.activeScan.extChoices=fc; AppState.activeScan.tot=tot;
-            const emoji=String.fromCodePoint(0x2705);
-            document.getElementById('scanned-feedback').innerText=emoji+' النتيجة: '+tot+' نقطة';
+            document.getElementById('scanned-feedback').innerText=
+                String.fromCodePoint(0x2705)+' النتيجة: '+tot+' نقطة';
             document.getElementById('scanner-bottom-bar').style.display='none';
             document.getElementById('result-top-bar').style.display='block';
         }
@@ -1695,13 +1767,15 @@ function editExamSetup(id) {
         function calculateScore(choices, answerKey, lay) {
             let total=0;
             for(let q in answerKey){
-                if(q==='_bubbleRadiusRatio')continue;
+                if(q==='_bubbleRadiusRatio'||q==='_refData') continue;
                 const cOpts=Object.keys(answerKey[q]), cCount=cOpts.length;
                 const sOpts=(choices[q]||'').split(', ').filter(Boolean);
-                if(sOpts.length===0)continue;
+                if(sOpts.length===0) continue;
                 if(cCount===1){
-                    if(sOpts.length===1&&sOpts[0]===cOpts[0])total+=answerKey[q][cOpts[0]];
+                    // خيار واحد: يجب أن يختار الصحيح فقط
+                    if(sOpts.length===1&&sOpts[0]===cOpts[0]) total+=answerKey[q][cOpts[0]];
                 } else {
+                    // متعدد: نقطة جزئية مع خصم عن الخطأ
                     const ptEach=answerKey[q][cOpts[0]]||1;
                     let earned=0, wrong=0;
                     sOpts.forEach(o=>{cOpts.includes(o)?earned+=ptEach:wrong++;});
@@ -1769,10 +1843,14 @@ function retakePhoto() {
             res.choices=extChoices; res.scores={};
             for(let i=1;i<=exam.qCount;i++){
                 const q='Q'+i;
-                res.scores[q]=calculateScore({[q]:extChoices[q]||''},{[q]:exam.answerKey[q]||{}},{[q]:exam.layout?.[q]||{}});
+                res.scores[q]=calculateScore(
+                    {[q]:extChoices[q]||''},
+                    {[q]:exam.answerKey[q]||{}},
+                    {[q]:exam.layout?.[q]||{}}
+                );
             }
             res.total=Math.round(Object.values(res.scores).reduce((a,b)=>a+b,0)*10)/10;
-            if(!AppState.results[eid])AppState.results[eid]={};
+            if(!AppState.results[eid]) AppState.results[eid]={};
             AppState.results[eid][studentId]=res;
             await IDB.put('results',res); stopScanner(); renderResultsTable();
         }
