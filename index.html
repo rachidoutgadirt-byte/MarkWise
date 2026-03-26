@@ -128,7 +128,7 @@
         .comp-D { background: var(--danger); color: white; padding: 2px 6px; border-radius: 4px; font-weight:bold; }
 
         #print-wrapper { position: absolute; top: -9999px; left: -9999px; }
-        .omr-sheet { width: 794px; height: 1123px; background: white; position: relative; font-family: Arial,sans-serif; box-sizing: border-box; overflow: hidden; direction: ltr; }
+        .omr-sheet { width: 794px; height: 1123px; background: white; position: relative; font-family: Arial,sans-serif; box-sizing: border-box; overflow: hidden; direction: ltr; border: 1px solid #ddd; }
         .omr-marker { position: absolute; background: black; }
         .omr-mid-marker { position: absolute; background: black; }
 
@@ -1148,9 +1148,9 @@ function editExamSetup(id) {
             NUM_GAP:8,   // مسافة بين الرقم والأول دائرة
             BLK:10,      // عدد الأسئلة في كل كتلة (مثل ZipGrade)
             // الترويسة
-            HDR_H: 112,  // ارتفاع منطقة الرأس من أعلى الورقة
-            // الهامش الداخلي (من حدود المرجع)
-            PAD: 22,
+            HDR_H: 155,  // ارتفاع منطقة الرأس (مُصحَّح)
+            // الهامش الداخلي من حدود المرجع
+            PAD: 35,  // هامش داخلي من المنطقة المرجعية
         };
 
         function buildPrintTemplate(ex) {
@@ -1190,7 +1190,7 @@ function editExamSetup(id) {
             // ==== الترويسة ====
             const hdrL = OMR.RL + OMR.PAD;
             const hdrR = OMR.RR - OMR.PAD;
-            const hdrT = OMR.RT + CM + 10;  // 10px بعد المربعات العلوية
+            const hdrT = OMR.CO + OMR.CM + 22;  // 22px هامش مريح بعد المربعات
             html += `
 <div style="position:absolute;left:${hdrL}px;top:${hdrT}px;right:${W-hdrR}px;direction:rtl;font-family:Arial,sans-serif;">
   <div style="border:2px solid #000;border-radius:4px;padding:5px 8px;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
@@ -1205,7 +1205,7 @@ function editExamSetup(id) {
 </div>`;
 
             // ==== شبكة الأسئلة ====
-            const gridTop = OMR.HDR_H;
+            const gridTop = OMR.HDR_H + 10; // +10 ضمان عدم التداخل
             const gridLeft = OMR.RL + OMR.PAD;
 
             for (let col = 0; col < numCols; col++) {
@@ -1218,7 +1218,7 @@ function editExamSetup(id) {
                     const qEnd = Math.min(qStart + BLK - 1, ex.qCount);
 
                     // Y بداية هذه الكتلة (رأس الخيارات + صفوف الأسئلة)
-                    const blkY = gridTop + blkIdx * (BLK * OMR.Q_GAP + 28);
+                    const blkY = gridTop + blkIdx * (BLK * OMR.Q_GAP + 32); // 32 = ارتفاع رأس الخيارات + فراغ
 
                     // رأس الخيارات (أ، ب، ج...)
                     opts.forEach((o, oi) => {
@@ -1567,7 +1567,9 @@ function editExamSetup(id) {
 
         async function startScanner(eid, sid, sName) {
             const ex = AppState.exams.find(e=>e.id===eid); 
-            if(!ex.layout) return alert("مخطط ورقة الإجابة غير موجود. يرجى تعديل الامتحان وحفظه من جديد لتوليد المخطط.");
+            if(!ex.layout) return alert("مخطط ورقة الإجابة غير موجود. يرجى تعديل الامتحان وحفظه من جديد.");
+            // التحقق من أن الـ layout تم توليده بالنظام الجديد (يحتوي على _meta)
+            if(!ex.layout._meta) return alert("⚠️ هذا الامتحان تم حفظه بنظام قديم.\nالرجاء تعديله وحفظه من جديد حتى يعمل التصحيح بدقة.");
             
             AppState.activeScan = {exam:ex, studentId:sid, extChoices:{}};
             document.getElementById('scannerTitle').innerText = `تصحيح: ${sName}`; 
@@ -1597,7 +1599,7 @@ function editExamSetup(id) {
                 video.onloadedmetadata = () => {
                     const cw = window.innerWidth;
                     const ch = window.innerHeight;
-                    const markerRatio = 1.435; 
+                    const markerRatio = 1123/794; // = 1.414 نسبة الورقة الحقيقية 
                     const guideBox = document.getElementById('guide-box');
                     
                     let gw, gh; 
@@ -1747,11 +1749,12 @@ function editExamSetup(id) {
             const key = AppState.activeScan.exam.answerKey;
             let fc={}, tot=0;
 
-            // نصف القطر من النسبة المخزنة
+            // نصف القطر من النسبة المخزنة في _meta
             const meta = lay._meta || {};
-            const ratio = meta.bubbleRadiusRatio || (13/774);
-            // × 1.3 لجعلها مرئية بوضوح (مثل ZipGrade)
-            const bubbleR = Math.max(Math.round(ratio * cropW * 1.3), 7);
+            const ratio = (meta.bubbleRadiusRatio && meta.bubbleRadiusRatio > 0)
+                          ? meta.bubbleRadiusRatio : (13/774);
+            // نضرب × 1.25 لجعلها مرئية بوضوح
+            const bubbleR = Math.max(Math.round(ratio * cropW * 1.25), 8);
 
             // ---- رسم دوائر صفراء على الإجابات الصحيحة ----
             for (let q in lay) {
