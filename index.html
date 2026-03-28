@@ -118,13 +118,17 @@ th{background:var(--light);white-space:nowrap;}
   display:none;background:#000;z-index:12;
 }
 #result-overlay{
-  display:none;position:absolute;
+  display:none;
+  position:absolute;
   bottom:0;left:0;width:100%;
-  background:linear-gradient(transparent,rgba(0,0,0,.92) 30%);
-  z-index:25;padding:40px 16px 20px;
-  flex-direction:column;align-items:center;
+  background:rgba(0,0,0,0.9);
+  z-index:25;
+  padding:18px 16px 28px;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
 }
-#result-score{color:#22c55e;font-size:1.8rem;font-weight:800;margin-bottom:14px;text-align:center;}
+#result-score{color:#22c55e;font-size:1.65rem;font-weight:800;text-align:center;line-height:1.3;}
 #scanner-bottom{position:absolute;bottom:0;left:0;width:100%;padding:14px;background:rgba(0,0,0,.78);z-index:20;text-align:center;}
 #scanner-instr{color:white;font-weight:700;font-size:.92rem;margin:0;}
 #scanner-topbar{position:absolute;top:0;left:0;width:100%;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.65);z-index:22;gap:8px;}
@@ -450,7 +454,7 @@ const OMR={W:794,H:1123,CM:22,CO:10,
   get RL(){return this.CO;},get RT(){return this.CO;},
   get RR(){return this.W-this.CO;},get RB(){return this.H-this.CO;},
   get RW(){return this.RR-this.RL;},get RH(){return this.RB-this.RT;},
-  BD:28,Q_GAP:38,OPT_GAP:36,NUM_W:24,NUM_GAP:8,BLK:10,HDR_H:160,PAD:35};
+  BD:28,Q_GAP:38,OPT_GAP:36,NUM_W:24,NUM_GAP:8,BLK:10,HDR_H:165,PAD:35};
 
 // ================================================================
 // Exam Creation
@@ -498,11 +502,18 @@ function editExamSetup(id){
   document.getElementById('examQCount').value=ex.qCount;
   document.getElementById('examOptionCount').value=ex.options.length;
   switchTab('create-exam');
-  const savedKey=JSON.parse(JSON.stringify(ex.answerKey));
-  generateExamGrid();
-  currentSetup.id=ex.id;
-  currentSetup.answerKey=savedKey;
-  for(let i=1;i<=ex.qCount;i++){const qk=`Q${i}`;if(savedKey[qk]){for(let opt in savedKey[qk]){const pts=savedKey[qk][opt];const row=document.getElementById('examQuestionsGrid').children[i-1];if(!row)continue;const od=row.querySelectorAll('.q-option');const oi=ex.options.indexOf(opt);if(oi>=0&&od[oi]){od[oi].classList.add('selected');od[oi].querySelector('.q-score-badge').innerText=pts;}}}}
+  // FIX4: انتظار تحديث DOM قبل generateExamGrid
+  const savedKey4=JSON.parse(JSON.stringify(ex.answerKey));
+  const savedId4=ex.id;
+  // إظهار الزر فوراً
+  document.getElementById('examAnswerKeyContainer').style.display='none';
+  setTimeout(()=>{
+    generateExamGrid();
+    currentSetup.id=savedId4;
+    currentSetup.answerKey=savedKey4;
+    // إعادة تلوين الدوائر المحددة سابقاً
+    for(let i=1;i<=ex.qCount;i++){const qk=`Q${i}`;if(savedKey4[qk]){for(let opt in savedKey4[qk]){const pts=savedKey4[qk][opt];const row=document.getElementById('examQuestionsGrid').children[i-1];if(!row)continue;const od=row.querySelectorAll('.q-option');const oi=ex.options.indexOf(opt);if(oi>=0&&od[oi]){od[oi].classList.add('selected');od[oi].querySelector('.q-score-badge').innerText=pts;}}}}
+  },100);
 }
 async function deleteExam(id){AppState.exams=AppState.exams.filter(e=>e.id!==id);await IDB.delete('exams',id);if(AppState.results[id]){for(let sid in AppState.results[id])await IDB.delete('results',`${id}___${sid}`);delete AppState.results[id];}}
 
@@ -529,24 +540,49 @@ function buildPrintTemplate(ex){
 <div class="omr-mid-marker" style="width:14px;height:28px;top:${midY}px;right:${CO}px;"></div>`;
   // ---- الترويسة بـ SVG (تحل مشكلة العربية المفككة) ----
   const hL=OMR.RL+OMR.PAD,hR=OMR.RR-OMR.PAD,hT=OMR.CO+OMR.CM+12;
-  const sw=hR-hL;
+  // SVG يمتد من الحافة اليسرى للمربعات إلى الحافة اليمنى (بعد PAD صغير)
+  const svgL = OMR.CO + 2;          // 12px من حافة الورقة
+  const svgW = OMR.W - svgL*2;      // عرض كامل تقريباً: 770px
+  const p = Math.round(svgW*0.03);  // padding داخلي 3%
   html+=`
-<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:${hL}px;top:${hT}px;" width="${sw}" height="118" direction="rtl">
-  <rect x="0" y="0" width="${sw}" height="42" rx="8" fill="#1e293b"/>
-  <rect x="0" y="10" width="${sw}" height="32" fill="#334155"/>
-  <text x="${sw-14}" y="28" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="15" font-weight="800" fill="white" text-anchor="end">${ex.name}</text>
-  <text x="14" y="28" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="10" fill="rgba(255,255,255,0.82)" text-anchor="start">${ex.subject||''} — ${ex.year||''}</text>
-  <rect x="0" y="42" width="${sw}" height="54" fill="white" stroke="#1e293b" stroke-width="2"/>
-  <line x1="${Math.round(sw*0.55)}" y1="42" x2="${Math.round(sw*0.55)}" y2="96" stroke="#e2e8f0" stroke-width="1"/>
-  <line x1="${Math.round(sw*0.78)}" y1="42" x2="${Math.round(sw*0.78)}" y2="96" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="${sw-10}" y="56" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="9.5" font-weight="700" fill="#475569" text-anchor="end">الاسم الكامل</text>
-  <text x="${Math.round(sw*0.78)-8}" y="56" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="9.5" font-weight="700" fill="#475569" text-anchor="end">القسم</text>
-  <text x="${Math.round(sw*0.55)-8}" y="56" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="9.5" font-weight="700" fill="#475569" text-anchor="end">الرقم الترتيبي</text>
-  <line x1="${Math.round(sw*0.56)}" y1="88" x2="${sw-10}" y2="88" stroke="#334155" stroke-width="1.5"/>
-  <line x1="${Math.round(sw*0.79)}" y1="88" x2="${Math.round(sw*0.55)-8}" y2="88" stroke="#334155" stroke-width="1.5"/>
-  <line x1="10" y1="88" x2="${Math.round(sw*0.78)-8}" y2="88" stroke="#334155" stroke-width="1.5"/>
-  <rect x="0" y="98" width="${sw}" height="18" rx="3" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="${Math.round(sw/2)}" y="110" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="9" fill="#475569" text-anchor="middle">ظلّل الدائرة كاملاً أو ضع علامة X واضحة — لا تستخدم علامات خارج الدوائر</text>
+<svg xmlns="http://www.w3.org/2000/svg"
+     style="position:absolute;left:${svgL}px;top:${hT}px;"
+     width="${svgW}" height="120">
+  <!-- خلفية العنوان -->
+  <rect x="0" y="0" width="${svgW}" height="44" rx="6" fill="#1e293b"/>
+  <rect x="0" y="12" width="${svgW}" height="32" fill="#334155"/>
+  <!-- اسم الامتحان — يمين (text-anchor=end يُحسب من اليمين) -->
+  <text x="${svgW-p}" y="22"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="14" font-weight="800" fill="white" text-anchor="end">${ex.name}</text>
+  <!-- المادة والموسم — يسار -->
+  <text x="${p}" y="38"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="start">${ex.subject||''} — ${ex.year||''}</text>
+  <!-- إطار حقول البيانات -->
+  <rect x="0" y="44" width="${svgW}" height="52" fill="white" stroke="#1e293b" stroke-width="1.5"/>
+  <!-- فواصل الأعمدة -->
+  <line x1="${Math.round(svgW*0.55)}" y1="44" x2="${Math.round(svgW*0.55)}" y2="96" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="${Math.round(svgW*0.77)}" y1="44" x2="${Math.round(svgW*0.77)}" y2="96" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- تسميات الحقول -->
+  <text x="${svgW-p}" y="59"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="10" font-weight="700" fill="#374151" text-anchor="end">الاسم الكامل</text>
+  <text x="${Math.round(svgW*0.77)-p}" y="59"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="10" font-weight="700" fill="#374151" text-anchor="end">القسم</text>
+  <text x="${Math.round(svgW*0.55)-p}" y="59"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="10" font-weight="700" fill="#374151" text-anchor="end">ر.ت</text>
+  <!-- خطوط الكتابة -->
+  <line x1="${Math.round(svgW*0.56)}" y1="88" x2="${svgW-p}" y2="88" stroke="#334155" stroke-width="1.5"/>
+  <line x1="${Math.round(svgW*0.78)}" y1="88" x2="${Math.round(svgW*0.55)-p}" y2="88" stroke="#334155" stroke-width="1.5"/>
+  <line x1="${p}" y1="88" x2="${Math.round(svgW*0.77)-p}" y2="88" stroke="#334155" stroke-width="1.5"/>
+  <!-- تعليمات -->
+  <rect x="${p}" y="98" width="${svgW-p*2}" height="20" rx="3" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="${Math.round(svgW/2)}" y="112"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="9.5" fill="#475569" text-anchor="middle">ظلّل الدائرة كاملاً أو ضع علامة X واضحة — لا تستخدم علامات خارج الدوائر</text>
 </svg>`;
   // ---- شبكة الأسئلة — Q_GAP ديناميكي ----
   const gridTop=OMR.HDR_H+8,gridLeft=OMR.RL+OMR.PAD;
@@ -645,8 +681,19 @@ function applyScanModeUI(){
   const btn=document.getElementById('autoModeBtn');
   const icon=document.getElementById('autoModeIcon');
   const lbl=document.getElementById('autoModeLabel');
-  if(isAutoMode){btn.style.background='rgba(34,197,94,.35)';btn.style.borderColor='#22c55e';icon.className='fas fa-magic';lbl.innerText='تلقائي';cam.style.display='none';document.getElementById('scanner-instr').innerText='وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';}
-  else{btn.style.background='rgba(245,158,11,.4)';btn.style.borderColor='#f59e0b';icon.className='fas fa-hand-pointer';lbl.innerText='يدوي';cam.style.display='flex';document.getElementById('scanner-instr').innerText='اضغط زر الالتقاط عندما تكون الورقة مرئية';}
+  if(isAutoMode){
+    btn.style.background='rgba(34,197,94,.35)';btn.style.borderColor='#22c55e';
+    icon.className='fas fa-magic';lbl.innerText='تلقائي';
+    // FIX5: إخفاء زر الالتقاط في الوضع التلقائي
+    cam.style.display='none';
+    document.getElementById('scanner-instr').innerText='وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';
+  } else {
+    btn.style.background='rgba(245,158,11,.4)';btn.style.borderColor='#f59e0b';
+    icon.className='fas fa-hand-pointer';lbl.innerText='يدوي';
+    // FIX5: إظهار زر الالتقاط دائماً في الوضع اليدوي
+    cam.style.display='inline-flex';
+    document.getElementById('scanner-instr').innerText='اضغط زر الالتقاط عندما تكون الورقة مرئية';
+  }
 }
 function toggleScanMode(){isAutoMode=!isAutoMode;applyScanModeUI();}
 
@@ -737,12 +784,12 @@ function scanLoop(){
     for(let dx of off)for(let dy of off)if(measureDarkness(analysisCtx,cx+dx,cy+dy,checkR*.48,140)>0.25)darkPts++;
     const inx=corners[i].x+insets[i].x*checkR*3.5,iny=corners[i].y+insets[i].y*checkR*3.5;
     const innerLight=measureDarkness(analysisCtx,inx,iny,checkR,140)<0.25;
-    if(darkPts>=3&&innerLight){el.classList.add('ok');aligned++;}else el.classList.remove('ok');
+    if(darkPts>=2&&innerLight){el.classList.add('ok');aligned++;}else el.classList.remove('ok');
   });
   const sb=document.getElementById('stab-bar');
   if(!isAutoMode){stabFrames=0;sb.style.width='0%';scanRAF=requestAnimationFrame(scanLoop);return;}
   const STAB=18; // ~0.6 ثانية عند 30fps
-  if(aligned>=3){stabFrames++;sb.style.width=(stabFrames/STAB*100)+'%';if(stabFrames>=STAB){isScanning=false;playShutterSound();sb.style.width='0%';setTimeout(()=>captureAndProcess(),50);return;}}
+  if(aligned>=4){stabFrames++;sb.style.width=(stabFrames/STAB*100)+'%';if(stabFrames>=STAB){isScanning=false;playShutterSound();sb.style.width='0%';setTimeout(()=>captureAndProcess(),50);return;}}
   else{stabFrames=0;sb.style.width='0%';}
   scanRAF=requestAnimationFrame(scanLoop);
 }
