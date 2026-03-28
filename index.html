@@ -48,7 +48,7 @@ th{background:var(--light);white-space:nowrap;}
 .modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:15px;}
 .close-btn{background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--danger);}
 .preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;direction:rtl;}
-.prev-q-row{display:flex;align-items:center;gap:5px;background:var(--light);padding:5px 10px;border-radius:5px;}
+.prev-q-row{display:flex;align-items:center;gap:5px;background:var(--light);padding:6px 10px;border-radius:6px;margin-bottom:4px;}
 .prev-bubble{width:25px;height:25px;border-radius:50%;border:2px solid var(--border);display:flex;justify-content:center;align-items:center;font-size:12px;font-weight:700;background:white;}
 .prev-bubble.correct-choice{border-color:var(--success);background:#dcfce7;}
 .prev-bubble.wrong-choice{border-color:var(--danger);background:#fee2e2;}
@@ -289,9 +289,28 @@ th{background:var(--light);white-space:nowrap;}
   <button class="btn btn-primary" onclick="saveManualScores()" style="width:100%;">حفظ</button>
 </div></div>
 <div class="modal" id="previewModal"><div class="modal-content" style="max-width:800px;">
-  <div class="modal-header"><h3>معاينة ورقة الإجابة</h3><button class="close-btn" onclick="closeModal('previewModal')">&times;</button></div>
+  <div class="modal-header">
+    <div style="display:flex;align-items:center;gap:10px;flex:1;">
+      <h3 id="previewModalTitle" style="margin:0;font-size:1rem;">إجابات التلميذ(ة)</h3>
+      <button id="previewImageBtn" onclick="showScannedImage()" title="معاينة ورقة الإجابة الملتقطة"
+        style="background:var(--primary);border:none;color:white;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:.8rem;display:none;align-items:center;gap:5px;white-space:nowrap;">
+        <i class="fas fa-image"></i> الورقة الملتقطة
+      </button>
+    </div>
+    <button class="close-btn" onclick="closeModal('previewModal')">&times;</button>
+  </div>
   <div id="previewContainer" class="preview-grid"></div>
 </div></div>
+<!-- نافذة عرض صورة الورقة الملتقطة -->
+<div class="modal" id="scannedImageModal">
+  <div class="modal-content" style="max-width:90vw;max-height:90vh;padding:10px;">
+    <div class="modal-header" style="margin-bottom:8px;">
+      <h3 style="font-size:1rem;">ورقة الإجابة الملتقطة</h3>
+      <button class="close-btn" onclick="closeModal('scannedImageModal')">&times;</button>
+    </div>
+    <img id="scannedImageView" src="" style="width:100%;border-radius:6px;display:block;" alt="ورقة الإجابة">
+  </div>
+</div>
 <div class="modal" id="chartModal"><div class="modal-content">
   <div class="modal-header"><h3>إحصائيات الكفايات</h3><button class="close-btn" onclick="closeModal('chartModal')">&times;</button></div>
   <canvas id="statsChart"></canvas>
@@ -644,10 +663,82 @@ function renderResultsTable(){saveUIState();const cid=document.getElementById('r
 let students=cls.students;if(ex?.year)students=students.filter(s=>s.year===ex.year);if(sq)students=students.filter(s=>s.name.toLowerCase().includes(sq));
 let hHTML=`<th>الكاميرا</th><th>ر.ت</th><th style="text-align:right;">الاسم الكامل</th>`;for(let i=1;i<=ex.qCount;i++)hHTML+=`<th>س${i}</th>`;head.innerHTML=hHTML+`<th>النتيجة</th><th>إجراءات</th>`;
 let maxTotal=0,maxQ={};for(let i=1;i<=ex.qCount;i++){let qM=0;Object.values(ex.answerKey[`Q${i}`]||{}).forEach(p=>qM+=p);if(qM===0)qM=1;maxQ[`Q${i}`]=qM;maxTotal+=qM;}
-students.forEach(s=>{const res=AppState.results[eid]?.[s.id]||{scores:{},choices:{},total:0,id:`${eid}___${s.id}`,examId:eid,studentId:s.id};let bHTML=`<td><button class="btn btn-primary btn-sm" onclick="startScanner('${eid}','${s.id}','${s.name}')"><i class="fas fa-camera"></i> Scan</button></td>`;bHTML+=`<td>${s.roll||'-'}</td><td style="text-align:right;">${s.name}</td>`;let total=0;for(let i=1;i<=ex.qCount;i++){let sc=parseFloat(res.scores?.[`Q${i}`])||0;total+=sc;let disp=isCompetencyMode?`<span class="comp-${getCompData(sc,maxQ[`Q${i}`]).c}">${getCompData(sc,maxQ[`Q${i}`]).c}</span>`:sc;bHTML+=`<td>${disp}</td>`;}res.total=total;if(!AppState.results[eid])AppState.results[eid]={};AppState.results[eid][s.id]=res;let fDisp=isCompetencyMode?`<span class="comp-${getCompData(total,maxTotal).c}">${getCompData(total,maxTotal).c}</span>`:`<strong>${total}</strong>`;bHTML+=`<td>${fDisp}</td><td class="actions-cell"><button class="btn btn-success btn-icon" onclick="openPreview('${eid}','${s.id}')"><i class="fas fa-eye"></i></button><button class="btn btn-warning btn-icon" onclick="openEditScore('${eid}','${s.id}')"><i class="fas fa-edit"></i></button></td>`;body.innerHTML+=`<tr>${bHTML}</tr>`;});}
+students.forEach(s=>{const res=AppState.results[eid]?.[s.id]||{scores:{},choices:{},total:0,id:`${eid}___${s.id}`,examId:eid,studentId:s.id};let bHTML=`<td><button class="btn btn-primary btn-sm" onclick="startScanner('${eid}','${s.id}','${s.name}')"><i class="fas fa-camera"></i> Scan</button></td>`;bHTML+=`<td>${s.roll||'-'}</td><td style="text-align:right;">${s.name}</td>`;let total=0;for(let i=1;i<=ex.qCount;i++){let sc=parseFloat(res.scores?.[`Q${i}`]||0);total+=sc;let disp=isCompetencyMode?`<span class="comp-${getCompData(sc,maxQ[`Q${i}`]).c}">${getCompData(sc,maxQ[`Q${i}`]).c}</span>`:sc;bHTML+=`<td>${disp}</td>`;}res.total=total;if(!AppState.results[eid])AppState.results[eid]={};AppState.results[eid][s.id]=res;let fDisp=isCompetencyMode?`<span class="comp-${getCompData(total,maxTotal).c}">${getCompData(total,maxTotal).c}</span>`:`<strong>${total}</strong>`;bHTML+=`<td>${fDisp}</td><td class="actions-cell"><button class="btn btn-success btn-icon" onclick="openPreview('${eid}','${s.id}')"><i class="fas fa-eye"></i></button><button class="btn btn-warning btn-icon" onclick="openEditScore('${eid}','${s.id}')"><i class="fas fa-edit"></i></button></td>`;body.innerHTML+=`<tr>${bHTML}</tr>`;});}
 let chartInst=null;
 function showStatistics(){const eid=document.getElementById('resultExamSelect').value,cid=document.getElementById('resultClassSelect').value;if(!eid||!cid)return alert('اختر القسم والامتحان');const ex=AppState.exams.find(e=>e.id===eid);let maxTotal=0;for(let q in ex.answerKey)Object.values(ex.answerKey[q]).forEach(p=>maxTotal+=p);if(maxTotal===0)maxTotal=ex.qCount;const counts={A:0,B:0,C:0,D:0};AppState.classes.find(c=>c.id===cid).students.forEach(s=>{let t=AppState.results[eid]?.[s.id]?.total||0;counts[getCompData(t,maxTotal).c]++;});document.getElementById('chartModal').style.display='flex';if(chartInst)chartInst.destroy();chartInst=new Chart(document.getElementById('statsChart').getContext('2d'),{type:'doughnut',data:{labels:['A (ممتاز)','B (جيد)','C (متوسط)','D (ضعيف)'],datasets:[{data:[counts.A,counts.B,counts.C,counts.D],backgroundColor:['#22c55e','#3b82f6','#f59e0b','#ef4444']}]}});}
-function openPreview(eid,sid){const ex=AppState.exams.find(e=>e.id===eid),res=AppState.results[eid][sid],cont=document.getElementById('previewContainer');cont.innerHTML='';for(let i=1;i<=ex.qCount;i++){let q=`Q${i}`,sC=(res.choices?.[q]||'').split(', ').filter(Boolean),cC=Object.keys(ex.answerKey[q]||{});let ip=sC.length===cC.length&&sC.every(c=>cC.includes(c)),gs=sC.some(c=>cC.includes(c));let icon=ip?'<i class="fas fa-check" style="color:var(--success)"></i>':(gs?'<i class="fas fa-minus-circle" style="color:var(--warning)"></i>':'<i class="fas fa-times" style="color:var(--danger)"></i>');let row=`<div class="prev-q-row"><div style="width:20px">${icon}</div><strong>س${i}:</strong>`;ex.options.forEach(o=>{let cls=['prev-bubble'],ss=sC.includes(o),cc=cC.includes(o);if(ss&&cc)cls.push('correct-choice');else if(ss&&!cc)cls.push('wrong-choice');else if(!ss&&cc)cls.push('missed-choice');row+=`<div class="${cls.join(' ')}">${o}</div>`;});cont.innerHTML+=row+'</div>';}document.getElementById('previewModal').style.display='flex';}
+function openPreview(eid, sid, studentName){
+  // استرجاع الاسم من AppState إذا لم يُمرَّر
+  if(!studentName){
+    for(let cls of AppState.classes){
+      const st = cls.students.find(s => s.id === sid);
+      if(st){ studentName = st.name; break; }
+    }
+  }
+  const ex   = AppState.exams.find(e => e.id === eid);
+  const res  = AppState.results[eid][sid];
+  const cont = document.getElementById('previewContainer');
+  cont.innerHTML = '';
+
+  // تحديث عنوان النافذة باسم التلميذ
+  const titleEl = document.getElementById('previewModalTitle');
+  if(titleEl) titleEl.innerText = `إجابات التلميذ(ة): ${studentName || ''}`;
+
+  // إظهار زر الصورة الملتقطة إذا كانت موجودة
+  const imgBtn = document.getElementById('previewImageBtn');
+  if(imgBtn){
+    const hasImage = res && res.scannedImage;
+    imgBtn.style.display = hasImage ? 'inline-flex' : 'none';
+    if(hasImage) imgBtn.setAttribute('data-img', res.scannedImage);
+  }
+
+  for(let i = 1; i <= ex.qCount; i++){
+    let q   = `Q${i}`;
+    let sC  = (res.choices?.[q] || '').split(', ').filter(Boolean);
+    let cC  = Object.keys(ex.answerKey[q] || {});
+    // حساب النقطة المستحقة لهذا السؤال
+    const qScore    = res.scores?.[`Q${i}`] || 0;
+    const qMaxScore = Object.values(ex.answerKey[q] || {}).reduce((s,v)=>s+v, 0) || 1;
+    const isPerfect = Math.abs(qScore - qMaxScore) < 0.01;
+    const isPartial = qScore > 0 && !isPerfect;
+    const isWrong   = qScore === 0 && sC.length > 0;
+    const isEmpty   = sC.length === 0;
+
+    let icon;
+    if(isPerfect)     icon = '<i class="fas fa-check-circle" style="color:var(--success)"></i>';
+    else if(isPartial)icon = '<i class="fas fa-adjust"       style="color:var(--warning)"></i>';
+    else if(isWrong)  icon = '<i class="fas fa-times-circle" style="color:var(--danger)"></i>';
+    else              icon = '<i class="fas fa-minus"         style="color:var(--gray)"></i>';
+
+    let row = `<div class="prev-q-row">
+      <div style="width:22px;text-align:center;">${icon}</div>
+      <strong style="min-width:28px;">س${i}:</strong>`;
+
+    ex.options.forEach(o => {
+      let cls = ['prev-bubble'];
+      const ss = sC.includes(o), cc = cC.includes(o);
+      if(ss && cc)        cls.push('correct-choice');
+      else if(ss && !cc)  cls.push('wrong-choice');
+      else if(!ss && cc)  cls.push('missed-choice');
+      row += `<div class="${cls.join(' ')}">${o}</div>`;
+    });
+
+    // إضافة النقطة المحققة
+    const scoreColor = isPerfect ? 'var(--success)' : (isPartial ? 'var(--warning)' : 'var(--danger)');
+    row += '<span style="margin-right:auto;font-size:.8rem;font-weight:700;color:' + scoreColor + ';">' + qScore + '/' + qMaxScore + '</span>';
+    cont.innerHTML += row + '</div>';
+  }
+  document.getElementById('previewModal').style.display = 'flex';
+}
+
+// عرض صورة الورقة الملتقطة
+function showScannedImage(){
+  const btn = document.getElementById('previewImageBtn');
+  const img = document.getElementById('scannedImageView');
+  if(btn && img){
+    img.src = btn.getAttribute('data-img') || '';
+    document.getElementById('scannedImageModal').style.display = 'flex';
+  }
+}
 function openEditScore(eid,sid){const ex=AppState.exams.find(e=>e.id===eid),res=AppState.results[eid][sid];document.getElementById('editScoreSId').value=`${eid}___${sid}`;const g=document.getElementById('editScoreGrid');g.innerHTML='';for(let i=1;i<=ex.qCount;i++)g.innerHTML+=`<div><label>س${i}</label><input type="number" id="es_Q${i}" value="${res.scores?.[`Q${i}`]||0}" step="0.5"></div>`;document.getElementById('editScoreModal').style.display='flex';}
 async function saveManualScores(){const[eid,sid]=document.getElementById('editScoreSId').value.split('___');let res=AppState.results[eid][sid],ex=AppState.exams.find(e=>e.id===eid);for(let i=1;i<=ex.qCount;i++)res.scores[`Q${i}`]=parseFloat(document.getElementById(`es_Q${i}`).value)||0;await IDB.put('results',res);closeModal('editScoreModal');renderResultsTable();}
 
@@ -697,7 +788,60 @@ function applyScanModeUI(){
 }
 function toggleScanMode(){isAutoMode=!isAutoMode;applyScanModeUI();}
 
-function playShutterSound(){try{const a=new(window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.setValueAtTime(1200,a.currentTime);o.frequency.exponentialRampToValueAtTime(80,a.currentTime+.07);g.gain.setValueAtTime(.7,a.currentTime);g.gain.exponentialRampToValueAtTime(.01,a.currentTime+.07);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.07);}catch(e){}}
+function playShutterSound(){
+  try{
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    if(ac.state === 'suspended') ac.resume();
+    const t = ac.currentTime;
+
+    // ── 1. صوت رفع المرآة (Mirror Slap) ── ضجيج مرتفع قصير
+    const bufMirror = ac.createBuffer(1, ac.sampleRate * 0.04, ac.sampleRate);
+    const dmirror   = bufMirror.getChannelData(0);
+    for(let i=0; i<dmirror.length; i++) dmirror[i] = (Math.random()*2-1) * Math.exp(-i/(dmirror.length*0.15));
+    const srcMirror = ac.createBufferSource();
+    srcMirror.buffer = bufMirror;
+    const fMirror = ac.createBiquadFilter();
+    fMirror.type = 'bandpass'; fMirror.frequency.value = 2800; fMirror.Q.value = 0.8;
+    const gMirror = ac.createGain();
+    gMirror.gain.setValueAtTime(1.2, t);
+    gMirror.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    srcMirror.connect(fMirror); fMirror.connect(gMirror); gMirror.connect(ac.destination);
+    srcMirror.start(t);
+
+    // ── 2. صوت المصراع (Shutter Curtain) ── ضجيج ميكانيكي مميز
+    const bufShutter = ac.createBuffer(1, ac.sampleRate * 0.08, ac.sampleRate);
+    const dshutter   = bufShutter.getChannelData(0);
+    for(let i=0; i<dshutter.length; i++){
+      const env = Math.exp(-i/(dshutter.length*0.2));
+      dshutter[i] = (Math.random()*2-1) * env * 0.9;
+    }
+    const srcShutter = ac.createBufferSource();
+    srcShutter.buffer = bufShutter;
+    const fShutter = ac.createBiquadFilter();
+    fShutter.type = 'bandpass'; fShutter.frequency.value = 1200; fShutter.Q.value = 0.5;
+    const gShutter = ac.createGain();
+    gShutter.gain.setValueAtTime(0.0, t + 0.012);
+    gShutter.gain.linearRampToValueAtTime(1.0, t + 0.025);
+    gShutter.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
+    srcShutter.connect(fShutter); fShutter.connect(gShutter); gShutter.connect(ac.destination);
+    srcShutter.start(t + 0.012);
+
+    // ── 3. صوت إغلاق المصراع (Curtain Close) ── دكة منخفضة
+    const bufClose = ac.createBuffer(1, ac.sampleRate * 0.05, ac.sampleRate);
+    const dclose   = bufClose.getChannelData(0);
+    for(let i=0; i<dclose.length; i++) dclose[i] = (Math.random()*2-1) * Math.exp(-i/(dclose.length*0.3)) * 0.7;
+    const srcClose = ac.createBufferSource();
+    srcClose.buffer = bufClose;
+    const fClose = ac.createBiquadFilter();
+    fClose.type = 'lowpass'; fClose.frequency.value = 600;
+    const gClose = ac.createGain();
+    gClose.gain.setValueAtTime(0.8, t + 0.09);
+    gClose.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    srcClose.connect(fClose); fClose.connect(gClose); gClose.connect(ac.destination);
+    srcClose.start(t + 0.09);
+
+  } catch(e){}
+}
 
 async function startScanner(eid,sid,sName){
   const ex=AppState.exams.find(e=>e.id===eid);
@@ -845,16 +989,46 @@ function captureAndProcess(){
   document.getElementById('result-overlay').style.display='flex';
 }
 
-function calculateScore(choices,answerKey){
-  let total=0;
-  for(let q in answerKey){if(q.startsWith('_'))continue;
-    const cOpts=Object.keys(answerKey[q]),cCount=cOpts.length;
-    const sOpts=(choices[q]||'').split(', ').filter(Boolean);
-    if(sOpts.length===0)continue;
-    if(cCount===1){if(sOpts.length===1&&sOpts[0]===cOpts[0])total+=answerKey[q][cOpts[0]];}
-    else{const pt=answerKey[q][cOpts[0]]||1;let earned=0,wrong=0;sOpts.forEach(o=>cOpts.includes(o)?earned+=pt:wrong++);total+=Math.max(0,earned-wrong*pt);}
+function calculateScore(choices, answerKey){
+  let total = 0;
+  for(let q in answerKey){
+    if(q.startsWith('_')) continue;
+    const cOpts  = Object.keys(answerKey[q]);   // الخيارات الصحيحة
+    const cCount = cOpts.length;
+    const sOpts  = (choices[q] || '').split(', ').filter(Boolean); // خيارات التلميذ
+
+    if(sOpts.length === 0) continue; // لم يختر شيئاً → 0
+
+    if(cCount === 1){
+      // ===== سؤال خيار واحد =====
+      // صح فقط إذا ظلّل الخيار الصحيح وحده بدون أي إضافات
+      if(sOpts.length === 1 && sOpts[0] === cOpts[0]){
+        total += answerKey[q][cOpts[0]];
+      }
+      // إذا ظلّل الصحيح + خيارات أخرى → 0 (خطأ)
+      // إذا ظلّل خيارات خاطئة فقط → 0
+
+    } else {
+      // ===== سؤال خيارات متعددة =====
+      // النقطة الجزئية لكل خيار صحيح (قد تختلف بين الخيارات)
+      // عقوبة كل خيار خاطئ = متوسط النقط الجزئية
+      const totalCorrectPts = cOpts.reduce((sum, o) => sum + (answerKey[q][o] || 0), 0);
+      const penaltyPerWrong = cCount > 0 ? (totalCorrectPts / cCount) : 0;
+
+      let earned = 0;
+      let wrongCount = 0;
+      sOpts.forEach(o => {
+        if(cOpts.includes(o)){
+          earned += (answerKey[q][o] || 0); // نقطة الخيار الصحيح
+        } else {
+          wrongCount++;                      // خيار خاطئ → عقوبة
+        }
+      });
+      const penalty = wrongCount * penaltyPerWrong;
+      total += Math.max(0, earned - penalty);
+    }
   }
-  return Math.round(total*10)/10;
+  return Math.round(total * 10) / 10;
 }
 
 function retakePhoto(){isScanning=true;resetScannerUI();scanLoop();}
@@ -866,6 +1040,18 @@ async function confirmSaveScanned(){
   res.choices=extChoices;res.scores={};
   for(let i=1;i<=exam.qCount;i++){const q='Q'+i;res.scores[q]=calculateScore({[q]:extChoices[q]||''},{[q]:exam.answerKey[q]||{}});}
   res.total=Math.round(Object.values(res.scores).reduce((a,b)=>a+b,0)*10)/10;
+  // حفظ صورة الورقة الملتقطة (base64 مضغوط)
+  try{
+    const pc=document.getElementById('preview-canvas');
+    if(pc && pc.width>0){
+      // تقليص الصورة للحفظ (جودة 60% لتوفير المساحة)
+      const tmpC=document.createElement('canvas');
+      const sf=Math.min(1, 600/pc.width);
+      tmpC.width=Math.round(pc.width*sf); tmpC.height=Math.round(pc.height*sf);
+      tmpC.getContext('2d').drawImage(pc,0,0,tmpC.width,tmpC.height);
+      res.scannedImage=tmpC.toDataURL('image/jpeg',0.6);
+    }
+  }catch(e){}
   if(!AppState.results[eid])AppState.results[eid]={};AppState.results[eid][studentId]=res;
   await IDB.put('results',res);stopScanner();renderResultsTable();
 }
