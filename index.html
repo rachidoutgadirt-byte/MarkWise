@@ -120,13 +120,15 @@ th{background:var(--light);white-space:nowrap;}
 #result-overlay{
   display:none;
   position:absolute;
-  bottom:0;left:0;width:100%;
-  background:rgba(0,0,0,0.9);
-  z-index:25;
-  padding:18px 16px 28px;
+  /* يغطي كامل الـ modal-content */
+  top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.92);
+  z-index:28;
   flex-direction:column;
   align-items:center;
-  gap:14px;
+  justify-content:center;
+  gap:18px;
+  padding:20px;
 }
 #result-score{color:#22c55e;font-size:1.65rem;font-weight:800;text-align:center;line-height:1.3;}
 #scanner-bottom{position:absolute;bottom:0;left:0;width:100%;padding:14px;background:rgba(0,0,0,.78);z-index:20;text-align:center;}
@@ -355,16 +357,16 @@ th{background:var(--light);white-space:nowrap;}
     <!-- canvas الصورة الملتقطة — يظهر بعد الالتقاط -->
     <canvas id="preview-canvas"></canvas>
     <canvas id="analysis-canvas"></canvas>
-    <!-- شريط النتيجة — يظهر أسفل الصورة -->
-    <div id="result-overlay">
-      <div id="result-score"></div>
-      <div style="display:flex;gap:12px;">
-        <button class="btn btn-warning" onclick="retakePhoto()" style="padding:10px 20px;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
-        <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding:10px 20px;"><i class="fas fa-check-circle"></i> حفظ النتيجة</button>
-      </div>
-    </div>
   </div>
   <div id="scanner-bottom"><p id="scanner-instr">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p></div>
+  <!-- result-overlay على مستوى modal-content لتجنب overflow:hidden -->
+  <div id="result-overlay">
+    <div id="result-score"></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+      <button class="btn btn-warning" onclick="retakePhoto()" style="padding:12px 28px;font-size:1rem;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
+      <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding:12px 28px;font-size:1rem;"><i class="fas fa-check-circle"></i> حفظ النتيجة</button>
+    </div>
+  </div>
 </div>
 </div>
 <!-- قالب الطباعة -->
@@ -799,22 +801,28 @@ const analysisCtx=analysisCanvas.getContext('2d');
 let scanRAF=null,isScanning=false,stabFrames=0,isAutoMode=true;
 
 function applyScanModeUI(){
-  const cam=document.getElementById('manualCaptureBtn');
-  const btn=document.getElementById('autoModeBtn');
-  const icon=document.getElementById('autoModeIcon');
-  const lbl=document.getElementById('autoModeLabel');
+  const cam = document.getElementById('manualCaptureBtn');
+  const btn = document.getElementById('autoModeBtn');
+  const icon= document.getElementById('autoModeIcon');
+  const lbl = document.getElementById('autoModeLabel');
+  const instr = document.getElementById('scanner-instr');
+
   if(isAutoMode){
-    btn.style.background='rgba(34,197,94,.35)';btn.style.borderColor='#22c55e';
-    icon.className='fas fa-magic';lbl.innerText='تلقائي';
-    // FIX5: إخفاء زر الالتقاط في الوضع التلقائي
-    cam.style.display='none';
-    document.getElementById('scanner-instr').innerText='وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';
+    btn.style.background  = 'rgba(34,197,94,.35)';
+    btn.style.borderColor = '#22c55e';
+    icon.className = 'fas fa-magic';
+    lbl.innerText  = 'تلقائي';
+    // الوضع التلقائي: زر الالتقاط مخفي (الالتقاط يتم تلقائياً)
+    cam.style.display = 'none';
+    if(instr) instr.innerText = 'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';
   } else {
-    btn.style.background='rgba(245,158,11,.4)';btn.style.borderColor='#f59e0b';
-    icon.className='fas fa-hand-pointer';lbl.innerText='يدوي';
-    // FIX5: إظهار زر الالتقاط دائماً في الوضع اليدوي
-    cam.style.display='inline-flex';
-    document.getElementById('scanner-instr').innerText='اضغط زر الالتقاط عندما تكون الورقة مرئية';
+    btn.style.background  = 'rgba(245,158,11,.4)';
+    btn.style.borderColor = '#f59e0b';
+    icon.className = 'fas fa-hand-pointer';
+    lbl.innerText  = 'يدوي';
+    // الوضع اليدوي: زر الالتقاط ظاهر دائماً
+    cam.style.display = 'inline-flex';
+    if(instr) instr.innerText = 'اضغط زر الالتقاط عندما تكون الورقة مرئية';
   }
 }
 function toggleScanMode(){isAutoMode=!isAutoMode;applyScanModeUI();}
@@ -901,16 +909,28 @@ async function startScanner(eid,sid,sName){
 }
 
 function resetScannerUI(){
-  // إخفاء النتيجة وإظهار الفيديو
-  previewCanvas.style.display='none';
-  video.style.display='block';
-  document.getElementById('guide-rect').style.display='block';
-  document.getElementById('result-overlay').style.display='none';
-  document.getElementById('scanner-bottom').style.display='block';
-  document.getElementById('scan-line').style.display='block';
-  document.getElementById('stab-bar').style.width='0%';
-  stabFrames=0;
-  ['cm-tl','cm-tr','cm-bl','cm-br'].forEach(id=>document.getElementById(id).classList.remove('ok'));
+  previewCanvas.style.display = 'none';
+  video.style.display         = 'block';
+  const gr = document.getElementById('guide-rect');
+  if(gr) gr.style.display = 'block';
+  // إخفاء result-overlay بشكل صريح
+  const ro = document.getElementById('result-overlay');
+  if(ro){ ro.style.display = 'none'; }
+  // إظهار الشريط السفلي
+  const sb = document.getElementById('scanner-bottom');
+  if(sb) sb.style.display = 'block';
+  // خط المسح
+  const sl = document.getElementById('scan-line');
+  if(sl) sl.style.display = 'block';
+  // شريط الاستقرار
+  const stb = document.getElementById('stab-bar');
+  if(stb) stb.style.width = '0%';
+  stabFrames = 0;
+  ['cm-tl','cm-tr','cm-bl','cm-br'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.classList.remove('ok');
+  });
+  // تطبيق وضع الكاميرا الصحيح (يُظهر/يُخفي زر اليدوي)
   applyScanModeUI();
 }
 
@@ -1025,27 +1045,38 @@ function calculateScore(choices, answerKey){
   for(let q in answerKey){
     if(q.startsWith('_')) continue;
 
-    const cOpts  = Object.keys(answerKey[q]);
+    const cOpts  = Object.keys(answerKey[q]);   // الخيارات الصحيحة
     const cCount = cOpts.length;
-    const sOpts  = (choices[q] || '').split(', ').filter(Boolean);
+    const sOpts  = (choices[q] || '').split(', ').filter(Boolean); // اختيارات التلميذ
 
     if(sOpts.length === 0) continue;
 
     if(cCount === 1){
-      // سؤال بخيار واحد: صح فقط إذا ظلّل الصحيح وحده
+      // ══ سؤال بخيار واحد ══
+      // النقطة الكاملة: الخيار الصحيح وحده تماماً
       if(sOpts.length === 1 && sOpts[0] === cOpts[0]){
         total += answerKey[q][cOpts[0]];
       }
+      // أي حالة أخرى = 0 (ظلّل خطأ، أو ظلّل صح+خطأ)
+
     } else {
-      // سؤال بخيارات متعددة
-      const fullPts    = cOpts.reduce((s, o) => s + (answerKey[q][o] || 0), 0);
-      const penaltyUnit = fullPts / cCount;
-      let earned = 0, wrongs = 0;
-      sOpts.forEach(o => {
-        if(cOpts.includes(o)) earned += (answerKey[q][o] || 0);
-        else wrongs++;
-      });
-      total += Math.max(0, Math.round((earned - wrongs * penaltyUnit) * 100) / 100);
+      // ══ سؤال بخيارات متعددة ══
+      const fullPts     = cOpts.reduce((s, o) => s + (answerKey[q][o] || 0), 0);
+      const ptPerChoice = fullPts / cCount;  // نصيب كل خيار
+
+      const correctPicked = sOpts.filter(o => cOpts.includes(o));
+      const wrongPicked   = sOpts.filter(o => !cOpts.includes(o));
+
+      // النقطة المكتسبة: مجموع نقط الخيارات الصحيحة المظلّلة
+      const earned = correctPicked.reduce((s, o) => s + (answerKey[q][o] || 0), 0);
+
+      // الخصم: يُطبَّق فقط على الزيادة عن العدد المطلوب
+      // مثال: سؤال بخيارين → ظلّل 2 (1صح+1خطأ) → لا خصم (لم يتجاوز الحد)
+      //                       ظلّل 3 (2صح+1خطأ) → خصم 1 خيار زائد فقط
+      const extraWrong  = Math.max(0, sOpts.length - cCount);
+      const deduction   = extraWrong * ptPerChoice;
+      const score       = Math.max(0, Math.round((earned - deduction) * 100) / 100);
+      total += score;
     }
   }
   return Math.round(total * 10) / 10;
