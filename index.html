@@ -50,19 +50,16 @@
 
         .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
 
-        /* --- تنسيقات ألوان وأشكال الأزرار --- */
         .btn { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.3s ease; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
         .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
         .btn-icon { padding: 8px 10px; border-radius: 6px; }
         
-        /* الألوان الخاصة بكل زر */
         .btn-primary { background: var(--primary); }
         .btn-success { background: var(--success); }
         .btn-danger { background: var(--danger); }
         .btn-warning { background: var(--warning); color: #000; }
         .btn-dark { background: var(--dark); }
         
-        /* التأثيرات عند تمرير الماوس والنقر */
         .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); opacity: 0.95; }
         .btn:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
@@ -79,7 +76,6 @@
         .exam-grid-setup { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;}
         .q-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: var(--light); border-radius: 5px;}
         
-        /* تعديل تصميم الدائرة ونقطة الأس */
         .q-option { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); display: flex; justify-content: center; align-items: center; cursor: pointer; background: white; font-weight: bold; position: relative;}
         .q-option.selected { background: var(--success); color: white; border-color: var(--success); }
         .q-score-badge { position: absolute; top: -8px; left: -8px; font-size: 11px; font-weight: bold; background: var(--warning); color: #000; border-radius: 50%; width: 22px; height: 22px; display: none; justify-content: center; align-items: center; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -90,18 +86,14 @@
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
         .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--danger); }
 
-        /* --- تصميم كاميرا الالتقاط التلقائي الدقيق --- */
         #camera-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto 15px auto; overflow: hidden; background: #000; border-radius: 10px;}
 
         #video-feed { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 10px; }
-/* 🌟 مربع التوجيه وتعتيم الخلفية بشكل مريح */
         #guide-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box; box-shadow: 0 0 0 2000px rgba(0,0,0,0.75); z-index: 2;}  
         
-        /* 🌟 زوايا ضخمة وواضحة (ZipGrade Style) */
         .target-corner { position: absolute; width: 60px; height: 60px; border: 6px solid rgba(255, 255, 255, 0.9); z-index: 5; transition: all 0.1s; }
         .target-corner.aligned { border-color: var(--success); background-color: rgba(34, 197, 94, 0.3); transform: scale(1.05); }
        
-        /* وضع الزوايا متجهة للداخل لتطويق المربعات السوداء */
         #corner-tl { top: 0; left: 0; border-right: none; border-bottom: none; }
         #corner-tr { top: 0; right: 0; border-left: none; border-bottom: none; }
         #corner-bl { bottom: 0; left: 0; border-right: none; border-top: none; }
@@ -132,18 +124,17 @@
         .omr-marker { position: absolute; background: black; }
         .omr-mid-marker { position: absolute; background: black; }
 
-/* --- Dropdown Styles --- */
         .dropdown {
             position: relative;
             display: inline-block;
         }
-.dropdown-content {
+        .dropdown-content {
             display: none;
             position: absolute;
             background-color: white;
-            min-width: 220px; /* زيادة العرض ليتسع للنص مرتاحاً */
+            min-width: 220px;
             box-shadow: 0px 10px 25px rgba(0,0,0,0.15);
-            z-index: 100; /* لضمان ظهوره فوق الجدول دائماً */
+            z-index: 100;
             border-radius: 8px;
             padding: 8px;
             right: auto;
@@ -160,20 +151,18 @@
             font-size: 0.95rem;
             font-weight: 500;
             border-radius: 6px;
-            white-space: nowrap; /* 🌟 السر هنا: منع كسر النص لسطرين أبداً */
+            white-space: nowrap;
             transition: all 0.2s ease;
         }
         .dropdown-content a:hover {
-            background-color: var(--light); /* لون هادئ عند مرور الماوس */
-            color: var(--primary); /* تغيير لون النص ليتناسق مع التطبيق */
+            background-color: var(--light);
+            color: var(--primary);
         }
 
-        /* كلاس لإظهار القائمة عند النقر */
         .show {
             display: block;
         }
 
-/* --- CSS الإعدادات --- */
         .settings-section { margin-bottom: 30px; }
         .settings-title { font-size: 1.2rem; color: var(--primary); margin-bottom: 5px; }
         .settings-desc { font-size: 0.85rem; color: var(--gray); margin-bottom: 15px; }
@@ -182,11 +171,8 @@
         .settings-card h4 { margin-bottom: 10px; color: var(--dark); text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
         .settings-list { list-style: none; max-height: 200px; overflow-y: auto; margin-bottom: 10px; }
 
-        /* --- تنسيقات عناصر الإعدادات المحسنة --- */
         .settings-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid var(--border); background: white; margin-bottom: 8px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        /* استخدام white-space: nowrap يمنع كسر الكلمة إلى سطرين */
         .settings-list label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.95rem; white-space: nowrap; color: var(--dark); font-weight: 500; margin: 0; }
-        /* تحديد حجم ثابت لزر التعليم وربطه بلون التطبيق */
         .settings-list input[type="checkbox"] { margin: 0; width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0; }
         
         .settings-actions { display: flex; gap: 10px; align-items: center; }
@@ -200,10 +186,8 @@
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            /* تنسيق الخلفية الشفافة التي تغطي الشاشة */
             .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 250; }
             .sidebar-overlay.show { display: block; }
-            /* إجبار زر الإغلاق (X) على الظهور في الهاتف */
             #closeMenuBtn { display: block !important; }
             .mobile-header { display: flex; }
             .sidebar { position: fixed; top: 0; right: 0; height: 100%; transform: translateX(100%); width: 260px; box-shadow: -5px 0 15px rgba(0,0,0,0.2); z-index: 300; }
@@ -213,7 +197,6 @@
             .table-responsive { overflow-x: auto; }
         }
 
-/* --- تنسيقات السحب والإفلات --- */
         .draggable-row { cursor: grab; transition: background-color 0.2s; }
         .draggable-row:active { cursor: grabbing; }
         .draggable-row.dragging { opacity: 0.5; background-color: #e2e8f0; }
@@ -225,20 +208,13 @@
 </head>
 <body>
 
-    <!-- الشريط العلوي للشاشات الصغيرة -->
     <div class="mobile-header" style="position: relative; justify-content: center;">
-        
-        <!-- زر القائمة الجانبية (في أقصى اليمين) -->
         <i class="fas fa-bars hamburger" style="position: absolute; right: 20px;" onclick="toggleMenu()"></i>
-        
-        <!-- الشعار الجذاب في المنتصف (بدون نص) -->
         <div style="background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
             <i class="fas fa-check-double" style="font-size: 1.5rem; color: white;"></i>
         </div>
-        
     </div>
 
-<!-- خلفية شفافة تغلق القائمة عند النقر عليها -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
     <nav class="sidebar" id="sidebar">
 
@@ -251,7 +227,7 @@
          <li id="nav-classes" onclick="switchTab('classes')"><i class="fas fa-users"></i> <span>لوائح الأقسام</span></li>
             <li id="nav-create-exam" onclick="switchTab('create-exam')"><i class="fas fa-plus-circle"></i> <span>إنشاء امتحان</span></li>
             <li id="nav-results" onclick="switchTab('results')"><i class="fas fa-chart-bar"></i> <span>تصحيح الامتحان</span></li>
-<li id="nav-settings" onclick="switchTab('settings')"><i class="fas fa-cog"></i> <span>الإعدادات</span></li>
+            <li id="nav-settings" onclick="switchTab('settings')"><i class="fas fa-cog"></i> <span>الإعدادات</span></li>
         </ul>
         <div class="sidebar-footer">
             <button class="btn btn-dark" style="width:100%;" onclick="openBackupModal()"><i class="fas fa-database"></i> نسخة احتياطية</button>
@@ -259,7 +235,7 @@
     </nav>
 
     <main class="main-content">
-<!-- الأقسام -->
+        <!-- الأقسام -->
         <section id="classes" class="tab-pane">
             <div class="header" style="display: block;">
                 <h2 style="margin-bottom: 5px;">لوائح الأقسام</h2>
@@ -285,13 +261,12 @@
                 </div>
             </div>
         </section>
-<!-- الإعدادات -->
+
+        <!-- الإعدادات -->
         <section id="settings" class="tab-pane">
             <div class="header"><h2>إعدادات النظام</h2></div>
 
-             <!-- صف الموسم والمراحل -->
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <!-- الموسم الدراسي (على اليمين) -->
                 <div class="card settings-section" style="flex: 1; min-width: 250px;">
                     <h3 class="settings-title">الموسم الدراسي</h3>
                     <p class="settings-desc">قم بالتعليم على الموسم الدراسي الحالي.</p>
@@ -299,7 +274,6 @@
                     <button class="btn btn-primary btn-sm" onclick="addNewSettingItem('year')"><i class="fas fa-plus"></i> إضافة موسم جديد</button>
                 </div>
                 
-                <!-- المراحل (على اليسار) -->
                 <div class="card settings-section" style="flex: 1; min-width: 250px;">
                     <h3 class="settings-title">المراحل</h3>
                     <p class="settings-desc">قم بالتعليم على المراحل الخمسة المستهدفة.</p>
@@ -311,9 +285,7 @@
             <div class="card settings-section">
                 <h3 class="settings-title">الأقسام المسندة</h3>
                 <p class="settings-desc">قم بالتعليم على الأقسام المسندة إليك لكي تظهر بشكل افتراضي في الخطوات اللاحقة.. يمكنك أيضا أن تضيف أقسام جديدة في حال لم تجد قسمك.</p>
-                <div class="settings-grid" id="settingsLevelsGrid">
-                    <!-- سيتم تعبئة البطاقات الـ 3 هنا تلقائياً بواسطة الجافاسكريبت -->
-                </div>
+                <div class="settings-grid" id="settingsLevelsGrid"></div>
             </div>
 
             <div class="card settings-section">
@@ -323,7 +295,8 @@
                 <button class="btn btn-primary btn-sm" onclick="addNewSettingItem('subject')"><i class="fas fa-plus"></i> إضافة مادة جديدة</button>
             </div>
         </section>
-<!-- إنشاء امتحان -->
+
+        <!-- إنشاء امتحان -->
         <section id="create-exam" class="tab-pane">
             <div class="header" style="display: block;">
                 <h2 id="createExamTitle" style="margin-bottom: 5px;">إنشاء ورقة امتحان</h2>
@@ -356,65 +329,48 @@
                 <button class="btn btn-success" style="margin-top:20px;" onclick="saveExam()" id="saveExamBtn"><i class="fas fa-save"></i> حفظ الامتحان</button>
             </div>
         </section>
-<!-- النتائج -->
+
+        <!-- النتائج -->
         <section id="results" class="tab-pane">
             <div class="header" style="display: block;">
                 <h2 style="margin-bottom: 5px;">تصحيح الامتحان</h2>
                 <p style="font-size: 0.9rem; color: var(--gray);">قم بتحديد الامتحان من القوائم العلوية لعرض ورقة الإجابة، ثم استخدم الكاميرا لمسح أوراق التلاميذ وتصحيحها تلقائياً، يمكنك أيضا التعديل على النقط يدوياً.</p>
             </div>
-            <!-- فلاتر البحث العلوية -->
             <div class="card flex-row" style="margin-bottom: 10px;">
-
                 <select id="resultYearSelect" onchange="updateResultExams()" style="flex:1; margin:0;"><option value="">- الموسم -</option></select>
                 <select id="resultStageSelect" onchange="updateResultExams()" style="flex:1; margin:0;"><option value="">- المرحلة -</option></select>
                 <select id="resultSubjectSelect" onchange="updateResultExams()" style="flex:1; margin:0;"><option value="">- المادة -</option></select>
                 <select id="resultClassSelect" onchange="updateResultExams()" style="flex:1; margin:0;"></select>
             </div>
  
-            <!-- حقل اختيار الامتحان والبحث -->
             <div class="card flex-row" style="margin-bottom: 15px;">
                 <select id="resultExamSelect" onchange="renderResultsTable()" style="flex:2; margin:0;"></select>
                 <input type="text" id="searchStudent" placeholder="بحث باسم التلميذ..." onkeyup="renderResultsTable()" style="flex:1; margin:0;">
             </div>
-<div class="card flex-row" style="justify-content:space-between;">
-    <!-- معلومات الامتحان في اليمين -->
-    <div id="examInfoCard" style="text-align:right; flex:1; display:none;">
-        <h3 id="infoExamTitle" style="color:var(--primary); margin:0;"></h3>
-        <p id="infoExamDetails" style="font-size:0.9rem; color:var(--gray); margin:0;"></p>
-        <p id="infoExamStats" style="font-size:0.9rem; margin:0;"></p>
-    </div>
 
-    <!-- زر القائمة المنسدلة في اليسار -->
-    <div class="dropdown">
-        <button onclick="toggleDropdown()" class="btn btn-primary">
-            <i class="fas fa-file-alt"></i> ورقة الإجابة
-        </button>
+            <div class="card flex-row" style="justify-content:space-between;">
+                <div id="examInfoCard" style="text-align:right; flex:1; display:none;">
+                    <h3 id="infoExamTitle" style="color:var(--primary); margin:0;"></h3>
+                    <p id="infoExamDetails" style="font-size:0.9rem; color:var(--gray); margin:0;"></p>
+                    <p id="infoExamStats" style="font-size:0.9rem; margin:0;"></p>
+                </div>
 
-
-
-        <div id="myDropdown" class="dropdown-content">
-            <a href="#" onclick="event.preventDefault(); editCurrentExam()"><i class="fas fa-edit" style="color:var(--warning);"></i> تعديل الامتحان</a>
-            <a href="#" onclick="event.preventDefault(); deleteCurrentExam()"><i class="fas fa-trash" style="color:var(--danger);"></i> حذف الامتحان</a>
-
-<a href="#" onclick="event.preventDefault(); openBroadcastModal()"><i class="fas fa-copy" style="color:var(--secondary);"></i> تعميم الامتحان</a>
-
-            <hr style="margin: 5px 0;">
-
-            <a href="#" onclick="event.preventDefault(); printCurrentExam('pdf')"><i class="fas fa-file-pdf" style="color:var(--dark);"></i> تحميل PDF</a>
-            <a href="#" onclick="event.preventDefault(); printCurrentExam('png')"><i class="fas fa-image" style="color:var(--success);"></i> تحميل PNG</a>
-        </div>
-    </div>
-</div>
-
-    <!-- معلومات الامتحان في الوسط -->
-    <div id="examInfoCard" style="text-align:center; flex:1; display:none;">
-        <h3 id="infoExamTitle" style="color:var(--primary); margin:0;"></h3>
-        <p id="infoExamDetails" style="font-size:0.9rem; color:var(--gray); margin:0;"></p>
-        <p id="infoExamStats" style="font-size:0.9rem; margin:0;"></p>
-    </div>
-</div>
+                <div class="dropdown">
+                    <button onclick="toggleDropdown()" class="btn btn-primary">
+                        <i class="fas fa-file-alt"></i> ورقة الإجابة
+                    </button>
+                    <div id="myDropdown" class="dropdown-content">
+                        <a href="#" onclick="event.preventDefault(); editCurrentExam()"><i class="fas fa-edit" style="color:var(--warning);"></i> تعديل الامتحان</a>
+                        <a href="#" onclick="event.preventDefault(); deleteCurrentExam()"><i class="fas fa-trash" style="color:var(--danger);"></i> حذف الامتحان</a>
+                        <a href="#" onclick="event.preventDefault(); openBroadcastModal()"><i class="fas fa-copy" style="color:var(--secondary);"></i> تعميم الامتحان</a>
+                        <hr style="margin: 5px 0;">
+                        <a href="#" onclick="event.preventDefault(); printCurrentExam('pdf')"><i class="fas fa-file-pdf" style="color:var(--dark);"></i> تحميل PDF</a>
+                        <a href="#" onclick="event.preventDefault(); printCurrentExam('png')"><i class="fas fa-image" style="color:var(--success);"></i> تحميل PNG</a>
+                    </div>
+                </div>
+            </div>
        
-     <div class="card flex-row" style="margin-bottom: 15px;">
+            <div class="card flex-row" style="margin-bottom: 15px;">
                 <button id="toggleCompBtn" class="btn btn-warning" onclick="toggleCompetencies()"><i class="fas fa-exchange-alt"></i> إظهار الكفايات</button>
                 <button class="btn btn-primary" onclick="showStatistics()"><i class="fas fa-chart-pie"></i> إحصائيات القسم</button>
             </div>
@@ -428,7 +384,7 @@
         </section>
     </main>
 
-    <!-- النوافذ المنبثقة (Modals) -->
+    <!-- النوافذ المنبثقة -->
     
     <div class="modal" id="bulkAddModal">
         <div class="modal-content">
@@ -467,11 +423,11 @@
             <div id="previewContainer" class="preview-grid"></div>
         </div>
     </div>
-<!-- نافذة الكاميرا بأسلوب ZipGrade (Full Screen) -->
+
+    <!-- نافذة الكاميرا -->
     <div class="modal" id="scannerModal" style="padding: 0; background: #000;">
         <div class="modal-content" style="width: 100vw; height: 100vh; max-width: none; max-height: none; padding: 0; border-radius: 0; display: flex; flex-direction: column; background: #000; position: relative; overflow: hidden;">
             
-            <!-- الشريط العلوي -->
             <div style="position:absolute;top:0;left:0;width:100%;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.62);z-index:30;gap:8px;">
                 <button onclick="stopScanner()" style="background:none;border:none;color:white;font-size:1.4rem;cursor:pointer;flex-shrink:0;"><i class="fas fa-arrow-left"></i></button>
                 <h3 id="scannerTitle" style="color:white;margin:0;font-size:1rem;text-align:center;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Scanning</h3>
@@ -485,20 +441,16 @@
                 </div>
             </div>
 
-            <!-- حاوية الكاميرا تملأ الشاشة -->
             <div id="camera-container" style="flex: 1; width: 100%; position: relative; overflow: hidden;">
                 <video id="video-feed" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
                 
-                <!-- المربع الدليلي مع التظليل المحيط (Overlay) -->
                 <div id="guide-box" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.4); box-shadow: 0 0 0 2000px rgba(0,0,0,0.6); z-index: 2; box-sizing: border-box;">
                     
-                    <!-- المربعات الكبيرة الأربعة (Viewfinders) -->
                     <div id="corner-tl" style="position:absolute; top:-2px; left:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
                     <div id="corner-tr" style="position:absolute; top:-2px; right:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
                     <div id="corner-bl" style="position:absolute; bottom:-2px; left:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
                     <div id="corner-br" style="position:absolute; bottom:-2px; right:-2px; width:45px; height:45px; border:3px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); transition:all 0.2s;"></div>
                     
-                    <!-- خط المسح وشريط الثبات -->
                     <div id="scan-line" style="position:absolute; top:0; left:0; width:100%; height:2px; background:rgba(34,197,94,0.8); box-shadow:0 0 10px #22c55e; display:none;"></div>
                     <div id="stabilization-bar" style="position:absolute; bottom:-6px; left:0; height:4px; background:#22c55e; width:0%; transition:width 0.1s;"></div>
                 </div>
@@ -507,11 +459,9 @@
             <canvas id="preview-canvas" style="width:100%; height:100%; object-fit:contain; display:none; background:#000; position:absolute; top:0; left:0; z-index:15;"></canvas>
             <canvas id="analysis-canvas" style="display:none;"></canvas>
 
-            <!-- شريط التعليمات -->
             <div id="scanner-bottom-bar" style="position:absolute;bottom:0;left:0;width:100%;padding:13px;background:rgba(0,0,0,0.76);z-index:20;text-align:center;">
                 <p id="scanner-instruction" style="color:white;font-weight:bold;font-size:0.93rem;margin:0;">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p>
             </div>
-            <!-- شريط النتيجة -->
             <div id="result-top-bar" style="display:none;position:absolute;top:0;left:0;width:100%;padding:65px 14px 18px;background:rgba(0,0,0,0.93);z-index:25;text-align:center;">
                 <div id="scanned-feedback" style="color:#22c55e;font-size:1.65rem;font-weight:bold;margin-bottom:18px;letter-spacing:.5px;"></div>
                 <div style="display:flex;justify-content:center;gap:12px;">
@@ -539,7 +489,8 @@
             <button class="btn btn-warning" style="width:100%;" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> استيراد البيانات (JSON)</button>
         </div>
     </div>
-<!-- نافذة تعميم الامتحان -->
+
+    <!-- نافذة تعميم الامتحان -->
     <div class="modal" id="broadcastModal">
         <div class="modal-content" style="max-width:400px;">
             <div class="modal-header">
@@ -547,16 +498,12 @@
                 <button class="close-btn" onclick="closeModal('broadcastModal')">&times;</button>
             </div>
             <p style="font-size:0.9rem; color:var(--gray); margin-bottom:15px;">حدد الأقسام (من نفس المستوى) التي تريد نسخ هذا الامتحان إليها بنفس الإعدادات ومفتاح الإجابة:</p>
-            
-            <!-- قائمة الأقسام ستظهر هنا -->
-            <div id="broadcastClassesList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px; max-height:250px; overflow-y:auto; padding: 5px;">
-            </div>
-            
+            <div id="broadcastClassesList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px; max-height:250px; overflow-y:auto; padding: 5px;"></div>
             <button class="btn btn-primary" id="confirmBroadcastBtn" onclick="confirmBroadcastExam()" style="width:100%;"><i class="fas fa-check-circle"></i> تأكيد التعميم</button>
         </div>
     </div>
 
-    <!-- Print Template -->
+    <!-- قالب الطباعة -->
     <div id="print-wrapper">
         <div class="omr-sheet" id="omr-print-template">
             <div id="omr-sheet-inner"></div>
@@ -579,7 +526,7 @@
                         if (!db.objectStoreNames.contains('classes')) db.createObjectStore('classes', { keyPath: 'id' });
                         if (!db.objectStoreNames.contains('exams')) db.createObjectStore('exams', { keyPath: 'id' });
                         if (!db.objectStoreNames.contains('results')) db.createObjectStore('results', { keyPath: 'id' });
-if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'id' });
+                        if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'id' });
                     };
                     req.onsuccess = (e) => { db = e.target.result; resolve(); };
                     req.onerror = (e) => reject(e);
@@ -617,25 +564,20 @@ if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', 
                     if(!AppState.results[eId]) AppState.results[eId] = {};
                     AppState.results[eId][sId] = r;
                 });
-// --- تحميل الإعدادات الافتراضية بطريقة آمنة ---
-                const savedSettings = await IDB.getAll('settings');
 
-// أضفنا شروطاً للتأكد من أن الإعدادات ليست فارغة أو تالفة
+                const savedSettings = await IDB.getAll('settings');
                 if(savedSettings.length > 0 && savedSettings[0] && savedSettings[0].levels && savedSettings[0].subjects) {
                     AppState.settings = savedSettings[0];
-                    // تحديث هام: إضافة المواسم لقاعدة البيانات إذا لم تكن موجودة
                     if(!AppState.settings.years) {
                         AppState.settings.years =['2025/2026', '2026/2027', '2027/2028', '2028/2029', '2029/2030'].map(n => ({id: generateId(), name: n, checked: false}));
                         await IDB.put('settings', AppState.settings);
                     }
                 } else {
-
                     AppState.settings = getDefaultSettings();
                     await IDB.put('settings', AppState.settings);
                 }
-                // تغيير اسم الذاكرة لكي ينسى المتصفح التبويب القديم ويفتح "الإعدادات" أولاً
-                const uiState = JSON.parse(localStorage.getItem('omr_uistate_v3')) || { tab: 'settings' };
 
+                const uiState = JSON.parse(localStorage.getItem('omr_uistate_v3')) || { tab: 'settings' };
                 switchTab(uiState.tab, false);
 
                 if(uiState.tab === 'results' && uiState.classId) {
@@ -670,8 +612,7 @@ if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', 
                     { id: generateId(), name: 'الثانية إعدادي', classes: defClasses('الثانية') },
                     { id: generateId(), name: 'الثالثة إعدادي', classes: defClasses('الثالثة') }
                 ],
-
-               subjects:['اللغة العربية', 'اللغة الفرنسية', 'الرياضيات', 'الفيزياء', 'علوم الحياة والأرض'].map(n => ({id: generateId(), name: n, checked: false})),
+                subjects:['اللغة العربية', 'اللغة الفرنسية', 'الرياضيات', 'الفيزياء', 'علوم الحياة والأرض'].map(n => ({id: generateId(), name: n, checked: false})),
                 stages:['المرحلة الأولى', 'المرحلة الثانية', 'المرحلة الثالثة', 'المرحلة الرابعة', 'المرحلة الخامسة'].map(n => ({id: generateId(), name: n, checked: false})),
                 years:['2025/2026', '2026/2027', '2027/2028', '2028/2029', '2029/2030'].map(n => ({id: generateId(), name: n, checked: false}))
             };
@@ -700,7 +641,7 @@ if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', 
             renderList('settingsYearsList', AppState.settings.years, 'year');
         }
 
-async function toggleSetting(type, lvlId, itemId) {
+        async function toggleSetting(type, lvlId, itemId) {
             let item;
             if(type === 'class') item = AppState.settings.levels.find(l=>l.id===lvlId).classes.find(c=>c.id===itemId);
             else if(type === 'subject') item = AppState.settings.subjects.find(s=>s.id===itemId);
@@ -749,14 +690,14 @@ async function toggleSetting(type, lvlId, itemId) {
             if(val && list.find(i=>i.name===val && i.checked)) sel.value = val;
         }
 
-         function toggleMenu() { 
+        function toggleMenu() { 
             document.getElementById('sidebar').classList.toggle('open'); 
             if(document.getElementById('sidebarOverlay')) {
                 document.getElementById('sidebarOverlay').classList.toggle('show');
             }
         }
 
-         function switchTab(tId, save = true) {
+        function switchTab(tId, save = true) {
             document.querySelectorAll('.tab-pane, .nav-links li').forEach(el => el.classList.remove('active'));
             if(document.getElementById(tId)) document.getElementById(tId).classList.add('active');
             if(document.getElementById('nav-'+tId)) document.getElementById('nav-'+tId).classList.add('active');
@@ -765,21 +706,18 @@ async function toggleSetting(type, lvlId, itemId) {
                 populateSettingsDropdown('yearSelect', AppState.settings.years);
                 populateClassesDropdown('classSelect');
             }
-
             if(tId==='create-exam') {
                 populateSettingsDropdown('examYearSelect', AppState.settings.years);
                 populateSettingsDropdown('examSubjectSelect', AppState.settings.subjects);
                 populateSettingsDropdown('examStageSelect', AppState.settings.stages);
                 populateClassesDropdown('examClassSelect');
             }
-
             if(tId==='results') {
                 populateSettingsDropdown('resultYearSelect', AppState.settings.years);
                 populateSettingsDropdown('resultStageSelect', AppState.settings.stages);
                 populateSettingsDropdown('resultSubjectSelect', AppState.settings.subjects);
                 populateClassesDropdown('resultClassSelect');
             }
-
             if(tId==='settings') renderSettings();
 
             if(window.innerWidth <= 768) {
@@ -788,12 +726,10 @@ async function toggleSetting(type, lvlId, itemId) {
                     document.getElementById('sidebarOverlay').classList.remove('show');
                 }
             }
-
             if(save) saveUIState();
         }
 
-// === Classes & Students ===
-        
+        // === Classes & Students ===
         function populateClassesDropdown(id) {
             const sel = document.getElementById(id); const val = sel.value;
             sel.innerHTML = '<option value="">-- اختر القسم --</option>';
@@ -809,7 +745,6 @@ async function toggleSetting(type, lvlId, itemId) {
                 }
             });
             
-            // استعادة الموسم المحفوظ إذا كان التبويب هو لوائح الأقسام
             const uiState = JSON.parse(localStorage.getItem('omr_uistate_v3')) || {};
             if(id === 'classSelect' && uiState.year) {
                 document.getElementById('yearSelect').value = uiState.year;
@@ -824,22 +759,19 @@ async function toggleSetting(type, lvlId, itemId) {
             const year = document.getElementById('yearSelect').value;
             const tb = document.getElementById('studentsTableBody'); tb.innerHTML='';
             
-            if(!cid || !year) return; // يجب توفر القسم والموسم
+            if(!cid || !year) return;
             
             const cls = AppState.classes.find(c=>c.id===cid);
-            // تصفية التلاميذ حسب الموسم الدراسي
             let yearStudents = cls.students.filter(s => s.year === year);
 
             yearStudents.sort((a,b)=>(a.roll||0)-(b.roll||0)).forEach((s,i) => {
                 s.roll = s.roll || (i+1);
-                // أضفنا خصائص السحب (draggable) وأيقونة المقبض (drag-handle)
                 tb.innerHTML += `<tr class="draggable-row" draggable="true" 
                     ondragstart="dragStart(event, '${s.id}')" 
                     ondragover="dragOver(event)" 
                     ondragenter="dragEnter(event)" 
                     ondragleave="dragLeave(event)" 
                     ondrop="drop(event, '${cid}', '${year}', '${s.id}')">
-                    
                     <td><i class="fas fa-grip-lines drag-handle" title="اسحب لتغيير الترتيب"></i> ${s.roll}</td>
                     <td style="text-align:right;">${s.name}</td>
                     <td class="actions-cell">
@@ -861,11 +793,9 @@ async function toggleSetting(type, lvlId, itemId) {
             const year = document.getElementById('yearSelect').value;
             const cls = AppState.classes.find(c=>c.id===cid);
             const names = document.getElementById('bulkStudentsText').value.split('\n').map(n=>n.trim()).filter(n=>n);
-            
             let yearStudents = cls.students.filter(s => s.year === year);
             let roll = yearStudents.length ? Math.max(...yearStudents.map(s=>s.roll||0))+1 : 1;
-            
-            names.forEach(name => cls.students.push({id: generateId(), name, roll: roll++, year: year})); // حفظ التلميذ مع الموسم
+            names.forEach(name => cls.students.push({id: generateId(), name, roll: roll++, year: year}));
             await IDB.put('classes', cls); closeModal('bulkAddModal'); renderStudents();
         }
 
@@ -873,11 +803,9 @@ async function toggleSetting(type, lvlId, itemId) {
             if(!document.getElementById('classSelect').value || !document.getElementById('yearSelect').value) return alert("اختر الموسم والقسم أولاً");
             document.getElementById('studentModalTitle').innerText = 'إضافة تلميذ';
             document.getElementById('editStudentId').value = ''; document.getElementById('editStudentName').value = '';
-            
             const cls = AppState.classes.find(c=>c.id===document.getElementById('classSelect').value);
             const year = document.getElementById('yearSelect').value;
             let yearStudents = cls.students.filter(s => s.year === year);
-            
             document.getElementById('editStudentRoll').value = yearStudents.length ? Math.max(...yearStudents.map(s=>s.roll||0))+1 : 1;
             document.getElementById('moveClassWrapper').style.display = 'none';
             document.getElementById('studentModal').style.display = 'flex';
@@ -900,16 +828,13 @@ async function toggleSetting(type, lvlId, itemId) {
             const roll = parseInt(document.getElementById('editStudentRoll').value)||0;
             const oldCid = document.getElementById('classSelect').value;
             const year = document.getElementById('yearSelect').value;
-            
             if(!name) return;
-            
             if(sid) {
                 const newCid = document.getElementById('editStudentClass').value;
                 const oldCls = AppState.classes.find(c=>c.id===oldCid);
                 const sIdx = oldCls.students.findIndex(x=>x.id===sid);
                 const sData = oldCls.students[sIdx];
                 sData.name = name; sData.roll = roll;
-                
                 if(oldCid !== newCid) {
                     oldCls.students.splice(sIdx,1); 
                     AppState.classes.find(c=>c.id===newCid).students.push(sData);
@@ -920,7 +845,7 @@ async function toggleSetting(type, lvlId, itemId) {
                 }
             } else {
                 const cls = AppState.classes.find(c=>c.id===oldCid);
-                cls.students.push({id: generateId(), name, roll, year}); // إضافة التلميذ للموسم المحدد
+                cls.students.push({id: generateId(), name, roll, year});
                 await IDB.put('classes', cls);
             }
             closeModal('studentModal'); renderStudents();
@@ -928,35 +853,20 @@ async function toggleSetting(type, lvlId, itemId) {
 
         async function deleteStudent(cid, sid) {
             if(!confirm("هل أنت متأكد من حذف التلميذ؟")) return;
-            
             const cls = AppState.classes.find(c=>c.id===cid);
-            
-            // 1. العثور على التلميذ لمعرفة الموسم الدراسي الخاص به قبل حذفه
             const studentToDelete = cls.students.find(s=>s.id===sid);
             const targetYear = studentToDelete.year;
-
-            // 2. حذف التلميذ من القسم
             cls.students = cls.students.filter(s=>s.id!==sid); 
-            
-            // 3. إعادة الترتيب التلقائي للأرقام الترتيبية (ر.ت) لتلاميذ هذا الموسم فقط
             let yearStudents = cls.students.filter(s => s.year === targetYear);
-            yearStudents.sort((a, b) => (a.roll || 0) - (b.roll || 0)); // ترتيبهم أولاً حسب أرقامهم السابقة
-            yearStudents.forEach((student, index) => {
-                student.roll = index + 1; // إعطاء رقم جديد متسلسل يبدأ من 1
-            });
-
-            // 4. حفظ التعديلات في قاعدة البيانات
+            yearStudents.sort((a, b) => (a.roll || 0) - (b.roll || 0));
+            yearStudents.forEach((student, index) => { student.roll = index + 1; });
             await IDB.put('classes', cls);
-            
-            // 5. حذف نتائج التلميذ المحذوف من الامتحانات
             for(let eid in AppState.results) {
                 if(AppState.results[eid][sid]) { 
                     delete AppState.results[eid][sid]; 
                     await IDB.delete('results', `${eid}___${sid}`); 
                 }
             }
-            
-            // تحديث الجدول لترى الترتيب الجديد فوراً
             renderStudents();
         }
 
@@ -964,22 +874,13 @@ async function toggleSetting(type, lvlId, itemId) {
             const cid = document.getElementById('classSelect').value;
             const year = document.getElementById('yearSelect').value;
             if(!cid || !year) return alert("الرجاء تحديد الموسم والقسم");
-            
             const cls = AppState.classes.find(c=>c.id===cid);
             let yearStudentsCount = cls.students.filter(s => s.year === year).length;
-            
             if(yearStudentsCount === 0) return alert("هذا القسم فارغ بالفعل في هذا الموسم!");
-            
             if(confirm(`⚠️ تنبيه هام!\nهل أنت متأكد من حذف جميع تلاميذ هذا القسم للموسم الدراسي (${year})؟\nهذا الإجراء سيؤدي أيضاً إلى حذف جميع نتائجهم ولن تتمكن من التراجع عنه!`)) {
-                
-                // تحديد التلاميذ المراد حذفهم لمسح نتائجهم لاحقاً
                 let studentsToDelete = cls.students.filter(s => s.year === year);
-                
-                // الإبقاء فقط على تلاميذ المواسم الأخرى
                 cls.students = cls.students.filter(s => s.year !== year);
                 await IDB.put('classes', cls);
-                
-                // حذف نتائجهم من قاعدة البيانات
                 for(let student of studentsToDelete) {
                     for(let eid in AppState.results) {
                         if(AppState.results[eid][student.id]) {
@@ -993,13 +894,12 @@ async function toggleSetting(type, lvlId, itemId) {
             }
         }
 
-        // === Exam Creation (Multiple Options allowed) ===
+        // === Exam Creation ===
         let currentSetup = null;
 
-
         function generateExamGrid() {
-        const name = document.getElementById('examName').value, cid = document.getElementById('examClassSelect').value;
-const qCount = parseInt(document.getElementById('examQCount').value), optCount = parseInt(document.getElementById('examOptionCount').value);
+            const name = document.getElementById('examName').value, cid = document.getElementById('examClassSelect').value;
+            const qCount = parseInt(document.getElementById('examQCount').value), optCount = parseInt(document.getElementById('examOptionCount').value);
             const year = document.getElementById('examYearSelect').value;
             const subject = document.getElementById('examSubjectSelect').value;
             const stage = document.getElementById('examStageSelect').value;
@@ -1022,12 +922,9 @@ const qCount = parseInt(document.getElementById('examQCount').value), optCount =
         function toggleOption(el, qId, opt) {
             const qKey = `Q${qId}`;
             if(!currentSetup.answerKey[qKey]) currentSetup.answerKey[qKey] = {};
-            
             if(!el.classList.contains('selected')) {
                 let pts = prompt(`أدخل النقطة للإجابة الصحيحة (${opt}):`, "1");
                 if(pts === null || isNaN(parseFloat(pts)) || pts.trim() === "") return;
-                
-                // تمت إزالة الكود الذي يحذف التحديد عن الخيارات الأخرى لتفعيل اختيار أكثر من خيار
                 currentSetup.answerKey[qKey][opt] = parseFloat(pts);
                 el.classList.add('selected');
                 el.querySelector('.q-score-badge').innerText = pts;
@@ -1041,29 +938,22 @@ const qCount = parseInt(document.getElementById('examQCount').value), optCount =
             buildPrintTemplate(currentSetup);
             setTimeout(async () => {
                 currentSetup.layout = extractBubbleCoordinates();
-                
                 const existingIdx = AppState.exams.findIndex(e => e.id === currentSetup.id);
                 if(existingIdx >= 0) AppState.exams[existingIdx] = currentSetup;
                 else AppState.exams.push(currentSetup);
-                
                 await IDB.put('exams', currentSetup);
                 alert("تم الحفظ بنجاح!");
                 document.getElementById('examAnswerKeyContainer').style.display = 'none';
                 document.getElementById('editingExamId').value = '';
-                // نقله لتبويب النتائج تلقائياً
-switchTab('results'); 
-// ضبط الحقول تلقائياً لعرض الامتحان المحفوظ
-document.getElementById('resultClassSelect').value = currentSetup.classId;
-updateResultExams(); // تحديث القائمة المنسدلة للامتحانات
-document.getElementById('resultExamSelect').value = currentSetup.id;
-updateResultExams(); // استدعاء نهائي لعرض الجدول والبطاقة
+                switchTab('results'); 
+                document.getElementById('resultClassSelect').value = currentSetup.classId;
+                updateResultExams();
+                document.getElementById('resultExamSelect').value = currentSetup.id;
+                updateResultExams();
             }, 300);
         }
 
-        // Fix: Restoring previously selected options correctly when editing
-
-
-function editExamSetup(id) {
+        function editExamSetup(id) {
             const ex = AppState.exams.find(e => e.id === id);
             document.getElementById('editingExamId').value = ex.id;
             document.getElementById('examName').value = ex.name;
@@ -1073,17 +963,10 @@ function editExamSetup(id) {
             document.getElementById('examClassSelect').value = ex.classId;
             document.getElementById('examQCount').value = ex.qCount;
             document.getElementById('examOptionCount').value = ex.options.length;
-            
             switchTab('create-exam');
-            
-            // توليد الشبكة فارغة أولاً
             generateExamGrid();
-            
-            // 🌟 الإصلاح: استعادة مفتاح الإجابة القديم بدلاً من مسحه
             currentSetup.id = ex.id;
             currentSetup.answerKey = JSON.parse(JSON.stringify(ex.answerKey)); 
-            
-            // إعادة تلوين الدوائر التي تم اختيارها سابقاً
             for(let i=1; i<=ex.qCount; i++) {
                 let qKey = `Q${i}`;
                 if(ex.answerKey[qKey]) {
@@ -1103,54 +986,38 @@ function editExamSetup(id) {
             }
         }
 
-
         async function deleteExam(id) {
-            // لا نسأل عن التأكيد هنا، لأن الدالة التي تستدعيها هي من يسأل
             AppState.exams = AppState.exams.filter(e => e.id !== id);
             await IDB.delete('exams', id);
-            
-            // حذف النتائج المرتبطة بهذا الامتحان
             if(AppState.results[id]) {
                 for(let sid in AppState.results[id]) {
                     await IDB.delete('results', `${id}___${sid}`);
                 }
                 delete AppState.results[id];
             }
-            
-            // لا تقم باستدعاء renderExamCards() المحذوفة
-            // التحديث سيتم تلقائياً عبر updateResultExams()
         }
 
         // =======================================================
         // ثوابت الورقة — ZipGrade Style
         // الورقة: 794×1123 px (A4)
-        // مربعات الزوايا: 20×20 px، هامش 10px
-        // مربعات الوسط: 14×28 px على الهامش الأيمن والأيسر
-        // المنطقة المرجعية: بين الحواف الخارجية للمربعات الأربعة الزاوية
         // =======================================================
         const OMR = {
             W:794, H:1123,
-            // مربعات الزوايا
-            CM:20, CO:10,
-            // المنطقة المرجعية
+            CM:20, CO:10,   // حجم مربع الزاوية وإزاحته
             get RL(){ return this.CO; },           // 10
             get RT(){ return this.CO; },           // 10
             get RR(){ return this.W-this.CO; },    // 784
             get RB(){ return this.H-this.CO; },    // 1113
             get RW(){ return this.RR-this.RL; },   // 774
             get RH(){ return this.RB-this.RT; },   // 1103
-            // الدائرة
-            BD:26, // قطر الدائرة بالبكسل (26px = واضحة ومريحة)
-            // إعدادات الشبكة
+            BD:26,       // قطر الدائرة بالبكسل
             Q_GAP:36,    // مسافة بين مراكز صفوف الأسئلة
             OPT_GAP:34,  // مسافة بين مراكز الخيارات
             NUM_W:22,    // عرض عمود رقم السؤال
-            NUM_GAP:8,   // مسافة بين الرقم والأول دائرة
-            BLK:10,      // عدد الأسئلة في كل كتلة (مثل ZipGrade)
-            // الترويسة
-            HDR_H: 155,  // ارتفاع منطقة الرأس (مُصحَّح)
-            // الهامش الداخلي من حدود المرجع
-            PAD: 35,  // هامش داخلي من المنطقة المرجعية
+            NUM_GAP:8,   // مسافة بين الرقم وأول دائرة
+            BLK:10,      // عدد الأسئلة في كل كتلة
+            HDR_H: 155,  // ارتفاع منطقة الرأس
+            PAD: 35,     // هامش داخلي من المنطقة المرجعية
         };
 
         function buildPrintTemplate(ex) {
@@ -1159,26 +1026,20 @@ function editExamSetup(id) {
             const nOpt = opts.length;
             const BLK  = OMR.BLK;
 
-            // ==== أبعاد كتلة الأسئلة ====
             const blockW = OMR.NUM_W + OMR.NUM_GAP + nOpt * OMR.OPT_GAP;
-            const innerW = OMR.RW - OMR.PAD * 2;  // العرض المتاح للأسئلة
+            const innerW = OMR.RW - OMR.PAD * 2;
 
-            // كم عمود يسعه العرض؟ (حد أقصى 4)
             const maxCols = Math.min(4, Math.floor(innerW / (blockW + 20)));
             const numCols = Math.max(1, maxCols);
             const colW    = Math.floor(innerW / numCols);
 
-            // عدد الكتل (كل كتلة = BLK أسئلة)
             const numBlocks = Math.ceil(ex.qCount / BLK);
-            // كم كتلة في كل عمود؟
             const blocksPerCol = Math.ceil(numBlocks / numCols);
 
-            // ==== بناء HTML ====
             let html = '';
 
-            // 6 مربعات: 4 زوايا + 2 وسط
             const {CM,CO,W,H} = OMR;
-            const midY = Math.round(H/2) - 14; // مركز الورقة رأسياً
+            const midY = Math.round(H/2) - 14;
             html += `
 <div class="omr-marker" style="width:${CM}px;height:${CM}px;top:${CO}px;left:${CO}px;"></div>
 <div class="omr-marker" style="width:${CM}px;height:${CM}px;top:${CO}px;right:${CO}px;"></div>
@@ -1187,10 +1048,9 @@ function editExamSetup(id) {
 <div class="omr-mid-marker" style="width:14px;height:28px;top:${midY}px;left:${CO}px;"></div>
 <div class="omr-mid-marker" style="width:14px;height:28px;top:${midY}px;right:${CO}px;"></div>`;
 
-            // ==== الترويسة ====
             const hdrL = OMR.RL + OMR.PAD;
             const hdrR = OMR.RR - OMR.PAD;
-            const hdrT = OMR.CO + OMR.CM + 22;  // 22px هامش مريح بعد المربعات
+            const hdrT = OMR.CO + OMR.CM + 22;
             html += `
 <div style="position:absolute;left:${hdrL}px;top:${hdrT}px;right:${W-hdrR}px;direction:rtl;font-family:Arial,sans-serif;">
   <div style="border:2px solid #000;border-radius:4px;padding:5px 8px;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
@@ -1204,39 +1064,34 @@ function editExamSetup(id) {
   <div style="text-align:center;font-size:9px;background:#f2f2f2;padding:2px;border:1px solid #ccc;margin-top:2px;">ظلّل الدائرة كاملاً أو ضع علامة X واضحة</div>
 </div>`;
 
-            // ==== شبكة الأسئلة ====
-            const gridTop = OMR.HDR_H + 10; // +10 ضمان عدم التداخل
+            const gridTop = OMR.HDR_H + 10;
             const gridLeft = OMR.RL + OMR.PAD;
 
             for (let col = 0; col < numCols; col++) {
                 const colX = gridLeft + col * colW;
 
                 for (let blkIdx = 0; blkIdx < blocksPerCol; blkIdx++) {
-                    const blockNum = col * blocksPerCol + blkIdx; // رقم الكتلة الكلي
+                    const blockNum = col * blocksPerCol + blkIdx;
                     const qStart   = blockNum * BLK + 1;
                     if (qStart > ex.qCount) break;
                     const qEnd = Math.min(qStart + BLK - 1, ex.qCount);
 
-                    // Y بداية هذه الكتلة (رأس الخيارات + صفوف الأسئلة)
-                    const blkY = gridTop + blkIdx * (BLK * OMR.Q_GAP + 32); // 32 = ارتفاع رأس الخيارات + فراغ
+                    const blkY = gridTop + blkIdx * (BLK * OMR.Q_GAP + 32);
 
-                    // رأس الخيارات (أ، ب، ج...)
                     opts.forEach((o, oi) => {
                         const hx = colX + OMR.NUM_W + OMR.NUM_GAP + oi * OMR.OPT_GAP + OMR.BD/2 - 5;
                         const hy = blkY;
                         html += `<div style="position:absolute;left:${hx}px;top:${hy}px;font-size:11px;font-weight:700;width:12px;text-align:center;font-family:Arial;">${o}</div>`;
                     });
 
-                    // صفوف الأسئلة
                     for (let q = qStart; q <= qEnd; q++) {
                         const rowIdx = q - qStart;
-                        const qy     = blkY + 16 + rowIdx * OMR.Q_GAP;  // 16 = ارتفاع رأس الخيارات
+                        const qy     = blkY + 16 + rowIdx * OMR.Q_GAP;
 
-                        // رقم السؤال
                         html += `<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:11px;font-weight:700;line-height:${OMR.BD}px;text-align:right;font-family:Arial;">${q}</div>`;
 
-                        // الدوائر مع data-cx/data-cy للإحداثيات الدقيقة
                         opts.forEach((o, oi) => {
+                            // cx و cy هما مركز الدائرة بالبكسل على الورقة المطبوعة (794×1123)
                             const cx = colX + OMR.NUM_W + OMR.NUM_GAP + oi * OMR.OPT_GAP + OMR.BD/2;
                             const cy = qy + OMR.BD/2;
                             const lx = cx - OMR.BD/2;
@@ -1254,27 +1109,155 @@ function editExamSetup(id) {
             document.getElementById('omr-sheet-inner').innerHTML = html;
         }
 
+        // =======================================================
+        // 🔧 الإصلاح الجوهري #1: extractBubbleCoordinates
+        //
+        // المشكلة القديمة:
+        //   xRel = (cx_px - RL) / RW  →  النسبة من داخل المنطقة المرجعية (بعد استثناء مربعات الزوايا)
+        //   لكن عند القص في captureAndProcess نقص الـ guide-box بالكامل بما فيها مربعات الزوايا
+        //   فيصبح cropW = المنطقة كلها (بما في المربعات)، بينما RW = المنطقة داخل المربعات فقط
+        //   → هذا يسبب خطأ في المقياس + إزاحة في الأصل
+        //
+        // الحل:
+        //   نخزن cx_px و cy_px كأرقام مطلقة (بكسل على الورقة 794×1123)
+        //   ثم في captureAndProcess نحولها إلى نسبة من الورقة كاملة (0..1)
+        //   حيث: xRel = cx_px / W   و   yRel = cy_px / H
+        //   وعند الإسقاط على الصورة المقصوصة: px = xRel * cropW
+        //   هذا يعمل لأن guide-box يمثل الورقة بأكملها (من الزاوية 0,0 حتى W,H)
+        // =======================================================
         function extractBubbleCoordinates() {
-            // قراءة data-cx/data-cy المحسوبة رياضياً في buildPrintTemplate
-            // تحويلها لإحداثيات نسبية (0..1) من المنطقة المرجعية
             const bubbles = document.querySelectorAll('.omr-bubble-mark[data-cx]');
             const layout  = {
                 _meta: {
-                    bubbleRadiusRatio: (OMR.BD/2) / OMR.RW,
-                    RW: OMR.RW, RH: OMR.RH, RL: OMR.RL, RT: OMR.RT
+                    // نصف قطر الدائرة كنسبة من عرض الورقة الكاملة (وليس RW فقط)
+                    bubbleRadiusRatio: (OMR.BD / 2) / OMR.W,
+                    // أبعاد الورقة الكاملة المرجعية
+                    sheetW: OMR.W,
+                    sheetH: OMR.H
                 }
             };
             bubbles.forEach(b => {
                 const cx_px = parseFloat(b.getAttribute('data-cx'));
                 const cy_px = parseFloat(b.getAttribute('data-cy'));
-                const xRel  = (cx_px - OMR.RL) / OMR.RW;
-                const yRel  = (cy_px - OMR.RT) / OMR.RH;
+
+                // ✅ الإصلاح: النسبة من الورقة كاملة (0..1) وليس من المنطقة الداخلية فقط
+                const xRel = cx_px / OMR.W;
+                const yRel = cy_px / OMR.H;
+
                 const q = b.getAttribute('data-q');
                 const o = b.getAttribute('data-opt');
                 if (!layout[q]) layout[q] = {};
                 layout[q][o] = { x: xRel, y: yRel };
             });
             return layout;
+        }
+
+        // =======================================================
+        // 🔧 الإصلاح الجوهري #2: captureAndProcess
+        //
+        // المشكلة القديمة:
+        //   bubbleR = ratio * cropW * 1.25  →  التضخيم بـ 1.25 يجعل الدائرة كبيرة جداً
+        //   وكان ratio = BD/2 / RW (نسبة من المنطقة الداخلية) لكنه يُضرب في cropW الكامل
+        //
+        // الحل:
+        //   ratio الآن = BD/2 / W (نسبة من الورقة كاملة)
+        //   bubbleR = ratio * cropW  ← بدون تضخيم
+        //   هذا يعطي حجماً مطابقاً للدائرة الفعلية على الصورة المقصوصة
+        // =======================================================
+        function captureAndProcess() {
+            const rv  = video.getBoundingClientRect();
+            const rg  = document.getElementById('guide-box').getBoundingClientRect();
+            const vw  = video.videoWidth, vh = video.videoHeight;
+
+            // تحويل إحداثيات guide-box من شاشة إلى بكسل الفيديو الأصلي
+            const tlN = getNativeCoords(rg.left - rv.left, rg.top - rv.top, rv, vw, vh);
+            const brN = getNativeCoords(rg.right - rv.left, rg.bottom - rv.top, rv, vw, vh);
+            const cropX = tlN.x, cropY = tlN.y;
+            const cropW = brN.x - tlN.x, cropH = brN.y - tlN.y;
+
+            // رسم الصورة المقصوصة على الكانفاس الظاهر
+            canvas.width  = cropW;
+            canvas.height = cropH;
+            ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+            // نسخة نظيفة للتحليل فقط — لا يُرسم عليها
+            const cleanCanvas = document.createElement('canvas');
+            cleanCanvas.width  = cropW;
+            cleanCanvas.height = cropH;
+            const cleanCtx = cleanCanvas.getContext('2d');
+            cleanCtx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+            video.style.display = 'none';
+            document.getElementById('guide-box').style.display = 'none';
+            canvas.style.display = 'block';
+
+            const lay = AppState.activeScan.exam.layout;
+            const key = AppState.activeScan.exam.answerKey;
+            const meta = lay._meta || {};
+
+            // ✅ الإصلاح: حساب نصف القطر بدون تضخيم
+            // ratio = BD/2 / sheetW (محفوظ في _meta)
+            // bubbleR = ratio * cropW  ← تحويل النسبة إلى بكسل في الصورة المقصوصة
+            const ratio   = (meta.bubbleRadiusRatio && meta.bubbleRadiusRatio > 0)
+                            ? meta.bubbleRadiusRatio
+                            : (OMR.BD / 2) / OMR.W;
+            const bubbleR = Math.max(Math.round(ratio * cropW), 6);
+
+            // ---- رسم دوائر صفراء على الإجابات الصحيحة (مرجع بصري) ----
+            for (let q in lay) {
+                if (q.startsWith('_')) continue;
+                const cOpts = Object.keys(key[q] || {});
+                for (let o in lay[q]) {
+                    if (!cOpts.includes(o)) continue;
+                    // ✅ الإصلاح: px = xRel * cropW  (مباشرة، بدون أي إزاحة)
+                    const px = Math.round(lay[q][o].x * cropW);
+                    const py = Math.round(lay[q][o].y * cropH);
+                    ctx.beginPath();
+                    ctx.arc(px, py, bubbleR, 0, 2 * Math.PI);
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+            }
+
+            // ---- قراءة وتحليل الإجابات من النسخة النظيفة ----
+            let fc = {}, tot = 0;
+            for (let q in lay) {
+                if (q.startsWith('_')) continue;
+                let filled = [];
+                for (let o in lay[q]) {
+                    const px = Math.round(lay[q][o].x * cropW);
+                    const py = Math.round(lay[q][o].y * cropH);
+                    const d  = measureDarkness(cleanCtx, px, py, bubbleR, 128);
+                    if (d > 0.12) filled.push({ opt: o, px, py });
+                }
+                if (filled.length > 0) {
+                    fc[q] = filled.map(f => f.opt).join(', ');
+                    const cOpts = Object.keys(key[q] || {});
+                    filled.forEach(f => {
+                        const ok = cOpts.includes(f.opt);
+                        ctx.beginPath();
+                        ctx.arc(f.px, f.py, bubbleR, 0, 2 * Math.PI);
+                        ctx.strokeStyle = ok ? '#22c55e' : '#ef4444';
+                        ctx.lineWidth = 5;
+                        ctx.stroke();
+                        if (ok) {
+                            ctx.beginPath();
+                            ctx.arc(f.px, f.py, bubbleR - 3, 0, 2 * Math.PI);
+                            ctx.fillStyle = 'rgba(34,197,94,0.28)';
+                            ctx.fill();
+                        }
+                    });
+                }
+            }
+
+            tot = calculateScore(fc, key, lay);
+            AppState.activeScan.extChoices = fc;
+            AppState.activeScan.tot = tot;
+            document.getElementById('scanned-feedback').innerText =
+                String.fromCodePoint(0x2705) + '  النتيجة: ' + tot + ' نقطة';
+            document.getElementById('scanner-bottom-bar').style.display = 'none';
+            document.getElementById('result-top-bar').style.display = 'block';
         }
 
         function renderExamCards() {
@@ -1294,6 +1277,7 @@ function editExamSetup(id) {
                 </div>`;
             });
         }
+
         async function printExam(id, type) {
             const ex = AppState.exams.find(e=>e.id===id); buildPrintTemplate(ex);
             await new Promise(r=>setTimeout(r,300));
@@ -1310,15 +1294,12 @@ function editExamSetup(id) {
         let isCompetencyMode = false;
         function toggleCompetencies() { 
             isCompetencyMode = !isCompetencyMode; 
-            
-            // تغيير نص الزر بناءً على الحالة
             const btn = document.getElementById('toggleCompBtn');
             if(isCompetencyMode) {
                 btn.innerHTML = '<i class="fas fa-exchange-alt"></i> إظهار النقط';
             } else {
                 btn.innerHTML = '<i class="fas fa-exchange-alt"></i> إظهار الكفايات';
             }
-            
             renderResultsTable(); 
         }
 
@@ -1334,11 +1315,8 @@ function editExamSetup(id) {
             const subject = document.getElementById('resultSubjectSelect').value;
             const cid = document.getElementById('resultClassSelect').value;
             const sel = document.getElementById('resultExamSelect');
-            
-            // تحديث قائمة الامتحانات بناءً على الفلاتر
             const currentVal = sel.value;
             sel.innerHTML = '<option value="">- اختر الامتحان -</option>';
-            
             AppState.exams.filter(e => {
                 return (!year || e.year === year) &&
                        (!stage || e.stage === stage) &&
@@ -1347,72 +1325,57 @@ function editExamSetup(id) {
             }).forEach(e => {
                 sel.innerHTML += `<option value="${e.id}">${e.name}</option>`;
             });
-            
             if (AppState.exams.find(e => e.id === currentVal)) {
                 sel.value = currentVal;
             }
-            
             saveUIState(); 
-            // نقلنا مهمة إظهار البطاقة إلى هذه الدالة لكي تعمل دائماً
             renderResultsTable();
         }
 
-            function renderResultsTable() {
+        function renderResultsTable() {
             saveUIState();
             const cid = document.getElementById('resultClassSelect').value, eid = document.getElementById('resultExamSelect').value;
             const sq = document.getElementById('searchStudent').value.toLowerCase();
             const head = document.getElementById('resultsTableHead'), body = document.getElementById('resultsTableBody');
             
-            // جلب عناصر البطاقة
             const infoDiv = document.getElementById('examInfoCard');
-            const mainCard = infoDiv ? infoDiv.parentElement : null; // البطاقة الكلية التي تضم الزر
+            const mainCard = infoDiv ? infoDiv.parentElement : null;
 
             head.innerHTML=''; body.innerHTML='';
             
             if(!cid || !eid) {
-                if(mainCard) mainCard.style.display = 'none'; // إخفاء البطاقة إذا لم يتم اختيار امتحان
+                if(mainCard) mainCard.style.display = 'none';
                 return;
             }
             
             const ex = AppState.exams.find(e=>e.id===eid);
             let cls = AppState.classes.find(c=>c.id===cid);
             
-            // --- إظهار وتنسيق البطاقة (حل مشكلة التداخل والفاصل | ) ---
             if(ex && cls && mainCard) {
-                // دمج العنوان مع التفاصيل في سطر واحد ووضع فواصل واضحة
                 document.getElementById('infoExamTitle').innerHTML = `${ex.name} <span style="color:var(--gray); font-size:1rem; font-weight:normal;"> | ${ex.subject || ''} | ${ex.stage || ''} | ${cls.name}</span>`;
-                
-                // إخفاء سطر التفاصيل القديم لمنع التداخل
                 document.getElementById('infoExamDetails').style.display = 'none';
-                
-                // الإحصائيات
                 let seasonStudentsCount = cls.students.filter(s => s.year === ex.year).length;
                 document.getElementById('infoExamStats').innerText = `الأسئلة: ${ex.qCount} | الخيارات: ${ex.options.length} | التلاميذ: ${seasonStudentsCount}`;
-                
                 mainCard.style.display = 'flex';
                 infoDiv.style.display = 'block';
             }
             
             let students = cls.students;
-            
-            // تصفية التلاميذ حسب الموسم
             if(ex && ex.year) {
                 students = students.filter(s => s.year === ex.year);
             }
             if(sq) students = students.filter(s=>s.name.toLowerCase().includes(sq));
             
             let hHTML = `<th>الكاميرا</th><th>ر.ت</th><th style="text-align:right;">الاسم الكامل</th>`;
-
             for(let i=1; i<=ex.qCount; i++) hHTML+=`<th>س${i}</th>`;
             head.innerHTML = hHTML+`<th>النتيجة</th><th>إجراءات</th>`;
 
-            // حساب النقطة القصوى في حال وجود أكثر من خيار صحيح
             let maxTotal = 0, maxQ = {};
             for(let i=1; i<=ex.qCount; i++) {
                 let qOpts = ex.answerKey[`Q${i}`] || {};
                 let qMax = 0;
                 Object.values(qOpts).forEach(pts => qMax += pts);
-                if(qMax === 0) qMax = 1; // تفادي القسمة على صفر
+                if(qMax === 0) qMax = 1;
                 maxQ[`Q${i}`] = qMax; 
                 maxTotal += qMax;
             }
@@ -1421,7 +1384,6 @@ function editExamSetup(id) {
                 const res = AppState.results[eid]?.[s.id] || {scores:{}, choices:{}, total:0, id:`${eid}___${s.id}`, examId:eid, studentId:s.id};
                 let bHTML = `<td><button class="btn btn-primary btn-sm" onclick="startScanner('${eid}','${s.id}','${s.name}')"><i class="fas fa-camera"></i> Scan</button></td>`;
                 bHTML+=`<td>${s.roll||'-'}</td><td style="text-align:right;">${s.name}</td>`;
-                
                 let total=0;
                 for(let i=1; i<=ex.qCount; i++) {
                     let sc = parseFloat(res.scores?.[`Q${i}`])||0; total+=sc;
@@ -1445,20 +1407,17 @@ function editExamSetup(id) {
         function showStatistics() {
             const eid = document.getElementById('resultExamSelect').value, cid = document.getElementById('resultClassSelect').value;
             if(!eid||!cid) return alert("اختر القسم والامتحان");
-            
             const ex = AppState.exams.find(e=>e.id===eid);
             let maxTotal=0; 
             for(let q in ex.answerKey) {
                 Object.values(ex.answerKey[q]).forEach(pts => maxTotal += pts);
             }
             if(maxTotal===0) maxTotal = ex.qCount;
-
             const counts = {A:0, B:0, C:0, D:0};
             AppState.classes.find(c=>c.id===cid).students.forEach(s => {
                 let t = AppState.results[eid]?.[s.id]?.total || 0;
                 counts[getCompData(t, maxTotal).c]++;
             });
-
             document.getElementById('chartModal').style.display='flex';
             if(chartInst) chartInst.destroy();
             chartInst = new Chart(document.getElementById('statsChart').getContext('2d'), {
@@ -1470,24 +1429,19 @@ function editExamSetup(id) {
             const ex = AppState.exams.find(e=>e.id===eid), res = AppState.results[eid][sid], cont = document.getElementById('previewContainer'); cont.innerHTML='';
             for(let i=1; i<=ex.qCount; i++) {
                 let q = `Q${i}`;
-                let sChoices = (res.choices?.[q] || "").split(', ').filter(Boolean); // خيارات التلميذ المتعددة
-                let cChoices = Object.keys(ex.answerKey[q] || {}); // الخيارات الصحيحة المتعددة
-                
+                let sChoices = (res.choices?.[q] || "").split(', ').filter(Boolean);
+                let cChoices = Object.keys(ex.answerKey[q] || {});
                 let isPerfect = sChoices.length === cChoices.length && sChoices.every(c => cChoices.includes(c));
                 let gotSome = sChoices.some(c => cChoices.includes(c));
-                
                 let icon = isPerfect ? '<i class="fas fa-check status-c"></i>' : (gotSome ? '<i class="fas fa-minus-circle" style="color:var(--warning);"></i>' : '<i class="fas fa-times status-x"></i>');
-                
                 let row = `<div class="prev-q-row"><div class="prev-status">${icon}</div><strong>س${i}:</strong>`;
                 ex.options.forEach(o => {
                     let cls = ['prev-bubble'];
                     let isStudSel = sChoices.includes(o);
                     let isCorrOpt = cChoices.includes(o);
-                    
                     if(isStudSel && isCorrOpt) cls.push('correct-choice'); 
                     else if(isStudSel && !isCorrOpt) cls.push('wrong-choice'); 
                     else if(!isStudSel && isCorrOpt) cls.push('missed-choice');
-                    
                     row+=`<div class="${cls.join(' ')}">${o}</div>`;
                 });
                 cont.innerHTML += row+'</div>';
@@ -1502,6 +1456,7 @@ function editExamSetup(id) {
             for(let i=1; i<=ex.qCount; i++) g.innerHTML+=`<div><label>س${i}</label><input type="number" id="es_Q${i}" value="${res.scores?.[`Q${i}`]||0}" step="0.5"></div>`;
             document.getElementById('editScoreModal').style.display='flex';
         }
+
         async function saveManualScores() {
             const[eid, sid] = document.getElementById('editScoreSId').value.split('___');
             let res = AppState.results[eid][sid], ex = AppState.exams.find(e=>e.id===eid);
@@ -1509,7 +1464,7 @@ function editExamSetup(id) {
             await IDB.put('results', res); closeModal('editScoreModal'); renderResultsTable();
         }
 
-// === Auto-Capture Camera Scanner (ZipGrade Style) ===
+        // === Auto-Capture Camera Scanner ===
         const video = document.getElementById('video-feed');
         const canvas = document.getElementById('preview-canvas');
         const ctx = canvas.getContext('2d');
@@ -1568,7 +1523,6 @@ function editExamSetup(id) {
         async function startScanner(eid, sid, sName) {
             const ex = AppState.exams.find(e=>e.id===eid); 
             if(!ex.layout) return alert("مخطط ورقة الإجابة غير موجود. يرجى تعديل الامتحان وحفظه من جديد.");
-            // التحقق من أن الـ layout تم توليده بالنظام الجديد (يحتوي على _meta)
             if(!ex.layout._meta) return alert("⚠️ هذا الامتحان تم حفظه بنظام قديم.\nالرجاء تعديله وحفظه من جديد حتى يعمل التصحيح بدقة.");
             
             AppState.activeScan = {exam:ex, studentId:sid, extChoices:{}};
@@ -1599,9 +1553,8 @@ function editExamSetup(id) {
                 video.onloadedmetadata = () => {
                     const cw = window.innerWidth;
                     const ch = window.innerHeight;
-                    const markerRatio = 1123/794; // = 1.414 نسبة الورقة الحقيقية 
+                    const markerRatio = 1123/794;
                     const guideBox = document.getElementById('guide-box');
-                    
                     let gw, gh; 
                     if (ch / cw > markerRatio) { 
                         gw = cw * 0.85; 
@@ -1610,7 +1563,6 @@ function editExamSetup(id) {
                         gh = ch * 0.75; 
                         gw = gh / markerRatio; 
                     }
-                    
                     guideBox.style.width = gw + 'px';
                     guideBox.style.height = gh + 'px';
 
@@ -1622,7 +1574,7 @@ function editExamSetup(id) {
             } catch(e) { alert("تعذر فتح الكاميرا."); stopScanner(); }
         }
 
-        // 🌟 المعادلة السحرية: تحويل إحداثيات الشاشة إلى إحداثيات الفيديو الأصلية بدقة متناهية
+        // تحويل إحداثيات الشاشة إلى إحداثيات الفيديو الأصلية
         function getNativeCoords(screenX, screenY, rv, vw, vh) {
             const scale = Math.max(rv.width / vw, rv.height / vh);
             const renderedW = vw * scale;
@@ -1650,7 +1602,6 @@ function editExamSetup(id) {
             const vw = video.videoWidth;
             const vh = video.videoHeight;
 
-            // حساب الزوايا الحقيقية
             const guideCorners =[
                 getNativeCoords(rg.left - rv.left, rg.top - rv.top, rv, vw, vh),
                 getNativeCoords(rg.right - rv.left, rg.top - rv.top, rv, vw, vh),
@@ -1667,7 +1618,6 @@ function editExamSetup(id) {
                 const cx = guideCorners[index].x + insetX;
                 const cy = guideCorners[index].y + insetY;
 
-// فحص المربع الأسود: نظام نقاط مرن يتكيف مع الإضاءة
                 let darkPoints = 0;
                 const offsets = [-checkRad*0.4, 0, checkRad*0.4];
                 for(let dx of offsets) {
@@ -1675,9 +1625,8 @@ function editExamSetup(id) {
                         if(measureDarkness(analysisCtx, cx+dx, cy+dy, checkRad*0.45, 140) > 0.30) darkPoints++;
                     }
                 }
-                let isDark = darkPoints >= 4; // يكفي 4 من 9 نقاط (أكثر مرونة)
+                let isDark = darkPoints >= 4;
                 
-                // فحص الحماية: المنطقة الداخلية يجب أن تكون أفتح من المربع
                 const innerX = guideCorners[index].x + (insetX * 3.5);
                 const innerY = guideCorners[index].y + (insetY * 3.5);
                 let isInnerLight = measureDarkness(analysisCtx, innerX, innerY, checkRad, 140) < 0.25;
@@ -1690,11 +1639,9 @@ function editExamSetup(id) {
                     el.style.borderColor = 'rgba(255,255,255,0.8)'; 
                     el.style.backgroundColor = 'rgba(255,255,255,0.1)';
                 }
-
             });
 
             const stabBar = document.getElementById('stabilization-bar');
-
 
             if (!isAutoMode) {
                 stabilizationFrames=0; stabBar.style.width='0%';
@@ -1713,93 +1660,12 @@ function editExamSetup(id) {
             }
         }
 
-        // دالة الالتقاط اليدوي الإجباري (تعمل بشكل مثالي الآن)
         function forceCapture() {
             if(!isScanning) return;
             isScanning = false;
             playShutterSound();
             document.getElementById('stabilization-bar').style.width = '0%';
             captureAndProcess();
-        }
-
-        function captureAndProcess() {
-            const rv  = video.getBoundingClientRect();
-            const rg  = document.getElementById('guide-box').getBoundingClientRect();
-            const vw  = video.videoWidth, vh = video.videoHeight;
-            const tlN = getNativeCoords(rg.left-rv.left,rg.top-rv.top,rv,vw,vh);
-            const brN = getNativeCoords(rg.right-rv.left,rg.bottom-rv.top,rv,vw,vh);
-            const cropX=tlN.x, cropY=tlN.y;
-            const cropW=brN.x-tlN.x, cropH=brN.y-tlN.y;
-
-            // رسم الصورة الخام
-            canvas.width=cropW; canvas.height=cropH;
-            ctx.drawImage(video,cropX,cropY,cropW,cropH,0,0,cropW,cropH);
-
-            // نسخة نظيفة للقراءة فقط — لا يُرسم عليها أبداً
-            const cleanCanvas=document.createElement('canvas');
-            cleanCanvas.width=cropW; cleanCanvas.height=cropH;
-            const cleanCtx=cleanCanvas.getContext('2d');
-            cleanCtx.drawImage(video,cropX,cropY,cropW,cropH,0,0,cropW,cropH);
-
-            video.style.display='none';
-            document.getElementById('guide-box').style.display='none';
-            canvas.style.display='block';
-
-            const lay = AppState.activeScan.exam.layout;
-            const key = AppState.activeScan.exam.answerKey;
-            let fc={}, tot=0;
-
-            // نصف القطر من النسبة المخزنة في _meta
-            const meta = lay._meta || {};
-            const ratio = (meta.bubbleRadiusRatio && meta.bubbleRadiusRatio > 0)
-                          ? meta.bubbleRadiusRatio : (13/774);
-            // نضرب × 1.25 لجعلها مرئية بوضوح
-            const bubbleR = Math.max(Math.round(ratio * cropW * 1.25), 8);
-
-            // ---- رسم دوائر صفراء على الإجابات الصحيحة ----
-            for (let q in lay) {
-                if (q.startsWith('_')) continue;
-                const cOpts = Object.keys(key[q]||{});
-                for (let o in lay[q]) {
-                    if (!cOpts.includes(o)) continue;
-                    const px=Math.round(lay[q][o].x*cropW);
-                    const py=Math.round(lay[q][o].y*cropH);
-                    ctx.beginPath(); ctx.arc(px,py,bubbleR,0,2*Math.PI);
-                    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=3; ctx.stroke();
-                }
-            }
-
-            // ---- قراءة وتحليل الإجابات من النسخة النظيفة ----
-            for (let q in lay) {
-                if (q.startsWith('_')) continue;
-                let filled=[];
-                for (let o in lay[q]) {
-                    const px=Math.round(lay[q][o].x*cropW);
-                    const py=Math.round(lay[q][o].y*cropH);
-                    const d=measureDarkness(cleanCtx,px,py,bubbleR,128);
-                    if (d>0.12) filled.push({opt:o,px,py});
-                }
-                if (filled.length>0) {
-                    fc[q]=filled.map(f=>f.opt).join(', ');
-                    const cOpts=Object.keys(key[q]||{});
-                    filled.forEach(f=>{
-                        const ok=cOpts.includes(f.opt);
-                        ctx.beginPath(); ctx.arc(f.px,f.py,bubbleR,0,2*Math.PI);
-                        ctx.strokeStyle=ok?'#22c55e':'#ef4444'; ctx.lineWidth=5; ctx.stroke();
-                        if(ok){
-                            ctx.beginPath(); ctx.arc(f.px,f.py,bubbleR-3,0,2*Math.PI);
-                            ctx.fillStyle='rgba(34,197,94,0.28)'; ctx.fill();
-                        }
-                    });
-                }
-            }
-
-            tot=calculateScore(fc,key,lay);
-            AppState.activeScan.extChoices=fc; AppState.activeScan.tot=tot;
-            document.getElementById('scanned-feedback').innerText=
-                String.fromCodePoint(0x2705)+'  النتيجة: '+tot+' نقطة';
-            document.getElementById('scanner-bottom-bar').style.display='none';
-            document.getElementById('result-top-bar').style.display='block';
         }
 
         function calculateScore(choices, answerKey, lay) {
@@ -1822,7 +1688,6 @@ function editExamSetup(id) {
             return Math.round(total*10)/10;
         }
 
-
         function measureDarkness(ctx, cx, cy, rad, threshold = 128) {
             cx = Math.round(cx); cy = Math.round(cy); rad = Math.round(rad);
             if(cx-rad<0 || cy-rad<0 || cx+rad>ctx.canvas.width || cy+rad>ctx.canvas.height) return 0;
@@ -1830,7 +1695,6 @@ function editExamSetup(id) {
             let dC=0, t=0, rSq=rad*rad;
             let totalR=0, totalG=0, totalB=0, bgCount=0;
             
-            // المرحلة 1: حساب لون الخلفية المحيطة (خارج الدائرة)
             for(let i=0; i<img.length; i+=4) {
                 const px=(i/4)%(rad*2)-rad, py=Math.floor((i/4)/(rad*2))-rad;
                 if(px*px+py*py > rSq && px*px+py*py <= (rad*1.8)*(rad*1.8)) {
@@ -1838,8 +1702,7 @@ function editExamSetup(id) {
                 }
             }
             const bgLum = bgCount > 0 ? (0.299*(totalR/bgCount) + 0.587*(totalG/bgCount) + 0.114*(totalB/bgCount)) : 200;
-            const adaptedThreshold = Math.min(bgLum * 0.70, threshold); // التكيف مع الإضاءة
-            // المرحلة 2: قراءة الدائرة بعد التكيف
+            const adaptedThreshold = Math.min(bgLum * 0.70, threshold);
             for(let i=0; i<img.length; i+=4) {
                 const px=(i/4)%(rad*2)-rad, py=Math.floor((i/4)/(rad*2))-rad;
                 if(px*px+py*py<=rSq) { 
@@ -1851,7 +1714,7 @@ function editExamSetup(id) {
             return t===0 ? 0 : dC/t;
         }
 
-function retakePhoto() {
+        function retakePhoto() {
             canvas.style.display='none';
             document.getElementById('video-feed').style.display='block';
             document.getElementById('guide-box').style.display='block';
@@ -1866,7 +1729,6 @@ function retakePhoto() {
             stabilizationFrames=0; isScanning=true; scanLoop();
         }
 
-        
         function stopScanner() { 
             isScanning = false;
             if(scanAnimationFrame) cancelAnimationFrame(scanAnimationFrame);
@@ -1891,7 +1753,6 @@ function retakePhoto() {
             await IDB.put('results',res); stopScanner(); renderResultsTable();
         }
 
-
         // === Backup System ===
         function openBackupModal() { document.getElementById('backupModal').style.display = 'flex'; }
         
@@ -1912,7 +1773,6 @@ function retakePhoto() {
         function importData(e) {
             const file = e.target.files[0]; 
             if(!file) return;
-            
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 try {
@@ -1920,15 +1780,12 @@ function retakePhoto() {
                     await IDB.clear('classes'); 
                     await IDB.clear('exams'); 
                     await IDB.clear('results');
-                    
                     const classesArray = data.classes ? data.classes :[];
                     const examsArray = data.exams ? data.exams : [];
                     const resultsArray = data.results ? data.results :[];
-                    
                     for(let i = 0; i < classesArray.length; i++) await IDB.put('classes', classesArray[i]);
                     for(let i = 0; i < examsArray.length; i++) await IDB.put('exams', examsArray[i]);
                     for(let i = 0; i < resultsArray.length; i++) await IDB.put('results', resultsArray[i]);
-                    
                     alert("تم استيراد البيانات بنجاح! سيتم تحديث الصفحة الآن.");
                     window.location.reload(); 
                 } catch (err) {
@@ -1939,12 +1796,10 @@ function retakePhoto() {
             reader.readAsText(file);
         }
 
-/* دالة لفتح وإغلاق القائمة المنسدلة */
         function toggleDropdown() {
             document.getElementById("myDropdown").classList.toggle("show");
         }
 
-        // إغلاق القائمة إذا نقر المستخدم خارجها
         window.onclick = function(event) {
           if (!event.target.matches('.btn')) {
             var dropdowns = document.getElementsByClassName("dropdown-content");
@@ -1957,20 +1812,20 @@ function retakePhoto() {
           }
         }
 
-function editCurrentExam() {
+        function editCurrentExam() {
             const eid = document.getElementById('resultExamSelect').value;
             if(eid) editExamSetup(eid);
         }
+
         async function deleteCurrentExam() {
             const eid = document.getElementById('resultExamSelect').value;
             if(eid && confirm("هل أنت متأكد من حذف هذا الامتحان وكل نتائجه؟")) {
                 await deleteExam(eid);
-                // تحديث الواجهة لإزالة الامتحان المحذوف من القائمة
                 updateResultExams(); 
             }
         }
 
-function printCurrentExam(type) {
+        function printCurrentExam(type) {
             const eid = document.getElementById('resultExamSelect').value;
             if (eid) {
                 printExam(eid, type);
@@ -1979,21 +1834,17 @@ function printCurrentExam(type) {
             }
         }
 
-// === Broadcast / Duplicate Exam ===
+        // === Broadcast / Duplicate Exam ===
         function openBroadcastModal() {
             const eid = document.getElementById('resultExamSelect').value;
             if(!eid) return alert("الرجاء اختيار امتحان أولاً!");
-            
             const currentExam = AppState.exams.find(e => e.id === eid);
-            
-            // البحث عن المستوى الذي ينتمي إليه القسم الحالي
             let targetLevel = null;
             if(AppState.settings && AppState.settings.levels) {
                 targetLevel = AppState.settings.levels.find(lvl => 
                     lvl.classes.some(c => c.id === currentExam.classId)
                 );
             }
-            
             if(!targetLevel) return alert("لم يتم العثور على المستوى الخاص بهذا القسم في الإعدادات.");
 
             const listDiv = document.getElementById('broadcastClassesList');
@@ -2001,17 +1852,12 @@ function printCurrentExam(type) {
             listDiv.innerHTML = '';
             let classesFound = 0;
 
-            // جلب باقي أقسام نفس المستوى
             targetLevel.classes.forEach(c => {
-                // استثناء القسم الحالي (لأنه يملك الامتحان أصلاً) واستثناء الأقسام غير المفعلة
                 if(c.id === currentExam.classId || !c.checked) return;
-
-                // التحقق مما إذا كان هذا القسم يمتلك بالفعل نسخة من هذا الامتحان (لتجنب التكرار)
                 const alreadyExists = AppState.exams.some(e => 
                     e.classId === c.id && e.name === currentExam.name && 
                     e.year === currentExam.year && e.subject === currentExam.subject && e.stage === currentExam.stage
                 );
-
                 if(!alreadyExists) {
                     listDiv.innerHTML += `
                     <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; background:var(--light); border:1px solid var(--border); border-radius:5px;">
@@ -2022,14 +1868,12 @@ function printCurrentExam(type) {
                 }
             });
 
-            // عرض رسالة إذا لم توجد أقسام متاحة
             if(classesFound === 0) {
                 listDiv.innerHTML = '<p style="color:var(--danger); text-align:center; font-weight:bold;">جميع الأقسام المفعلة في هذا المستوى تمتلك هذا الامتحان بالفعل!</p>';
                 confirmBtn.style.display = 'none';
             } else {
                 confirmBtn.style.display = 'block';
             }
-
             document.getElementById('broadcastModal').style.display = 'flex';
         }
 
@@ -2037,39 +1881,31 @@ function printCurrentExam(type) {
             const eid = document.getElementById('resultExamSelect').value;
             const currentExam = AppState.exams.find(e => e.id === eid);
             const checkboxes = document.querySelectorAll('.broadcast-checkbox:checked');
-
             if(checkboxes.length === 0) return alert("الرجاء تحديد قسم واحد على الأقل.");
-
             for (let cb of checkboxes) {
                 const newClassId = cb.value;
-                
-                // إنشاء نسخة عميقة (Deep Copy) للامتحان لكي لا تتداخل البيانات
                 const newExam = JSON.parse(JSON.stringify(currentExam));
-                newExam.id = generateId(); // إعطاء معرف جديد للنسخة
-                newExam.classId = newClassId; // ربطها بالقسم الجديد
-                
+                newExam.id = generateId();
+                newExam.classId = newClassId;
                 AppState.exams.push(newExam);
-                await IDB.put('exams', newExam); // حفظ النسخة في قاعدة البيانات
+                await IDB.put('exams', newExam);
             }
-
             alert(`تم تعميم الامتحان بنجاح على (${checkboxes.length}) قسم/أقسام!`);
             closeModal('broadcastModal');
-            updateResultExams(); // تحديث الواجهة
+            updateResultExams();
         }
 
-
-// === Drag and Drop Logic (ترتيب التلاميذ) ===
+        // === Drag and Drop Logic ===
         let draggedStudentId = null;
 
         function dragStart(event, id) {
             draggedStudentId = id;
             event.target.classList.add('dragging');
-            // تأخير بسيط لكي لا تختفي الصورة أثناء السحب
             setTimeout(() => event.target.style.display = 'none', 0);
         }
 
         function dragOver(event) {
-            event.preventDefault(); // ضروري للسماح بالإفلات
+            event.preventDefault();
         }
 
         function dragEnter(event) {
@@ -2085,43 +1921,23 @@ function printCurrentExam(type) {
 
         async function drop(event, cid, year, targetId) {
             event.preventDefault();
-            
-            // تنظيف التنسيقات بعد الإفلات
             document.querySelectorAll('.draggable-row').forEach(row => {
                 row.classList.remove('dragging', 'drag-over');
-                row.style.display = ''; // إظهار الصف المخفي
+                row.style.display = '';
             });
-
-            // إذا أُفلت التلميذ في نفس مكانه، لا تفعل شيئاً
             if (!draggedStudentId || draggedStudentId === targetId) return;
-
             const cls = AppState.classes.find(c => c.id === cid);
             if (!cls) return;
-
-            // جلب تلاميذ هذا الموسم فقط وترتيبهم
             let yearStudents = cls.students.filter(s => s.year === year).sort((a,b) => (a.roll || 0) - (b.roll || 0));
             let otherStudents = cls.students.filter(s => s.year !== year);
-
-            // البحث عن مكان التلميذ المسحوب والمكان المستهدف
             const draggedIndex = yearStudents.findIndex(s => s.id === draggedStudentId);
             const targetIndex = yearStudents.findIndex(s => s.id === targetId);
-
             if (draggedIndex === -1 || targetIndex === -1) return;
-
-            // عملية القص واللصق (إزالة التلميذ من مكانه القديم ووضعه في المكان الجديد)
             const [draggedItem] = yearStudents.splice(draggedIndex, 1);
             yearStudents.splice(targetIndex, 0, draggedItem);
-
-            // إعادة تعيين الأرقام الترتيبية (ر.ت) تلقائياً من 1 إلى آخر تلميذ
-            yearStudents.forEach((student, index) => {
-                student.roll = index + 1;
-            });
-
-            // دمج التلاميذ مجدداً وحفظهم في قاعدة البيانات
+            yearStudents.forEach((student, index) => { student.roll = index + 1; });
             cls.students = [...otherStudents, ...yearStudents];
             await IDB.put('classes', cls);
-            
-            // تحديث الجدول ليظهر الترتيب الجديد
             renderStudents();
             draggedStudentId = null;
         }
