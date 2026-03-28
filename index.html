@@ -473,7 +473,7 @@ const OMR={W:794,H:1123,CM:22,CO:10,
   get RL(){return this.CO;},get RT(){return this.CO;},
   get RR(){return this.W-this.CO;},get RB(){return this.H-this.CO;},
   get RW(){return this.RR-this.RL;},get RH(){return this.RB-this.RT;},
-  BD:28,Q_GAP:38,OPT_GAP:36,NUM_W:24,NUM_GAP:8,BLK:10,HDR_H:165,PAD:35};
+  BD:28,Q_GAP:38,OPT_GAP:36,NUM_W:24,NUM_GAP:8,BLK:10,HDR_H:195,PAD:35};
 
 // ================================================================
 // Exam Creation
@@ -559,49 +559,66 @@ function buildPrintTemplate(ex){
 <div class="omr-mid-marker" style="width:14px;height:28px;top:${midY}px;right:${CO}px;"></div>`;
   // ---- الترويسة بـ SVG (تحل مشكلة العربية المفككة) ----
   const hL=OMR.RL+OMR.PAD,hR=OMR.RR-OMR.PAD,hT=OMR.CO+OMR.CM+12;
-  // SVG يمتد من الحافة اليسرى للمربعات إلى الحافة اليمنى (بعد PAD صغير)
-  const svgL = OMR.CO + 2;          // 12px من حافة الورقة
-  const svgW = OMR.W - svgL*2;      // عرض كامل تقريباً: 770px
-  const p = Math.round(svgW*0.03);  // padding داخلي 3%
+  // SVG الترويسة بعرض كامل الورقة
+  const svgL = OMR.CO + 2;           // 12px من حافة الورقة
+  const svgW = OMR.W - svgL * 2;     // عرض كامل: ~770px
+  const p    = Math.round(svgW*0.025); // padding داخلي 2.5%
   html+=`
 <svg xmlns="http://www.w3.org/2000/svg"
      style="position:absolute;left:${svgL}px;top:${hT}px;"
-     width="${svgW}" height="120">
-  <!-- خلفية العنوان -->
-  <rect x="0" y="0" width="${svgW}" height="44" rx="6" fill="#1e293b"/>
-  <rect x="0" y="12" width="${svgW}" height="32" fill="#334155"/>
-  <!-- اسم الامتحان — يمين (text-anchor=end يُحسب من اليمين) -->
-  <text x="${svgW-p}" y="22"
+     width="${svgW}" height="150">
+
+  <!-- ████ خلفية شريط العنوان ████ -->
+  <rect x="0" y="0" width="${svgW}" height="52" rx="7" fill="#1e293b"/>
+  <rect x="0" y="14" width="${svgW}" height="38" fill="#334155"/>
+
+  <!-- اسم الامتحان — كبير وواضح — يمين -->
+  <text x="${svgW - p}" y="27"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="800" fill="white" text-anchor="end">${ex.name}</text>
-  <!-- المادة والموسم — يسار -->
-  <text x="${p}" y="38"
+    font-size="17" font-weight="800" fill="white" text-anchor="end"
+    dominant-baseline="middle">${ex.name}</text>
+
+  <!-- المادة / المرحلة / الموسم — يسار -->
+  <text x="${p}" y="44"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="10" fill="rgba(255,255,255,0.85)" text-anchor="start">${ex.subject||''} — ${ex.year||''}</text>
-  <!-- إطار حقول البيانات -->
-  <rect x="0" y="44" width="${svgW}" height="52" fill="white" stroke="#1e293b" stroke-width="1.5"/>
+    font-size="11.5" fill="rgba(255,255,255,0.88)" text-anchor="start"
+    dominant-baseline="middle">${ex.subject||''} — ${ex.stage||''} — ${ex.year||''}</text>
+
+  <!-- ████ إطار حقول البيانات ████ -->
+  <rect x="0" y="52" width="${svgW}" height="58" fill="white" stroke="#1e293b" stroke-width="1.5"/>
+
   <!-- فواصل الأعمدة -->
-  <line x1="${Math.round(svgW*0.55)}" y1="44" x2="${Math.round(svgW*0.55)}" y2="96" stroke="#cbd5e1" stroke-width="1"/>
-  <line x1="${Math.round(svgW*0.77)}" y1="44" x2="${Math.round(svgW*0.77)}" y2="96" stroke="#cbd5e1" stroke-width="1"/>
-  <!-- تسميات الحقول -->
-  <text x="${svgW-p}" y="59"
+  <line x1="${Math.round(svgW*0.55)}" y1="52" x2="${Math.round(svgW*0.55)}" y2="110" stroke="#cbd5e1" stroke-width="1.2"/>
+  <line x1="${Math.round(svgW*0.78)}" y1="52" x2="${Math.round(svgW*0.78)}" y2="110" stroke="#cbd5e1" stroke-width="1.2"/>
+
+  <!-- تسميات الحقول — أكبر وأوضح -->
+  <text x="${svgW - p}" y="67"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="10" font-weight="700" fill="#374151" text-anchor="end">الاسم الكامل</text>
-  <text x="${Math.round(svgW*0.77)-p}" y="59"
+    font-size="12" font-weight="700" fill="#374151" text-anchor="end">الاسم الكامل</text>
+  <text x="${Math.round(svgW*0.78) - p}" y="67"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="10" font-weight="700" fill="#374151" text-anchor="end">القسم</text>
-  <text x="${Math.round(svgW*0.55)-p}" y="59"
+    font-size="12" font-weight="700" fill="#374151" text-anchor="end">القسم</text>
+  <text x="${Math.round(svgW*0.55) - p}" y="67"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="10" font-weight="700" fill="#374151" text-anchor="end">ر.ت</text>
+    font-size="12" font-weight="700" fill="#374151" text-anchor="end">ر.ت</text>
+
   <!-- خطوط الكتابة -->
-  <line x1="${Math.round(svgW*0.56)}" y1="88" x2="${svgW-p}" y2="88" stroke="#334155" stroke-width="1.5"/>
-  <line x1="${Math.round(svgW*0.78)}" y1="88" x2="${Math.round(svgW*0.55)-p}" y2="88" stroke="#334155" stroke-width="1.5"/>
-  <line x1="${p}" y1="88" x2="${Math.round(svgW*0.77)-p}" y2="88" stroke="#334155" stroke-width="1.5"/>
-  <!-- تعليمات -->
-  <rect x="${p}" y="98" width="${svgW-p*2}" height="20" rx="3" fill="#f8fafc" stroke="#e2e8f0"/>
-  <text x="${Math.round(svgW/2)}" y="112"
+  <line x1="${Math.round(svgW*0.56)}" y1="100" x2="${svgW - p}" y2="100" stroke="#334155" stroke-width="1.8"/>
+  <line x1="${Math.round(svgW*0.79)}" y1="100" x2="${Math.round(svgW*0.55) - p}" y2="100" stroke="#334155" stroke-width="1.8"/>
+  <line x1="${p}" y1="100" x2="${Math.round(svgW*0.78) - p}" y2="100" stroke="#334155" stroke-width="1.8"/>
+
+  <!-- ████ شريط التعليمات ████ -->
+  <rect x="0" y="112" width="${svgW}" height="36" rx="4" fill="#f0f4ff" stroke="#c7d2fe" stroke-width="1.2"/>
+  <text x="${Math.round(svgW/2)}" y="127"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="9.5" fill="#475569" text-anchor="middle">ظلّل الدائرة كاملاً أو ضع علامة X واضحة — لا تستخدم علامات خارج الدوائر</text>
+    font-size="11.5" font-weight="700" fill="#1e40af" text-anchor="middle">
+    لوّن الدائرة المناسبة لإجابتك
+  </text>
+  <text x="${Math.round(svgW/2)}" y="144"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="10" fill="#475569" text-anchor="middle">
+    لا تضع أي علامة خارج الدوائر
+  </text>
 </svg>`;
   // ---- شبكة الأسئلة — Q_GAP ديناميكي ----
   const gridTop=OMR.HDR_H+8,gridLeft=OMR.RL+OMR.PAD;
@@ -633,7 +650,21 @@ function buildPrintTemplate(ex){
     }
   }
   html+=`<span id="dyn-bd" data-bd="${dynBD}" style="display:none;"></span>`;
-  document.getElementById('omr-sheet-inner').innerHTML=html;
+
+  // Footer bar — ZipGrade style — بين المربعات الوسطى والسفلية
+  const footerY = OMR.H - OMR.CO - OMR.CM - 22;
+  const fL = OMR.CO + OMR.CM + 8;
+  const fR = OMR.W - OMR.CO - OMR.CM - 8;
+  const fW = fR - fL;
+  const clsName = (AppState.classes.find(cl => cl.id === ex.classId) || {name:''}).name;
+  html += '<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:' + fL + 'px;top:' + footerY + 'px;" width="' + fW + '" height="16" direction="ltr">'
+    + '<text x="0" y="12" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="11" font-weight="800" fill="#1e293b" text-anchor="start">المصحح</text>'
+    + '<text x="' + Math.round(fW*0.19) + '" y="12" font-family="Arial,sans-serif" font-size="9" fill="#94a3b8" text-anchor="start">•</text>'
+    + '<text x="' + Math.round(fW*0.23) + '" y="12" font-family="Arial,sans-serif" font-size="10" fill="#475569" text-anchor="start">www.mysite.com</text>'
+    + '<text x="' + Math.round(fW/2) + '" y="12" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="10" fill="#64748b" text-anchor="middle">' + ex.name + (clsName ? ' — ' + clsName : '') + '</text>'
+    + '</svg>';
+
+    document.getElementById('omr-sheet-inner').innerHTML=html;
 }
 
 function extractBubbleCoordinates(){
@@ -993,47 +1024,32 @@ function calculateScore(choices, answerKey){
   let total = 0;
   for(let q in answerKey){
     if(q.startsWith('_')) continue;
-    const cOpts  = Object.keys(answerKey[q]);   // الخيارات الصحيحة
-    const cCount = cOpts.length;
-    const sOpts  = (choices[q] || '').split(', ').filter(Boolean); // خيارات التلميذ
 
-    if(sOpts.length === 0) continue; // لم يختر شيئاً → 0
+    const cOpts  = Object.keys(answerKey[q]);
+    const cCount = cOpts.length;
+    const sOpts  = (choices[q] || '').split(', ').filter(Boolean);
+
+    if(sOpts.length === 0) continue;
 
     if(cCount === 1){
-      // ===== سؤال خيار واحد =====
-      // صح فقط إذا ظلّل الخيار الصحيح وحده بدون أي إضافات
+      // سؤال بخيار واحد: صح فقط إذا ظلّل الصحيح وحده
       if(sOpts.length === 1 && sOpts[0] === cOpts[0]){
         total += answerKey[q][cOpts[0]];
       }
-      // إذا ظلّل الصحيح + خيارات أخرى → 0 (خطأ)
-      // إذا ظلّل خيارات خاطئة فقط → 0
-
     } else {
-      // ===== سؤال خيارات متعددة =====
-      // النقطة الجزئية لكل خيار صحيح (قد تختلف بين الخيارات)
-      // عقوبة كل خيار خاطئ = متوسط النقط الجزئية
-      const totalCorrectPts = cOpts.reduce((sum, o) => sum + (answerKey[q][o] || 0), 0);
-      const penaltyPerWrong = cCount > 0 ? (totalCorrectPts / cCount) : 0;
-
-      let earned = 0;
-      let wrongCount = 0;
+      // سؤال بخيارات متعددة
+      const fullPts    = cOpts.reduce((s, o) => s + (answerKey[q][o] || 0), 0);
+      const penaltyUnit = fullPts / cCount;
+      let earned = 0, wrongs = 0;
       sOpts.forEach(o => {
-        if(cOpts.includes(o)){
-          earned += (answerKey[q][o] || 0); // نقطة الخيار الصحيح
-        } else {
-          wrongCount++;                      // خيار خاطئ → عقوبة
-        }
+        if(cOpts.includes(o)) earned += (answerKey[q][o] || 0);
+        else wrongs++;
       });
-      const penalty = wrongCount * penaltyPerWrong;
-      total += Math.max(0, earned - penalty);
+      total += Math.max(0, Math.round((earned - wrongs * penaltyUnit) * 100) / 100);
     }
   }
   return Math.round(total * 10) / 10;
 }
-
-function retakePhoto(){isScanning=true;resetScannerUI();scanLoop();}
-function stopScanner(){isScanning=false;if(scanRAF)cancelAnimationFrame(scanRAF);AppState.videoStream?.getTracks().forEach(t=>t.stop());document.getElementById('scannerModal').style.display='none';}
-
 async function confirmSaveScanned(){
   const{exam,studentId,extChoices}=AppState.activeScan,eid=exam.id;
   let res=AppState.results[eid]?.[studentId]||{id:`${eid}___${studentId}`,examId:eid,studentId};
