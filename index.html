@@ -395,11 +395,14 @@
             <canvas id="analysis-canvas"></canvas>
 
             <!-- نتيجة التصحيح -->
-            <div id="result-overlay" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:30;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:70px;">
-                <div id="result-score" style="color:#22c55e;font-size:2rem;font-weight:800;margin-bottom:25px;text-align:center;padding:0 20px;"></div>
-                <div style="display:flex;gap:15px;">
-                    <button class="btn btn-warning" onclick="retakePhoto()" style="padding:12px 24px;"><i class="fas fa-redo"></i> إعادة</button>
-                    <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding:12px 24px;"><i class="fas fa-check-circle"></i> حفظ النتيجة</button>
+            <div id="result-overlay" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;z-index:30;flex-direction:column;align-items:center;justify-content:flex-start;pointer-events:none;">
+                <!-- شريط النتيجة العلوي — شبه شفاف لإظهار صورة الورقة خلفه -->
+                <div style="width:100%;background:rgba(0,0,0,0.85);padding:60px 20px 18px;text-align:center;pointer-events:all;">
+                    <div id="result-score" style="color:#22c55e;font-size:1.8rem;font-weight:800;margin-bottom:16px;text-align:center;"></div>
+                    <div style="display:flex;gap:12px;justify-content:center;">
+                        <button class="btn btn-warning" onclick="retakePhoto()" style="padding:11px 22px;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
+                        <button class="btn btn-success" onclick="confirmSaveScanned()" style="padding:11px 22px;"><i class="fas fa-check-circle"></i> حفظ النتيجة</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -625,8 +628,12 @@ function editExamSetup(id){
     document.getElementById('examQCount').value=ex.qCount;
     document.getElementById('examOptionCount').value=ex.options.length;
     switchTab('create-exam');
+    // ✅ FIX4: حفظ البيانات قبل استدعاء generateExamGrid التي تمسح answerKey
+    const _savedKey=JSON.parse(JSON.stringify(ex.answerKey));
+    const _savedId=ex.id;
     generateExamGrid();
-    currentSetup.id=ex.id; currentSetup.answerKey=JSON.parse(JSON.stringify(ex.answerKey));
+    currentSetup.id=_savedId;
+    currentSetup.answerKey=_savedKey;
     for(let i=1;i<=ex.qCount;i++){
         let qk=`Q${i}`; if(ex.answerKey[qk]){ for(let opt in ex.answerKey[qk]){ let pts=ex.answerKey[qk][opt]; let row=document.getElementById('examQuestionsGrid').children[i-1]; if(row){ let od=row.querySelectorAll('.q-option'); let oi=ex.options.indexOf(opt); if(oi>=0&&od[oi]){ od[oi].classList.add('selected'); od[oi].querySelector('.q-score-badge').innerText=pts; } } } }
     }
@@ -661,9 +668,8 @@ function buildPrintTemplate(ex){
 
     // ---- الترويسة الاحترافية ----
     const hL=OMR.RL+OMR.PAD, hR=OMR.RR-OMR.PAD, hT=OMR.CO+OMR.CM+18;
-    const clsName=cls?cls.name:'';
     html+=`
-<div style="position:absolute;left:${hL}px;top:${hT}px;right:${W-hR}px;direction:rtl;font-family:Arial,sans-serif;">
+<div style="position:absolute;left:${hL}px;top:${hT}px;right:${W-hR}px;direction:rtl;font-family:'Cairo','Tajawal',sans-serif;">
 
   <!-- شريط العنوان العلوي -->
   <div style="background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:white;border-radius:8px 8px 0 0;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:0;">
@@ -683,7 +689,7 @@ function buildPrintTemplate(ex){
     <!-- القسم -->
     <div style="display:flex;flex-direction:column;gap:3px;">
       <span style="font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">القسم</span>
-      <div style="border-bottom:2px solid #334155;min-height:22px;text-align:center;font-size:12px;font-weight:700;">${clsName}</div>
+      <div style="border-bottom:2px solid #334155;min-height:22px;"></div>
     </div>
 
     <!-- الرقم الترتيبي -->
@@ -699,9 +705,23 @@ function buildPrintTemplate(ex){
   </div>
 </div>`;
 
-    // ---- شبكة الأسئلة ----
+    // ---- شبكة الأسئلة — FIX3: Q_GAP ديناميكي لملء الورقة ----
     const gridTop=OMR.HDR_H+8;
     const gridLeft=OMR.RL+OMR.PAD;
+
+    // حساب المسافة المتاحة رأسياً وتوزيعها على الأسئلة
+    // بحيث تملأ الورقة دون فراغات كبيرة
+    const availH = OMR.H - gridTop - OMR.CO - OMR.CM - 10;
+    const rowsPerCol = Math.ceil(ex.qCount / numCols);
+    const hdrHeight = 22; // ارتفاع رأس الخيارات لكل كتلة
+    const blkCount = Math.ceil(rowsPerCol / BLK);
+    // Q_GAP الديناميكي: يتمدد بين 34 و 60 حسب عدد الأسئلة
+    const totalHdrH = blkCount * (hdrHeight + 6);
+    const dynQ_GAP = Math.min(60, Math.max(34,
+        Math.floor((availH - totalHdrH) / Math.max(rowsPerCol, 1))
+    ));
+    // قطر الدائرة الديناميكي بما يتناسب مع Q_GAP
+    const dynBD = Math.min(34, Math.max(24, dynQ_GAP - 6));
 
     for(let col=0;col<numCols;col++){
         const colX=gridLeft+col*colW;
@@ -710,32 +730,34 @@ function buildPrintTemplate(ex){
             const qStart=blockNum*BLK+1;
             if(qStart>ex.qCount) break;
             const qEnd=Math.min(qStart+BLK-1,ex.qCount);
-            const blkY=gridTop+blkIdx*(BLK*OMR.Q_GAP+34);
+            const blkY=gridTop+blkIdx*(BLK*dynQ_GAP+hdrHeight+6);
 
             // رأس الخيارات
             opts.forEach((o,oi)=>{
-                const hx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*OMR.OPT_GAP+OMR.BD/2-6;
-                html+=`<div style="position:absolute;left:${hx}px;top:${blkY}px;font-size:11px;font-weight:800;width:14px;text-align:center;font-family:Arial;color:#1e293b;">${o}</div>`;
+                const hx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*OMR.OPT_GAP+dynBD/2-6;
+                html+=`<div style="position:absolute;left:${hx}px;top:${blkY}px;font-size:12px;font-weight:800;width:14px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;">${o}</div>`;
             });
 
             // صفوف الأسئلة
             for(let q=qStart;q<=qEnd;q++){
                 const rowIdx=q-qStart;
-                const qy=blkY+18+rowIdx*OMR.Q_GAP;
+                const qy=blkY+hdrHeight+rowIdx*dynQ_GAP;
                 // رقم السؤال
-                html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:11px;font-weight:700;line-height:${OMR.BD}px;text-align:right;font-family:Arial;color:#374151;">${q}</div>`;
-                // الدوائر
+                html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:11px;font-weight:700;line-height:${dynBD}px;text-align:right;font-family:Arial;color:#374151;">${q}</div>`;
+                // الدوائر — data-cx, data-cy للإحداثيات الدقيقة
                 opts.forEach((o,oi)=>{
-                    const cx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*OMR.OPT_GAP+OMR.BD/2;
-                    const cy=qy+OMR.BD/2;
-                    const lx=cx-OMR.BD/2;
+                    const cx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*OMR.OPT_GAP+dynBD/2;
+                    const cy=qy+dynBD/2;
+                    const lx=cx-dynBD/2;
                     html+=`<div class="omr-bubble-mark" data-q="Q${q}" data-opt="${o}" data-cx="${cx}" data-cy="${cy}"
-                        style="position:absolute;left:${lx}px;top:${qy}px;width:${OMR.BD}px;height:${OMR.BD}px;
+                        style="position:absolute;left:${lx}px;top:${qy}px;width:${dynBD}px;height:${dynBD}px;
                                border:2.5px solid #1e293b;border-radius:50%;background:white;box-sizing:border-box;"></div>`;
                 });
             }
         }
     }
+    // تخزين dynBD لاسترجاعه في extractBubbleCoordinates
+    html+=`<span id="dyn-bd" data-bd="${dynBD}" style="display:none;"></span>`;
     document.getElementById('omr-sheet-inner').innerHTML=html;
 }
 
@@ -745,7 +767,10 @@ function buildPrintTemplate(ex){
 // ============================================================
 function extractBubbleCoordinates(){
     const bubbles=document.querySelectorAll('.omr-bubble-mark[data-cx]');
-    const layout={ _meta:{ bubbleRadiusRatio:(OMR.BD/2)/OMR.W, sheetW:OMR.W, sheetH:OMR.H } };
+    // FIX3: استخدام dynBD المحسوب ديناميكياً
+    const dynBdEl=document.getElementById('dyn-bd');
+    const actualBD=dynBdEl?parseFloat(dynBdEl.getAttribute('data-bd')):OMR.BD;
+    const layout={ _meta:{ bubbleRadiusRatio:(actualBD/2)/OMR.W, sheetW:OMR.W, sheetH:OMR.H } };
     bubbles.forEach(b=>{
         const cx=parseFloat(b.getAttribute('data-cx'));
         const cy=parseFloat(b.getAttribute('data-cy'));
@@ -945,7 +970,8 @@ function resetScannerUI(){
     document.getElementById('scanner-bar').style.display='block';
     document.getElementById('scan-line').style.display='block';
     document.getElementById('stab-bar').style.width='0%';
-    document.getElementById('manualCaptureBtn').style.display=isAutoMode?'none':'flex';
+    // ✅ FIX5: زر التصحيح اليدوي يُعرض دائماً حسب الوضع
+        document.getElementById('manualCaptureBtn').style.display=isAutoMode?'none':'flex';
     setInstruction(isAutoMode?'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر':'اضغط زر الالتقاط عندما تكون الورقة مرئية');
     ['cm-tl','cm-tr','cm-bl','cm-br'].forEach(id=>{ const el=document.getElementById(id); el.style.borderColor='rgba(255,255,255,0.9)'; el.style.background='transparent'; });
     stabFrames=0;
@@ -1012,7 +1038,7 @@ function scanLoop(){
         const inx=corners[i].x+insets[i].x*checkR*4, iny=corners[i].y+insets[i].y*checkR*4;
         const innerLight=measureDarkness(analysisCtx,inx,iny,checkR,145)<0.22;
 
-        if(darkPts>=4&&innerLight){
+        if(darkPts>=3&&innerLight){
             el.style.borderColor='#22c55e'; el.style.background='rgba(34,197,94,0.25)'; aligned++;
         } else {
             el.style.borderColor='rgba(255,255,255,0.9)'; el.style.background='transparent';
@@ -1022,8 +1048,8 @@ function scanLoop(){
     const sb=document.getElementById('stab-bar');
     if(!isAutoMode){ stabFrames=0; sb.style.width='0%'; scanRAF=requestAnimationFrame(scanLoop); return; }
 
-    const STAB_NEEDED=30;
-    if(aligned===4){
+    const STAB_NEEDED=18;
+    if(aligned>=3){
         stabFrames++;
         sb.style.width=(stabFrames/STAB_NEEDED*100)+'%';
         if(stabFrames>=STAB_NEEDED){ isScanning=false; playShutterSound(); sb.style.width='0%'; setTimeout(()=>captureAndProcess(),60); return; }
