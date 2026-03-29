@@ -123,11 +123,16 @@ th{background:var(--light);white-space:nowrap;}
   flex-direction:column;
   align-items:center;
   background:rgba(0,0,0,0.92);
-  padding:14px 16px 28px;
-  gap:10px;
+  /* padding آمن: لا يتجاوز الشاشة */
+  padding:10px 16px 12px;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px));
+  gap:8px;
   flex-shrink:0;
   z-index:28;
   width:100%;
+  /* ارتفاع أقصى لضمان عدم التجاوز */
+  max-height:40vh;
+  overflow:hidden;
 }
 #result-student-name{
   color:rgba(255,255,255,0.75);
@@ -137,22 +142,23 @@ th{background:var(--light);white-space:nowrap;}
 }
 #result-score{
   color:#22c55e;
-  font-size:1.9rem;
+  font-size:1.7rem;
   font-weight:800;
-  line-height:1.2;
+  line-height:1.1;
   text-align:center;
 }
 #result-btns{
   display:flex;
   flex-direction:row;
-  gap:12px;
+  gap:10px;
   width:100%;
   max-width:480px;
 }
 #result-btns .btn{
   flex:1;
-  padding:13px 8px;
-  font-size:0.95rem;
+  padding:11px 8px;
+  font-size:0.92rem;
+  min-height:44px;
 }
 #scanner-bottom{position:absolute;bottom:0;left:0;width:100%;padding:14px;background:rgba(0,0,0,.78);z-index:20;text-align:center;}
 #scanner-instr{color:white;font-weight:700;font-size:.92rem;margin:0;}
@@ -379,8 +385,7 @@ th{background:var(--light);white-space:nowrap;}
     <canvas id="preview-canvas"></canvas>
     <canvas id="analysis-canvas"></canvas>
   </div>
-  <!-- scanner-bottom و result-overlay خارج overflow:hidden — يظهران دائماً -->
-  <div id="scanner-bottom"><p id="scanner-instr">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p></div>
+  <!-- result-overlay: عنصر في آخر الـ flex column — لا يتجاوز الشاشة -->
   <div id="result-overlay">
     <div id="result-student-name"></div>
     <div id="result-score"></div>
@@ -497,7 +502,7 @@ const OMR={W:794,H:1123,CM:22,CO:10,
   get RL(){return this.CO;},get RT(){return this.CO;},
   get RR(){return this.W-this.CO;},get RB(){return this.H-this.CO;},
   get RW(){return this.RR-this.RL;},get RH(){return this.RB-this.RT;},
-  BD:28,Q_GAP:38,OPT_GAP:44,NUM_W:24,NUM_GAP:8,BLK:10,HDR_H:220,PAD:35};
+  BD:28,Q_GAP:38,OPT_GAP:44,NUM_W:30,NUM_GAP:8,BLK:10,HDR_H:220,PAD:35};
 
 // ================================================================
 // Exam Creation
@@ -639,13 +644,19 @@ function buildPrintTemplate(ex){
     font-family="Cairo,Tajawal,Arial,sans-serif"
     font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">الاسم الكامل</text>
 
-  <!-- خطوط الكتابة y=110 -->
-  <!-- خط الاسم: عمود 0..50% -->
-  <line x1="${p + 4}" y1="110" x2="${Math.round(svgW*0.50) - 8}" y2="110" stroke="#334155" stroke-width="1.8"/>
-  <!-- خط القسم: عمود 50%..75% -->
-  <line x1="${Math.round(svgW*0.50) + 8}" y1="110" x2="${Math.round(svgW*0.75) - 8}" y2="110" stroke="#334155" stroke-width="1.8"/>
-  <!-- خط ر.ت: عمود 75%..100% -->
-  <line x1="${Math.round(svgW*0.75) + 8}" y1="110" x2="${svgW - p - 4}" y2="110" stroke="#334155" stroke-width="1.8"/>
+  <!-- نقط الكتابة 5px بدلاً من الخطوط — مع فراغ مناسب تحت التسمية -->
+  <!-- نقط عمود الاسم الكامل: 0..50% -->
+  <text x="${Math.round(svgW*0.25)}" y="108"
+    font-family="Arial,sans-serif" font-size="5" fill="#94a3b8"
+    text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .</text>
+  <!-- نقط عمود القسم: 50%..75% -->
+  <text x="${Math.round(svgW*0.625)}" y="108"
+    font-family="Arial,sans-serif" font-size="5" fill="#94a3b8"
+    text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . .</text>
+  <!-- نقط عمود ر.ت: 75%..100% -->
+  <text x="${Math.round(svgW*0.875)}" y="108"
+    font-family="Arial,sans-serif" font-size="5" fill="#94a3b8"
+    text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . .</text>
 
   <!-- شريط التعليمات -->
   <rect x="0" y="124" width="${svgW}" height="42" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
@@ -661,10 +672,10 @@ function buildPrintTemplate(ex){
   const availH=H-gridTop-CO-CM-10;
   const rowsPerCol=Math.ceil(ex.qCount/numCols);
   const blkCount=Math.ceil(rowsPerCol/BLK);
-  const dynQ_GAP=Math.min(66,Math.max(40,Math.floor((availH-blkCount*30)/Math.max(rowsPerCol,1))));
-  const dynBD=Math.min(40,Math.max(28,dynQ_GAP-4));
+  const dynQ_GAP=Math.min(72,Math.max(48,Math.floor((availH-blkCount*32)/Math.max(rowsPerCol,1))));
+  const dynBD=Math.min(50,Math.max(36,dynQ_GAP-2));
   // OPT_GAP ديناميكي: قطر الدائرة + 10px هامش (لا يقل عن 44)
-  const dynOPT_GAP = Math.max(44, dynBD + 10);
+  const dynOPT_GAP = Math.max(52, dynBD + 12);
   for(let col=0;col<numCols;col++){
     const colX=gridLeft+col*colW;
     for(let blkIdx=0;blkIdx<blocksPerCol;blkIdx++){
@@ -674,11 +685,11 @@ function buildPrintTemplate(ex){
       const blkY=gridTop+blkIdx*(BLK*dynQ_GAP+28);
       opts.forEach((o,oi)=>{
         const hx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2-6;
-        html+=`<div style="position:absolute;left:${hx-2}px;top:${blkY}px;font-size:15px;font-weight:800;width:18px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;">${o}</div>`;
+        html+=`<div style="position:absolute;left:${hx-4}px;top:${blkY}px;font-size:20px;font-weight:800;width:24px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;">${o}</div>`;
       });
       for(let q=qStart;q<=qEnd;q++){
-        const qy=blkY+30+(q-qStart)*dynQ_GAP;
-        html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:14px;font-weight:700;line-height:${dynBD}px;text-align:right;font-family:Arial;color:#1e293b;">${q}</div>`;
+        const qy=blkY+36+(q-qStart)*dynQ_GAP;
+        html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:22px;font-weight:800;line-height:${dynBD}px;text-align:right;font-family:Arial;color:#1e293b;">${q}</div>`;
         opts.forEach((o,oi)=>{
           const cx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2;
           const cy=qy+dynBD/2;
