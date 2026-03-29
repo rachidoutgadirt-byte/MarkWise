@@ -360,7 +360,7 @@ th{background:var(--light);white-space:nowrap;}
   <div id="scanner-bottom"><p id="scanner-instr">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p></div>
   <!-- result-overlay: شريط شفاف في الأسفل — الورقة مرئية خلفه -->
   <div id="result-overlay">
-    <div style="width:100%;background:rgba(0,0,0,0.88);padding:16px 20px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <div style="width:100%;background:rgba(0,0,0,0.88);padding:16px 20px env(safe-area-inset-bottom,24px);padding-bottom:max(24px,env(safe-area-inset-bottom,0px)+24px);display:flex;flex-direction:column;align-items:center;gap:12px;">
       <div id="result-student-name" style="color:rgba(255,255,255,0.75);font-size:0.9rem;font-weight:500;"></div>
       <div id="result-score" style="color:#22c55e;font-size:1.8rem;font-weight:800;"></div>
       <!-- الزران في نفس السطر دائماً -->
@@ -480,7 +480,7 @@ const OMR={W:794,H:1123,CM:22,CO:10,
   get RL(){return this.CO;},get RT(){return this.CO;},
   get RR(){return this.W-this.CO;},get RB(){return this.H-this.CO;},
   get RW(){return this.RR-this.RL;},get RH(){return this.RB-this.RT;},
-  BD:28,Q_GAP:38,OPT_GAP:36,NUM_W:24,NUM_GAP:8,BLK:10,HDR_H:220,PAD:35};
+  BD:28,Q_GAP:38,OPT_GAP:44,NUM_W:24,NUM_GAP:8,BLK:10,HDR_H:220,PAD:35};
 
 // ================================================================
 // Exam Creation
@@ -548,7 +548,7 @@ async function deleteExam(id){AppState.exams=AppState.exams.filter(e=>e.id!==id)
 // ================================================================
 function buildPrintTemplate(ex){
   const opts=ex.options,nOpt=opts.length,BLK=OMR.BLK;
-  const blockW=OMR.NUM_W+OMR.NUM_GAP+nOpt*OMR.OPT_GAP;
+  const blockW=OMR.NUM_W+OMR.NUM_GAP+nOpt*44; // تقدير أولي قبل dynOPT_GAP
   const innerW=OMR.RW-OMR.PAD*2;
   const numCols=Math.max(1,Math.min(4,Math.floor(innerW/(blockW+20))));
   const colW=Math.floor(innerW/numCols);
@@ -573,59 +573,63 @@ function buildPrintTemplate(ex){
   html+=`
 <svg xmlns="http://www.w3.org/2000/svg"
      style="position:absolute;left:${svgL}px;top:${hT}px;"
-     width="${svgW}" height="165">
+     width="${svgW}" height="168">
 
-  <!-- ████ خلفية شريط العنوان ████ -->
-  <rect x="0" y="0" width="${svgW}" height="60" rx="7" fill="#e8edf2"/>
-  <rect x="0" y="16" width="${svgW}" height="44" fill="#f0f4f8"/>
+  <!-- شريط العنوان الداكن -->
+  <rect x="0" y="0" width="${svgW}" height="58" rx="7" fill="#d1d9e0"/>
+  <rect x="0" y="14" width="${svgW}" height="44" fill="#e2e8ed"/>
 
-  <!-- اسم الامتحان — كبير وواضح — يمين -->
-  <text x="${svgW - p}" y="32"
+  <!-- خط فاصل سفلي للشريط -->
+  <line x1="0" y1="57" x2="${svgW}" y2="57" stroke="#94a3b8" stroke-width="1"/>
+
+  <!-- اسم الامتحان — يمين — كبير وعريض -->
+  <text x="${svgW - p}" y="31"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="22" font-weight="800" fill="#1e293b" text-anchor="end"
+    font-size="22" font-weight="800" fill="#0f172a" text-anchor="end"
     dominant-baseline="middle">${ex.name}</text>
 
   <!-- المادة / المرحلة / الموسم — يسار -->
-  <text x="${p}" y="52"
+  <text x="${p}" y="49"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" fill="#475569" text-anchor="start"
+    font-size="13" fill="#334155" text-anchor="start"
     dominant-baseline="middle">${ex.subject||''} — ${ex.stage||''} — ${ex.year||''}</text>
 
-  <!-- ████ إطار حقول البيانات ████ -->
-  <rect x="0" y="62" width="${svgW}" height="62" fill="white" stroke="#1e293b" stroke-width="1.5"/>
+  <!-- إطار جدول البيانات — مقسّم بنسب 50/25/25 -->
+  <!-- الإطار الخارجي -->
+  <rect x="0" y="58" width="${svgW}" height="64" rx="0" fill="white" stroke="#475569" stroke-width="1.5"/>
 
-  <!-- فواصل الأعمدة -->
-  <line x1="${Math.round(svgW*0.55)}" y1="62" x2="${Math.round(svgW*0.55)}" y2="124" stroke="#cbd5e1" stroke-width="1.2"/>
-  <line x1="${Math.round(svgW*0.78)}" y1="62" x2="${Math.round(svgW*0.78)}" y2="124" stroke="#cbd5e1" stroke-width="1.2"/>
+  <!-- فاصل عمود القسم: 50% من اليمين -->
+  <line x1="${Math.round(svgW*0.50)}" y1="58" x2="${Math.round(svgW*0.50)}" y2="122" stroke="#475569" stroke-width="1.2"/>
+  <!-- فاصل عمود ر.ت: 75% من اليمين -->
+  <line x1="${Math.round(svgW*0.75)}" y1="58" x2="${Math.round(svgW*0.75)}" y2="122" stroke="#475569" stroke-width="1.2"/>
 
-  <!-- تسميات الحقول — أكبر وأوضح -->
-  <text x="${svgW - p}" y="78"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="15" font-weight="700" fill="#374151" text-anchor="end">الاسم الكامل</text>
-  <text x="${Math.round(svgW*0.78) - p}" y="78"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="15" font-weight="700" fill="#374151" text-anchor="end">القسم</text>
-  <text x="${Math.round(svgW*0.55) - p}" y="78"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="15" font-weight="700" fill="#374151" text-anchor="end">ر.ت</text>
+  <!-- خط فاصل أفقي بين التسمية وخط الكتابة -->
+  <line x1="0" y1="78" x2="${svgW}" y2="78" stroke="#e2e8f0" stroke-width="1"/>
 
-  <!-- خطوط الكتابة -->
-  <line x1="${Math.round(svgW*0.56)}" y1="116" x2="${svgW - p}" y2="116" stroke="#334155" stroke-width="1.8"/>
-  <line x1="${Math.round(svgW*0.79)}" y1="116" x2="${Math.round(svgW*0.55) - p}" y2="100" stroke="#334155" stroke-width="1.8"/>
-  <line x1="${p}" y1="116" x2="${Math.round(svgW*0.78) - p}" y2="100" stroke="#334155" stroke-width="1.8"/>
+  <!-- تسميات الحقول -->
+  <text x="${svgW - p}" y="69"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="14" font-weight="700" fill="#1e293b" text-anchor="end">الاسم الكامل</text>
+  <text x="${Math.round(svgW*0.75) - p}" y="69"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="14" font-weight="700" fill="#1e293b" text-anchor="end">القسم</text>
+  <text x="${Math.round(svgW*0.50) - p}" y="69"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="14" font-weight="700" fill="#1e293b" text-anchor="end">ر.ت</text>
 
-  <!-- ████ شريط التعليمات ████ -->
-  <rect x="0" y="126" width="${svgW}" height="38" rx="4" fill="#f0f4ff" stroke="#c7d2fe" stroke-width="1.2"/>
-  <text x="${Math.round(svgW/2)}" y="140"
+  <!-- خطوط الكتابة — كلها على نفس الارتفاع y=114 -->
+  <line x1="${Math.round(svgW*0.51) + 6}" y1="114" x2="${svgW - p}" y2="114" stroke="#334155" stroke-width="1.8"/>
+  <line x1="${Math.round(svgW*0.76) + 6}" y1="114" x2="${Math.round(svgW*0.50) - p}" y2="114" stroke="#334155" stroke-width="1.8"/>
+  <line x1="${p}" y1="114" x2="${Math.round(svgW*0.75) - p}" y2="114" stroke="#334155" stroke-width="1.8"/>
+
+  <!-- شريط التعليمات -->
+  <rect x="0" y="124" width="${svgW}" height="42" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
+  <text x="${Math.round(svgW/2)}" y="139"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e40af" text-anchor="middle">
-    لوّن الدائرة المناسبة لإجابتك
-  </text>
-  <text x="${Math.round(svgW/2)}" y="156"
+    font-size="14" font-weight="700" fill="#1d4ed8" text-anchor="middle">لوّن الدائرة المناسبة لإجابتك</text>
+  <text x="${Math.round(svgW/2)}" y="158"
     font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="12.5" fill="#475569" text-anchor="middle">
-    لا تضع أي علامة خارج الدوائر
-  </text>
+    font-size="12.5" fill="#475569" text-anchor="middle">لا تضع أي علامة خارج الدوائر</text>
 </svg>`;
   // ---- شبكة الأسئلة — Q_GAP ديناميكي ----
   const gridTop=OMR.HDR_H+8,gridLeft=OMR.RL+OMR.PAD;
@@ -634,6 +638,8 @@ function buildPrintTemplate(ex){
   const blkCount=Math.ceil(rowsPerCol/BLK);
   const dynQ_GAP=Math.min(66,Math.max(40,Math.floor((availH-blkCount*30)/Math.max(rowsPerCol,1))));
   const dynBD=Math.min(40,Math.max(28,dynQ_GAP-4));
+  // OPT_GAP ديناميكي: قطر الدائرة + 10px هامش (لا يقل عن 44)
+  const dynOPT_GAP = Math.max(44, dynBD + 10);
   for(let col=0;col<numCols;col++){
     const colX=gridLeft+col*colW;
     for(let blkIdx=0;blkIdx<blocksPerCol;blkIdx++){
@@ -642,14 +648,14 @@ function buildPrintTemplate(ex){
       const qEnd=Math.min(qStart+BLK-1,ex.qCount);
       const blkY=gridTop+blkIdx*(BLK*dynQ_GAP+28);
       opts.forEach((o,oi)=>{
-        const hx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*OMR.OPT_GAP+dynBD/2-6;
+        const hx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2-6;
         html+=`<div style="position:absolute;left:${hx-2}px;top:${blkY}px;font-size:15px;font-weight:800;width:18px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;">${o}</div>`;
       });
       for(let q=qStart;q<=qEnd;q++){
-        const qy=blkY+22+(q-qStart)*dynQ_GAP;
+        const qy=blkY+30+(q-qStart)*dynQ_GAP;
         html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:14px;font-weight:700;line-height:${dynBD}px;text-align:right;font-family:Arial;color:#1e293b;">${q}</div>`;
         opts.forEach((o,oi)=>{
-          const cx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*OMR.OPT_GAP+dynBD/2;
+          const cx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2;
           const cy=qy+dynBD/2;
           html+=`<div class="omr-bubble-mark" data-q="Q${q}" data-opt="${o}" data-cx="${cx}" data-cy="${cy}" style="position:absolute;left:${cx-dynBD/2}px;top:${qy}px;width:${dynBD}px;height:${dynBD}px;border:3px solid #1e293b;border-radius:50%;background:white;box-sizing:border-box;"></div>`;
         });
