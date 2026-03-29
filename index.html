@@ -98,7 +98,7 @@ th{background:var(--light);white-space:nowrap;}
   .table-responsive{overflow-x:auto;}
 }
 /* ===== SCANNER ===== */
-#scannerModal .modal-content{width:100vw;height:100vh;max-width:none;max-height:none;padding:0;border-radius:0;display:flex;flex-direction:column;background:#000;position:relative;overflow:hidden;}
+#scannerModal .modal-content{width:100vw;height:100dvh;max-width:none;max-height:none;padding:0;border-radius:0;display:flex;flex-direction:column;background:#000;position:relative;overflow:hidden;}
 #video-feed{width:100%;height:100%;object-fit:cover;display:block;}
 #guide-rect{position:absolute;border:2px solid rgba(255,255,255,.35);box-shadow:0 0 0 4000px rgba(0,0,0,.55);z-index:4;box-sizing:border-box;}
 .cm{position:absolute;width:48px;height:48px;z-index:6;transition:border-color .1s,background .1s;}
@@ -123,16 +123,13 @@ th{background:var(--light);white-space:nowrap;}
   flex-direction:column;
   align-items:center;
   background:rgba(0,0,0,0.92);
-  /* padding آمن: لا يتجاوز الشاشة */
-  padding:10px 16px 12px;
-  padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px));
+  padding:10px 16px;
+  padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));
   gap:8px;
   flex-shrink:0;
   z-index:28;
   width:100%;
-  /* ارتفاع أقصى لضمان عدم التجاوز */
-  max-height:40vh;
-  overflow:hidden;
+  box-sizing:border-box;
 }
 #result-student-name{
   color:rgba(255,255,255,0.75);
@@ -646,17 +643,19 @@ function buildPrintTemplate(ex){
 
   <!-- نقط الكتابة 5px بدلاً من الخطوط — مع فراغ مناسب تحت التسمية -->
   <!-- نقط عمود الاسم الكامل: 0..50% -->
-  <text x="${Math.round(svgW*0.25)}" y="108"
-    font-family="Arial,sans-serif" font-size="5" fill="#94a3b8"
-    text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .</text>
-  <!-- نقط عمود القسم: 50%..75% -->
-  <text x="${Math.round(svgW*0.625)}" y="108"
-    font-family="Arial,sans-serif" font-size="5" fill="#94a3b8"
-    text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . .</text>
-  <!-- نقط عمود ر.ت: 75%..100% -->
-  <text x="${Math.round(svgW*0.875)}" y="108"
-    font-family="Arial,sans-serif" font-size="5" fill="#94a3b8"
-    text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . .</text>
+  <!-- نقط الكتابة — font-size=5px كما طُلب — مع فراغ مناسب -->
+  <!-- نقط عمود الاسم الكامل -->
+  <text x="${Math.round(svgW*0.25)}" y="112"
+    font-family="Arial,sans-serif" font-size="5" fill="#64748b"
+    text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .</text>
+  <!-- نقط عمود القسم -->
+  <text x="${Math.round(svgW*0.625)}" y="112"
+    font-family="Arial,sans-serif" font-size="5" fill="#64748b"
+    text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . . . . . . . . .</text>
+  <!-- نقط عمود ر.ت -->
+  <text x="${Math.round(svgW*0.875)}" y="112"
+    font-family="Arial,sans-serif" font-size="5" fill="#64748b"
+    text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . .</text>
 
   <!-- شريط التعليمات -->
   <rect x="0" y="124" width="${svgW}" height="42" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
@@ -685,11 +684,14 @@ function buildPrintTemplate(ex){
       const blkY=gridTop+blkIdx*(BLK*dynQ_GAP+28);
       opts.forEach((o,oi)=>{
         const hx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2-6;
-        html+=`<div style="position:absolute;left:${hx-4}px;top:${blkY}px;font-size:20px;font-weight:800;width:24px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;">${o}</div>`;
+        const optFS = Math.round(dynBD * 0.58);
+        const optW  = Math.round(dynBD * 0.7);
+        html+=`<div style="position:absolute;left:${hx - Math.round(optW/2)}px;top:${blkY + 2}px;font-size:${optFS}px;font-weight:800;width:${optW}px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;line-height:1;">${o}</div>`;
       });
       for(let q=qStart;q<=qEnd;q++){
         const qy=blkY+36+(q-qStart)*dynQ_GAP;
-        html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:22px;font-weight:800;line-height:${dynBD}px;text-align:right;font-family:Arial;color:#1e293b;">${q}</div>`;
+        const qFS = Math.round(dynBD * 0.60);
+        html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:${qFS}px;font-weight:800;line-height:${dynBD}px;text-align:right;font-family:Arial;color:#1e293b;">${q}</div>`;
         opts.forEach((o,oi)=>{
           const cx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2;
           const cy=qy+dynBD/2;
