@@ -117,19 +117,43 @@ th{background:var(--light);white-space:nowrap;}
   width:100%;height:100%;
   display:none;background:#000;z-index:12;
 }
+/* result-overlay: عنصر عادي في flex column — يظهر دائماً */
 #result-overlay{
   display:none;
-  position:absolute;
-  top:0;left:0;right:0;bottom:0;
-  background:transparent;
-  z-index:28;
   flex-direction:column;
   align-items:center;
-  justify-content:flex-end;
-  pointer-events:none;
+  background:rgba(0,0,0,0.92);
+  padding:14px 16px 28px;
+  gap:10px;
+  flex-shrink:0;
+  z-index:28;
+  width:100%;
 }
-#result-overlay > * { pointer-events:all; }
-#result-score{color:#22c55e;font-size:1.65rem;font-weight:800;text-align:center;line-height:1.3;}
+#result-student-name{
+  color:rgba(255,255,255,0.75);
+  font-size:0.9rem;
+  font-weight:500;
+  text-align:center;
+}
+#result-score{
+  color:#22c55e;
+  font-size:1.9rem;
+  font-weight:800;
+  line-height:1.2;
+  text-align:center;
+}
+#result-btns{
+  display:flex;
+  flex-direction:row;
+  gap:12px;
+  width:100%;
+  max-width:480px;
+}
+#result-btns .btn{
+  flex:1;
+  padding:13px 8px;
+  font-size:0.95rem;
+}
 #scanner-bottom{position:absolute;bottom:0;left:0;width:100%;padding:14px;background:rgba(0,0,0,.78);z-index:20;text-align:center;}
 #scanner-instr{color:white;font-weight:700;font-size:.92rem;margin:0;}
 #scanner-topbar{position:absolute;top:0;left:0;width:100%;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.65);z-index:22;gap:8px;}
@@ -343,33 +367,26 @@ th{background:var(--light);white-space:nowrap;}
       </button>
     </div>
   </div>
-  <!-- منطقة الفيديو والتراكبات -->
-  <div style="flex:1;position:relative;overflow:hidden;">
+  <!-- منطقة الفيديو — overflow:hidden لعرض الكاميرا فقط -->
+  <div id="video-area" style="flex:1;position:relative;overflow:hidden;">
     <video id="video-feed" autoplay playsinline></video>
-    <!-- المستطيل الدليلي -->
     <div id="guide-rect">
       <div class="cm" id="cm-tl"></div><div class="cm" id="cm-tr"></div>
       <div class="cm" id="cm-bl"></div><div class="cm" id="cm-br"></div>
       <div id="scan-line"></div>
       <div id="stab-bar"></div>
     </div>
-    <!-- canvas الصورة الملتقطة — يظهر بعد الالتقاط -->
     <canvas id="preview-canvas"></canvas>
     <canvas id="analysis-canvas"></canvas>
   </div>
+  <!-- scanner-bottom و result-overlay خارج overflow:hidden — يظهران دائماً -->
   <div id="scanner-bottom"><p id="scanner-instr">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p></div>
-  <!-- result-overlay: شريط شفاف في الأسفل — الورقة مرئية خلفه -->
   <div id="result-overlay">
-    <div style="width:100%;background:rgba(0,0,0,0.88);padding:16px 20px env(safe-area-inset-bottom,24px);padding-bottom:max(24px,env(safe-area-inset-bottom,0px)+24px);display:flex;flex-direction:column;align-items:center;gap:12px;">
-      <div id="result-student-name" style="color:rgba(255,255,255,0.75);font-size:0.9rem;font-weight:500;"></div>
-      <div id="result-score" style="color:#22c55e;font-size:1.8rem;font-weight:800;"></div>
-      <!-- الزران في نفس السطر دائماً -->
-      <div style="display:flex;flex-direction:row;gap:12px;width:100%;max-width:500px;">
-        <button class="btn btn-warning" onclick="retakePhoto()"
-          style="flex:1;padding:14px 10px;font-size:1rem;"><i class="fas fa-redo"></i> إعادة التصحيح</button>
-        <button class="btn btn-success" onclick="confirmSaveScanned()"
-          style="flex:1;padding:14px 10px;font-size:1rem;"><i class="fas fa-check-circle"></i> حفظ النتيجة</button>
-      </div>
+    <div id="result-student-name"></div>
+    <div id="result-score"></div>
+    <div id="result-btns">
+      <button class="btn btn-warning" onclick="retakePhoto()"><i class="fas fa-redo"></i> إعادة التصحيح</button>
+      <button class="btn btn-success" onclick="confirmSaveScanned()"><i class="fas fa-check-circle"></i> حفظ النتيجة</button>
     </div>
   </div>
 </div>
@@ -594,33 +611,41 @@ function buildPrintTemplate(ex){
     font-size="13" fill="#334155" text-anchor="start"
     dominant-baseline="middle">${ex.subject||''} — ${ex.stage||''} — ${ex.year||''}</text>
 
-  <!-- إطار جدول البيانات — مقسّم بنسب 50/25/25 -->
-  <!-- الإطار الخارجي -->
-  <rect x="0" y="58" width="${svgW}" height="64" rx="0" fill="white" stroke="#475569" stroke-width="1.5"/>
+  <!-- جدول البيانات RTL صريح:
+       في SVG (LTR): x صغير=يسار الشاشة، x كبير=يمين الشاشة
+       الجدول direction:rtl يعني: أيمن الشاشة = أول عمود مرئي
+       نسب الأعمدة:
+         ر.ت     = 25% = x من 75%..100% (أقصى يمين الشاشة)
+         القسم   = 25% = x من 50%..75%
+         الاسم   = 50% = x من  0%..50% (أقصى يسار الشاشة)
+  -->
+  <rect x="0" y="58" width="${svgW}" height="64" fill="white" stroke="#475569" stroke-width="1.5"/>
 
-  <!-- فاصل عمود القسم: 50% من اليمين -->
+  <!-- فاصل القسم|الاسم عند x=50% -->
   <line x1="${Math.round(svgW*0.50)}" y1="58" x2="${Math.round(svgW*0.50)}" y2="122" stroke="#475569" stroke-width="1.2"/>
-  <!-- فاصل عمود ر.ت: 75% من اليمين -->
+  <!-- فاصل ر.ت|القسم عند x=75% -->
   <line x1="${Math.round(svgW*0.75)}" y1="58" x2="${Math.round(svgW*0.75)}" y2="122" stroke="#475569" stroke-width="1.2"/>
 
-  <!-- خط فاصل أفقي بين التسمية وخط الكتابة -->
-  <line x1="0" y1="78" x2="${svgW}" y2="78" stroke="#e2e8f0" stroke-width="1"/>
+  <!-- تسمية ر.ت: مركز العمود 75%..100% = x=87.5% -->
+  <text x="${Math.round(svgW*0.875)}" y="73"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">ر.ت</text>
+  <!-- تسمية القسم: مركز العمود 50%..75% = x=62.5% -->
+  <text x="${Math.round(svgW*0.625)}" y="73"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">القسم</text>
+  <!-- تسمية الاسم الكامل: مركز العمود 0%..50% = x=25% -->
+  <text x="${Math.round(svgW*0.25)}" y="73"
+    font-family="Cairo,Tajawal,Arial,sans-serif"
+    font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">الاسم الكامل</text>
 
-  <!-- تسميات الحقول -->
-  <text x="${svgW - p}" y="69"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e293b" text-anchor="end">الاسم الكامل</text>
-  <text x="${Math.round(svgW*0.75) - p}" y="69"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e293b" text-anchor="end">القسم</text>
-  <text x="${Math.round(svgW*0.50) - p}" y="69"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e293b" text-anchor="end">ر.ت</text>
-
-  <!-- خطوط الكتابة — كلها على نفس الارتفاع y=114 -->
-  <line x1="${Math.round(svgW*0.51) + 6}" y1="114" x2="${svgW - p}" y2="114" stroke="#334155" stroke-width="1.8"/>
-  <line x1="${Math.round(svgW*0.76) + 6}" y1="114" x2="${Math.round(svgW*0.50) - p}" y2="114" stroke="#334155" stroke-width="1.8"/>
-  <line x1="${p}" y1="114" x2="${Math.round(svgW*0.75) - p}" y2="114" stroke="#334155" stroke-width="1.8"/>
+  <!-- خطوط الكتابة y=110 -->
+  <!-- خط الاسم: عمود 0..50% -->
+  <line x1="${p + 4}" y1="110" x2="${Math.round(svgW*0.50) - 8}" y2="110" stroke="#334155" stroke-width="1.8"/>
+  <!-- خط القسم: عمود 50%..75% -->
+  <line x1="${Math.round(svgW*0.50) + 8}" y1="110" x2="${Math.round(svgW*0.75) - 8}" y2="110" stroke="#334155" stroke-width="1.8"/>
+  <!-- خط ر.ت: عمود 75%..100% -->
+  <line x1="${Math.round(svgW*0.75) + 8}" y1="110" x2="${svgW - p - 4}" y2="110" stroke="#334155" stroke-width="1.8"/>
 
   <!-- شريط التعليمات -->
   <rect x="0" y="124" width="${svgW}" height="42" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
