@@ -98,7 +98,16 @@ th{background:var(--light);white-space:nowrap;}
   .table-responsive{overflow-x:auto;}
 }
 /* ===== SCANNER ===== */
-#scannerModal .modal-content{width:100vw;height:100dvh;max-width:none;max-height:none;padding:0;border-radius:0;display:flex;flex-direction:column;background:#000;position:relative;overflow:hidden;}
+#scannerModal .modal-content{
+  width:100vw;
+  height:100dvh;
+  max-width:none;max-height:none;
+  padding:0;border-radius:0;
+  display:flex;flex-direction:column;
+  background:#000;
+  position:relative;
+  overflow:hidden;
+}
 #video-feed{width:100%;height:100%;object-fit:cover;display:block;}
 #guide-rect{position:absolute;border:2px solid rgba(255,255,255,.35);box-shadow:0 0 0 4000px rgba(0,0,0,.55);z-index:4;box-sizing:border-box;}
 .cm{position:absolute;width:48px;height:48px;z-index:6;transition:border-color .1s,background .1s;}
@@ -112,6 +121,12 @@ th{background:var(--light);white-space:nowrap;}
 @keyframes scanAnim{0%{top:3%}50%{top:97%}100%{top:3%}}
 /* ===== نتيجة التصحيح ===== */
 /* الـ canvas يملأ الشاشة — شريط النتيجة في الأسفل فوقه */
+#video-area{
+  flex:1;
+  position:relative;
+  overflow:hidden;
+  min-height:0;
+}
 #preview-canvas{
   position:absolute;top:0;left:0;
   width:100%;height:100%;
@@ -123,11 +138,10 @@ th{background:var(--light);white-space:nowrap;}
   flex-direction:column;
   align-items:center;
   background:rgba(0,0,0,0.92);
-  padding:10px 16px;
+  padding:12px 16px;
   padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));
-  gap:8px;
+  gap:10px;
   flex-shrink:0;
-  z-index:28;
   width:100%;
   box-sizing:border-box;
 }
@@ -157,7 +171,7 @@ th{background:var(--light);white-space:nowrap;}
   font-size:0.92rem;
   min-height:44px;
 }
-#scanner-bottom{position:absolute;bottom:0;left:0;width:100%;padding:14px;background:rgba(0,0,0,.78);z-index:20;text-align:center;}
+#scanner-bottom{position:absolute;bottom:0;left:0;width:100%;padding:12px 14px;background:rgba(0,0,0,.78);z-index:20;text-align:center;}
 #scanner-instr{color:white;font-weight:700;font-size:.92rem;margin:0;}
 #scanner-topbar{position:absolute;top:0;left:0;width:100%;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.65);z-index:22;gap:8px;}
 #analysis-canvas{display:none;}
@@ -358,10 +372,11 @@ th{background:var(--light);white-space:nowrap;}
 <!-- SCANNER MODAL -->
 <div class="modal" id="scannerModal" style="padding:0;background:#000;">
 <div class="modal-content">
+  <!-- الشريط العلوي -->
   <div id="scanner-topbar">
-    <button onclick="stopScanner()" style="background:none;border:none;color:white;font-size:1.4rem;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
+    <button onclick="stopScanner()" style="background:none;border:none;color:white;font-size:1.4rem;cursor:pointer;flex-shrink:0;"><i class="fas fa-arrow-left"></i></button>
     <h3 id="scannerTitle" style="color:white;margin:0;font-size:1rem;text-align:center;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></h3>
-    <div style="display:flex;align-items:center;gap:7px;">
+    <div style="display:flex;align-items:center;gap:7px;flex-shrink:0;">
       <button id="autoModeBtn" onclick="toggleScanMode()" style="background:rgba(34,197,94,.35);border:1.5px solid #22c55e;color:white;font-size:.75rem;cursor:pointer;border-radius:7px;padding:5px 9px;display:flex;align-items:center;gap:4px;">
         <i id="autoModeIcon" class="fas fa-magic"></i><span id="autoModeLabel">تلقائي</span>
       </button>
@@ -370,8 +385,8 @@ th{background:var(--light);white-space:nowrap;}
       </button>
     </div>
   </div>
-  <!-- منطقة الفيديو — overflow:hidden لعرض الكاميرا فقط -->
-  <div id="video-area" style="flex:1;position:relative;overflow:hidden;">
+  <!-- منطقة الفيديو: flex:1 تملأ المساحة المتبقية -->
+  <div id="video-area">
     <video id="video-feed" autoplay playsinline></video>
     <div id="guide-rect">
       <div class="cm" id="cm-tl"></div><div class="cm" id="cm-tr"></div>
@@ -381,8 +396,10 @@ th{background:var(--light);white-space:nowrap;}
     </div>
     <canvas id="preview-canvas"></canvas>
     <canvas id="analysis-canvas"></canvas>
+    <!-- شريط التوجيه داخل video-area (position:absolute) -->
+    <div id="scanner-bottom"><p id="scanner-instr">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p></div>
   </div>
-  <!-- result-overlay: عنصر في آخر الـ flex column — لا يتجاوز الشاشة -->
+  <!-- شريط النتيجة: flex-shrink:0 — يظهر أسفل الـ flex column مباشرة -->
   <div id="result-overlay">
     <div id="result-student-name"></div>
     <div id="result-score"></div>
@@ -684,12 +701,12 @@ function buildPrintTemplate(ex){
       const blkY=gridTop+blkIdx*(BLK*dynQ_GAP+28);
       opts.forEach((o,oi)=>{
         const hx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2-6;
-        const optFS = Math.round(dynBD * 0.58);
-        const optW  = Math.round(dynBD * 0.7);
-        html+=`<div style="position:absolute;left:${hx - Math.round(optW/2)}px;top:${blkY + 2}px;font-size:${optFS}px;font-weight:800;width:${optW}px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;line-height:1;">${o}</div>`;
+        const optFS = Math.round(dynBD * 0.55);
+        const optW  = Math.round(dynBD * 0.8);
+        html+=`<div style="position:absolute;left:${hx - Math.round(optW/2)}px;top:${blkY + 4}px;font-size:${optFS}px;font-weight:800;width:${optW}px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;line-height:1;">${o}</div>`;
       });
       for(let q=qStart;q<=qEnd;q++){
-        const qy=blkY+36+(q-qStart)*dynQ_GAP;
+        const qy=blkY+42+(q-qStart)*dynQ_GAP;
         const qFS = Math.round(dynBD * 0.60);
         html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:${qFS}px;font-weight:800;line-height:${dynBD}px;text-align:right;font-family:Arial;color:#1e293b;">${q}</div>`;
         opts.forEach((o,oi)=>{
@@ -965,7 +982,7 @@ function resetScannerUI(){
   if(gr) gr.style.display = 'block';
   // إخفاء result-overlay بشكل صريح
   const ro = document.getElementById('result-overlay');
-  if(ro){ ro.style.display = 'none'; }
+  if(ro){ ro.style.display = 'none'; ro.style.flexDirection = 'column'; }
   // إظهار الشريط السفلي
   const sb = document.getElementById('scanner-bottom');
   if(sb) sb.style.display = 'block';
