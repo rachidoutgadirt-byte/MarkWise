@@ -254,13 +254,17 @@ th{background:var(--light);white-space:nowrap;}
     <div><label>المرحلة</label><select id="examStageSelect"></select></div>
     <div><label>القسم</label><select id="examClassSelect"></select></div>
     <div><label>اسم الامتحان</label><input type="text" id="examName" placeholder="مثال: الفرض الأول"></div>
-    <div><label>عدد الأسئلة</label><input type="number" id="examQCount" value="10" min="1" max="50"></div>
+    <div><label>عدد الأسئلة</label><input type="number" id="examQCount" value="10" min="1" max="40" onchange="updateOptionCount()"></div>
     <div><label>عدد الخيارات</label>
       <select id="examOptionCount">
         <option value="4">4 خيارات (أ ب ج د)</option>
+        <option value="5">5 خيارات (أ ب ج د هـ)</option>
         <option value="6">6 خيارات (أ ب ج د هـ و)</option>
+        <option value="7">7 خيارات</option>
         <option value="8">8 خيارات</option>
+        <option value="9">9 خيارات</option>
       </select>
+      <small id="optCountInfo" style="color:var(--warning);font-weight:600;display:block;margin-top:4px;"></small>
     </div>
   </div>
   <div class="card"><button class="btn btn-primary" onclick="generateExamGrid()"><i class="fas fa-cogs"></i> توليد الشبكة</button></div>
@@ -521,6 +525,42 @@ const OMR={W:794,H:1123,CM:22,CO:10,
 // ================================================================
 // Exam Creation
 // ================================================================
+// ================================================================
+// updateOptionCount: تحديث قائمة الخيارات بناءً على عدد الأسئلة
+// ≤20 سؤال → 1 عمود → max 9 خيارات
+// >20 سؤال → 2 عمود → max 6 خيارات (لتجنب التداخل)
+// ================================================================
+function updateOptionCount(){
+  const qCount = parseInt(document.getElementById('examQCount').value) || 10;
+  const sel    = document.getElementById('examOptionCount');
+  const curVal = parseInt(sel.value) || 4;
+
+  // تحديد الحد الأقصى للخيارات
+  const maxOpts = qCount <= 20 ? 9 : 6;
+
+  // إعادة بناء القائمة
+  const labels = ['','','','4 خيارات (أ ب ج د)','5 خيارات (أ ب ج د هـ)',
+    '6 خيارات (أ ب ج د هـ و)','7 خيارات','8 خيارات','9 خيارات'];
+  sel.innerHTML = '';
+  for(let n = 4; n <= maxOpts; n++){
+    const opt = document.createElement('option');
+    opt.value = n;
+    opt.textContent = labels[n] || n + ' خيارات';
+    sel.appendChild(opt);
+  }
+
+  // الإبقاء على القيمة السابقة إن أمكن، وإلا أصغر قيمة مناسبة
+  sel.value = Math.min(curVal, maxOpts);
+
+  // إظهار تنبيه إذا تغير الحد
+  const info = document.getElementById('optCountInfo');
+  if(info){
+    info.textContent = qCount > 20
+      ? '⚠️ عمودان — الحد الأقصى ' + maxOpts + ' خيارات'
+      : '';
+  }
+}
+
 let currentSetup=null;
 function generateExamGrid(){
   const name=document.getElementById('examName').value,cid=document.getElementById('examClassSelect').value;
@@ -583,14 +623,55 @@ async function deleteExam(id){AppState.exams=AppState.exams.filter(e=>e.id!==id)
 // buildPrintTemplate — ورقة إجابة بـ SVG للعربية الصحيحة
 // ================================================================
 function buildPrintTemplate(ex){
-  const opts=ex.options,nOpt=opts.length,BLK=OMR.BLK;
-  const blockW=OMR.NUM_W+OMR.NUM_GAP+nOpt*44; // تقدير أولي قبل dynOPT_GAP
-  const innerW=OMR.RW-OMR.PAD*2;
-  const numCols=Math.max(1,Math.min(4,Math.floor(innerW/(blockW+20))));
-  const colW=Math.floor(innerW/numCols);
-  const numBlocks=Math.ceil(ex.qCount/BLK);
-  const blocksPerCol=Math.ceil(numBlocks/numCols);
-  const {CM,CO,W,H}=OMR;
+  const opts=ex.options, nOpt=opts.length;
+  const {CM,CO,W,H,PAD} = OMR;
+
+  // ════ نظام العمود الذكي ════
+  // ≤20 سؤال: عمود واحد يتوسط الورقة — نتيح حتى 9 خيارات
+  // >20 سؤال: عمودان متوازيان — نتيح حتى 6 خيارات
+  const numCols = ex.qCount <= 20 ? 1 : 2;
+  const BLK     = 10; // أسئلة في كل كتلة
+
+  // ── أبعاد المنطقة الداخلية ──
+  const innerW = W - CO*2 - PAD*2;  // ~704px
+
+  // ── حساب حجم الدوائر والفجوات بناءً على عدد الأسئلة وعدد الأعمدة ──
+  const availH   = H - OMR.HDR_H - 8 - CO - CM - 50;
+  const rowsPerCol = Math.ceil(ex.qCount / numCols);
+  const blkCount   = Math.ceil(rowsPerCol / BLK);
+
+  // Q_GAP: المسافة بين مراكز الصفوف (تصغر مع كثرة الأسئلة)
+  const dynQ_GAP = numCols === 1
+    ? Math.min(80, Math.max(48, Math.floor((availH - blkCount*32) / Math.max(rowsPerCol,1))))
+    : Math.min(60, Math.max(40, Math.floor((availH - blkCount*28) / Math.max(rowsPerCol,1))));
+
+  // Bubble diameter
+  const dynBD = numCols === 1
+    ? Math.min(54, Math.max(38, dynQ_GAP - 4))
+    : Math.min(42, Math.max(28, dynQ_GAP - 6));
+
+  // OPT_GAP: المسافة بين مراكز الدوائر الأفقية (≥ dynBD + 8)
+  const dynOPT_GAP = Math.max(dynBD + 10, numCols === 1 ? 52 : 40);
+
+  // عرض كتلة سؤال واحد = رقم + فجوة + دوائر
+  const blockW = OMR.NUM_W + OMR.NUM_GAP + nOpt * dynOPT_GAP;
+
+  // توزيع الأعمدة
+  let colW, gridLeft;
+  if(numCols === 1){
+    // عمود واحد يتوسط الورقة
+    gridLeft = CO + PAD + Math.max(0, Math.floor((innerW - blockW) / 2));
+    colW     = innerW; // غير مستخدم فعلياً لكن نحفظه
+  } else {
+    // عمودان: فجوة 30px بين العمودين
+    const gap  = 30;
+    colW       = Math.floor((innerW - gap) / 2);
+    gridLeft   = CO + PAD;
+  }
+
+  const colGap  = numCols === 1 ? 0 : Math.floor((innerW - 2*colW) / 1);
+  const blocksPerCol = Math.ceil(Math.ceil(ex.qCount/numCols) / BLK);
+  // CM,CO,W,H,PAD already destructured above
   const midY=Math.round(H/2)-14;
   // ---- مربعات الزوايا ----
   let html=`
@@ -684,16 +765,17 @@ function buildPrintTemplate(ex){
     font-size="12.5" fill="#475569" text-anchor="middle">لا تضع أي علامة خارج الدوائر</text>
 </svg>`;
   // ---- شبكة الأسئلة — Q_GAP ديناميكي ----
-  const gridTop=OMR.HDR_H+8,gridLeft=OMR.RL+OMR.PAD;
-  const availH=H-gridTop-CO-CM-10;
-  const rowsPerCol=Math.ceil(ex.qCount/numCols);
-  const blkCount=Math.ceil(rowsPerCol/BLK);
-  const dynQ_GAP=Math.min(72,Math.max(48,Math.floor((availH-blkCount*32)/Math.max(rowsPerCol,1))));
-  const dynBD=Math.min(50,Math.max(36,dynQ_GAP-2));
-  // OPT_GAP ديناميكي: قطر الدائرة + 10px هامش (لا يقل عن 44)
-  const dynOPT_GAP = Math.max(52, dynBD + 12);
-  for(let col=0;col<numCols;col++){
-    const colX=gridLeft+col*colW;
+  const gridTop = OMR.HDR_H + 8;
+
+  for(let col=0; col<numCols; col++){
+    // colX: للعمود الواحد المتوسط، للعمودين: يسار ويمين
+    let colX;
+    if(numCols === 1){
+      colX = gridLeft;
+    } else {
+      // عمودان: col=0 يسار الورقة (LTR), col=1 يمين
+      colX = gridLeft + col * (colW + colGap);
+    }
     for(let blkIdx=0;blkIdx<blocksPerCol;blkIdx++){
       const blockNum=col*blocksPerCol+blkIdx,qStart=blockNum*BLK+1;
       if(qStart>ex.qCount)break;
