@@ -10,45 +10,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-:root{
-  --pri:#4f46e5;--pri2:#818cf8;--sec:#8b5cf6;
-  --bg:#f1f5f9;--card:#fff;--dark:#0f172a;--gray:#64748b;--border:#cbd5e1;
-  --ok:#10b981;--no:#ef4444;--warn:#f59e0b;
-  --font:'Tajawal','Cairo',sans-serif;
-}
+:root{--pri:#4f46e5;--pri2:#818cf8;--sec:#8b5cf6;--bg:#f1f5f9;--card:#fff;--dark:#0f172a;--gray:#64748b;--border:#cbd5e1;--ok:#10b981;--no:#ef4444;--warn:#f59e0b;--font:'Tajawal','Cairo',sans-serif}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:var(--font);background:var(--bg);color:var(--dark);display:flex;height:100vh;overflow:hidden}
-
-/* ── Sidebar ── */
 .sidebar{width:250px;background:linear-gradient(180deg,var(--dark),#1e293b);color:#fff;display:flex;flex-direction:column;z-index:100;transition:transform .3s}
 .sidebar-hd{padding:20px;text-align:center;font-size:1.4rem;font-weight:800;border-bottom:1px solid rgba(255,255,255,.08)}
 .nav{list-style:none;padding:8px 0;flex:1;overflow-y:auto}
-.nav li{padding:14px 20px;cursor:pointer;display:flex;align-items:center;gap:12px;font-weight:600;transition:.15s;border-radius:0}
+.nav li{padding:14px 20px;cursor:pointer;display:flex;align-items:center;gap:12px;font-weight:600;transition:.15s}
 .nav li:hover,.nav li.on{background:var(--pri)}
 .sidebar-ft{padding:14px;border-top:1px solid rgba(255,255,255,.08);margin-top:auto}
-
-/* ── Main ── */
 .main{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column}
 .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:14px 18px;background:var(--card);border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.tab{display:none;animation:fadeIn .25s;flex:1}
-.tab.on{display:block}
+.tab{display:none;animation:fadeIn .25s;flex:1}.tab.on{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.05);margin-bottom:16px}
 .btn{padding:10px 16px;border:none;border-radius:8px;cursor:pointer;color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:6px;transition:.2s;font-size:.88rem;box-shadow:0 2px 4px rgba(0,0,0,.08)}
-.btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.12)}
-.btn:active{transform:none}
-.btn-p{background:var(--pri)}.btn-s{background:var(--ok)}.btn-d{background:var(--no)}.btn-w{background:var(--warn);color:#000}.btn-k{background:var(--dark)}
-.btn-sm{padding:6px 12px;font-size:.82rem}
+.btn:hover{transform:translateY(-1px)}.btn:active{transform:none}
+.btn-p{background:var(--pri)}.btn-s{background:var(--ok)}.btn-d{background:var(--no)}.btn-w{background:var(--warn);color:#000}.btn-k{background:var(--dark)}.btn-sm{padding:6px 12px;font-size:.82rem}
 input,select,textarea{padding:10px 12px;border:1px solid var(--border);border-radius:7px;width:100%;margin-bottom:8px;outline:none;font-family:var(--font);font-size:.92rem}
 input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
 table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff}
-th,td{padding:9px 10px;text-align:center;border-bottom:1px solid var(--border);font-size:.88rem}
-th{background:var(--bg);white-space:nowrap;font-weight:700}
-.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.flex>select,.flex>input{margin:0}
+th,td{padding:9px 10px;text-align:center;border-bottom:1px solid var(--border);font-size:.88rem}th{background:var(--bg);white-space:nowrap;font-weight:700}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.flex>select,.flex>input{margin:0}
 .acts{display:flex;justify-content:center;gap:4px}
-
-/* ── Settings ── */
 .sets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .sets-card{border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--bg)}
 .sets-card h4{margin-bottom:8px;text-align:center;border-bottom:2px solid var(--pri);padding-bottom:5px;font-size:1rem}
@@ -56,46 +40,32 @@ th{background:var(--bg);white-space:nowrap;font-weight:700}
 .sets-lst li{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--border);background:#fff;margin-bottom:6px;border-radius:6px}
 .sets-lst label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.92rem;margin:0}
 .sets-lst input[type=checkbox]{width:17px;height:17px;accent-color:var(--pri)}
-.sets-acts button{background:none;border:none;cursor:pointer;font-size:1rem;transition:transform .15s}
-.sets-acts button:hover{transform:scale(1.2)}
-.btn-ed{color:var(--warn)}.btn-rm{color:var(--no)}
-
-/* ── Exam grid ── */
+.sets-acts button{background:none;border:none;cursor:pointer;font-size:1rem}.btn-ed{color:var(--warn)}.btn-rm{color:var(--no)}
 .exam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 .q-row{display:flex;gap:8px;align-items:center;padding:10px;background:var(--bg);border-radius:6px;margin-bottom:6px}
 .q-opt{width:38px;height:38px;border-radius:50%;border:2px solid var(--border);display:flex;justify-content:center;align-items:center;cursor:pointer;background:#fff;font-weight:800;position:relative;transition:.15s}
 .q-opt.sel{background:var(--ok);color:#fff;border-color:var(--ok)}
 .q-pts{position:absolute;top:-7px;left:-7px;font-size:10px;font-weight:800;background:var(--warn);color:#000;border-radius:50%;width:20px;height:20px;display:none;justify-content:center;align-items:center;border:2px solid #fff}
 .q-opt.sel .q-pts{display:flex}
-
-/* ── Modal ── */
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;justify-content:center;align-items:center}
-.modal.on{display:flex}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;justify-content:center;align-items:center}.modal.on{display:flex}
 .modal-c{background:#fff;padding:20px;border-radius:12px;width:95%;max-width:600px;max-height:90vh;overflow-y:auto}
 .modal-hd{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:14px}
 .close{background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--no)}
 .prev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 .prev-row{display:flex;align-items:center;gap:4px;background:var(--bg);padding:5px 8px;border-radius:6px;margin-bottom:3px}
 .prev-bub{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);display:flex;justify-content:center;align-items:center;font-size:11px;font-weight:800;background:#fff}
-.prev-bub.ok{border-color:var(--ok);background:#dcfce7}
-.prev-bub.no{border-color:var(--no);background:#fee2e2}
-.prev-bub.miss{border-color:var(--warn);background:#fef3c7;border-style:dashed}
+.prev-bub.ok{border-color:var(--ok);background:#dcfce7}.prev-bub.no{border-color:var(--no);background:#fee2e2}.prev-bub.miss{border-color:var(--warn);background:#fef3c7;border-style:dashed}
 .comp-A{background:var(--ok);color:#fff;padding:2px 7px;border-radius:4px;font-weight:800}
 .comp-B{background:var(--sec);color:#fff;padding:2px 7px;border-radius:4px;font-weight:800}
 .comp-C{background:var(--warn);color:#000;padding:2px 7px;border-radius:4px;font-weight:800}
 .comp-D{background:var(--no);color:#fff;padding:2px 7px;border-radius:4px;font-weight:800}
-
-/* ── Dropdown ── */
 .dd{position:relative;display:inline-block}
 .dd-c{display:none;position:absolute;background:#fff;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;border-radius:8px;padding:6px;left:0;border:1px solid var(--border)}
 .dd-c a{color:var(--dark);padding:10px 14px;text-decoration:none;display:flex;align-items:center;gap:10px;font-size:.92rem;border-radius:6px;white-space:nowrap;transition:.15s}
-.dd-c a:hover{background:var(--bg)}
-.dd-c.on{display:block}
-
-/* ── Print wrapper ── */
+.dd-c a:hover{background:var(--bg)}.dd-c.on{display:block}
 #print-wrap{position:absolute;top:-9999px;left:-9999px}
 
-/* ── Scanner ── */
+/* Scanner */
 #scanModal .modal-c{width:100vw;height:100dvh;max-width:none;max-height:none;padding:0;border-radius:0;display:flex;flex-direction:column;background:#000;position:relative;overflow:hidden}
 #vid{width:100%;height:100%;object-fit:cover;display:block}
 #guide{position:absolute;border:2px solid rgba(255,255,255,.3);box-shadow:0 0 0 5000px rgba(0,0,0,.5);z-index:4;box-sizing:border-box}
@@ -119,34 +89,21 @@ th{background:var(--bg);white-space:nowrap;font-weight:700}
 #scan-bot{position:absolute;bottom:0;left:0;width:100%;padding:12px;background:rgba(0,0,0,.75);z-index:20;text-align:center}
 #scan-bot p{color:#fff;font-weight:700;font-size:.9rem;margin:0}
 #scan-top{position:absolute;top:0;left:0;width:100%;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.6);z-index:22;gap:8px}
+/* Debug overlay */
+#dbg-ov{position:absolute;top:50px;left:10px;z-index:30;background:rgba(0,0,0,.75);color:#0f0;font-family:monospace;font-size:11px;padding:8px;border-radius:6px;pointer-events:none;display:none;max-width:300px;line-height:1.5}
 
-/* ── Mobile ── */
-.mob-hd{display:none;background:linear-gradient(90deg,var(--pri),var(--sec));color:#fff;padding:14px 18px;align-items:center;justify-content:center;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+/* Mobile */
+.mob-hd{display:none;background:linear-gradient(90deg,var(--pri),var(--sec));color:#fff;padding:14px 18px;align-items:center;justify-content:center;z-index:200}
 .mob-hd i.menu{position:absolute;right:18px;font-size:1.4rem;cursor:pointer}
-.sbov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250}
-.sbov.on{display:block}
-@media(max-width:768px){
-  body{flex-direction:column}
-  .mob-hd{display:flex;position:relative}
-  .sidebar{position:fixed;top:0;right:0;height:100%;transform:translateX(100%);width:260px;z-index:300}
-  .sidebar.open{transform:none}
-  .main{padding:10px}
-  .tbl-r{overflow-x:auto}
-}
+.sbov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250}.sbov.on{display:block}
+@media(max-width:768px){body{flex-direction:column}.mob-hd{display:flex;position:relative}.sidebar{position:fixed;top:0;right:0;height:100%;transform:translateX(100%);width:260px;z-index:300}.sidebar.open{transform:none}.main{padding:10px}.tbl-r{overflow-x:auto}}
 </style>
 </head>
 <body>
 
-<!-- Mobile header -->
-<div class="mob-hd">
-  <i class="fas fa-bars menu" onclick="togMenu()"></i>
-  <div style="background:rgba(255,255,255,.2);width:42px;height:42px;border-radius:50%;display:flex;justify-content:center;align-items:center">
-    <i class="fas fa-check-double" style="font-size:1.3rem"></i>
-  </div>
-</div>
+<div class="mob-hd"><i class="fas fa-bars menu" onclick="togMenu()"></i><div style="background:rgba(255,255,255,.2);width:42px;height:42px;border-radius:50%;display:flex;justify-content:center;align-items:center"><i class="fas fa-check-double" style="font-size:1.3rem"></i></div></div>
 <div class="sbov" id="sbOv" onclick="togMenu()"></div>
 
-<!-- Sidebar -->
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-hd"><i class="fas fa-check-double" style="color:var(--ok)"></i> المصحح</div>
   <ul class="nav">
@@ -155,17 +112,12 @@ th{background:var(--bg);white-space:nowrap;font-weight:700}
     <li id="n-results" onclick="go('results')"><i class="fas fa-chart-bar"></i> تصحيح الامتحان</li>
     <li id="n-settings" onclick="go('settings')"><i class="fas fa-cog"></i> الإعدادات</li>
   </ul>
-  <div class="sidebar-ft">
-    <button class="btn btn-k" style="width:100%" onclick="openModal('bkpModal')"><i class="fas fa-database"></i> نسخة احتياطية</button>
-  </div>
+  <div class="sidebar-ft"><button class="btn btn-k" style="width:100%" onclick="openModal('bkpModal')"><i class="fas fa-database"></i> نسخة احتياطية</button></div>
 </nav>
 
-<!-- Main -->
 <main class="main">
-
-<!-- ═══ لوائح الأقسام ═══ -->
 <section id="classes" class="tab">
-  <div class="hdr"><h2>لوائح الأقسام</h2><p style="font-size:.88rem;color:var(--gray)">حدد الموسم والقسم ثم أضف التلاميذ</p></div>
+  <div class="hdr"><h2>لوائح الأقسام</h2></div>
   <div class="card">
     <div class="flex" style="margin-bottom:12px;align-items:flex-end">
       <div style="flex:1"><label style="font-size:11px;color:var(--gray)">الموسم الدراسي</label><select id="yrSel" onchange="renderStu()"></select></div>
@@ -180,18 +132,16 @@ th{background:var(--bg);white-space:nowrap;font-weight:700}
   </div>
 </section>
 
-<!-- ═══ الإعدادات ═══ -->
 <section id="settings" class="tab">
   <div class="hdr"><h2>إعدادات النظام</h2></div>
   <div class="flex" style="flex-wrap:wrap;gap:14px">
-    <div class="card" style="flex:1;min-width:240px"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">الموسم الدراسي</h3><p style="font-size:.82rem;color:var(--gray);margin-bottom:10px">علّم على الموسم الحالي</p><ul class="sets-lst" id="sYrs"></ul><button class="btn btn-p btn-sm" onclick="addSet('year')"><i class="fas fa-plus"></i> إضافة موسم</button></div>
-    <div class="card" style="flex:1;min-width:240px"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">المراحل</h3><p style="font-size:.82rem;color:var(--gray);margin-bottom:10px">علّم على المراحل المستهدفة</p><ul class="sets-lst" id="sStg"></ul><button class="btn btn-p btn-sm" onclick="addSet('stage')"><i class="fas fa-plus"></i> إضافة مرحلة</button></div>
+    <div class="card" style="flex:1;min-width:240px"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">الموسم الدراسي</h3><ul class="sets-lst" id="sYrs"></ul><button class="btn btn-p btn-sm" onclick="addSet('year')"><i class="fas fa-plus"></i> إضافة موسم</button></div>
+    <div class="card" style="flex:1;min-width:240px"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">المراحل</h3><ul class="sets-lst" id="sStg"></ul><button class="btn btn-p btn-sm" onclick="addSet('stage')"><i class="fas fa-plus"></i> إضافة مرحلة</button></div>
   </div>
-  <div class="card"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">الأقسام المسندة</h3><p style="font-size:.82rem;color:var(--gray);margin-bottom:10px">علّم على أقسامك</p><div class="sets-grid" id="sLvls"></div></div>
-  <div class="card"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">المواد الدراسية</h3><p style="font-size:.82rem;color:var(--gray);margin-bottom:10px">علّم على مادتك</p><ul class="sets-lst" id="sSubs"></ul><button class="btn btn-p btn-sm" onclick="addSet('subject')"><i class="fas fa-plus"></i> إضافة مادة</button></div>
+  <div class="card"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">الأقسام</h3><div class="sets-grid" id="sLvls"></div></div>
+  <div class="card"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">المواد الدراسية</h3><ul class="sets-lst" id="sSubs"></ul><button class="btn btn-p btn-sm" onclick="addSet('subject')"><i class="fas fa-plus"></i> إضافة مادة</button></div>
 </section>
 
-<!-- ═══ إنشاء امتحان ═══ -->
 <section id="exam" class="tab">
   <div class="hdr"><h2 id="examTitle">إنشاء ورقة امتحان</h2></div>
   <input type="hidden" id="editExamId" value="">
@@ -202,19 +152,16 @@ th{background:var(--bg);white-space:nowrap;font-weight:700}
     <div><label>القسم</label><select id="exCls"></select></div>
     <div><label>اسم الامتحان</label><input id="exName" placeholder="مثال: الفرض الأول"></div>
     <div><label>عدد الأسئلة (1-100)</label><input type="number" id="exQC" value="20" min="1" max="100"></div>
-    <div><label>عدد الخيارات</label>
-      <select id="exOC"><option value="4">4 خيارات (أ ب ج د)</option><option value="5">5 خيارات</option><option value="6">6 خيارات</option></select>
-    </div>
+    <div><label>عدد الخيارات</label><select id="exOC"><option value="4">4 خيارات (أ ب ج د)</option><option value="5">5 خيارات</option><option value="6">6 خيارات</option></select></div>
   </div>
   <div class="card"><button class="btn btn-p" onclick="genGrid()"><i class="fas fa-cogs"></i> توليد شبكة الإجابات</button></div>
   <div class="card" id="akBox" style="display:none">
-    <h3>حدد الإجابات الصحيحة (انقر على الدوائر)</h3>
+    <h3>حدد الإجابات الصحيحة</h3>
     <div id="akGrid" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px"></div>
     <button class="btn btn-s" style="margin-top:18px" onclick="saveExam()"><i class="fas fa-save"></i> حفظ الامتحان</button>
   </div>
 </section>
 
-<!-- ═══ تصحيح الامتحان ═══ -->
 <section id="results" class="tab">
   <div class="hdr"><h2>تصحيح الامتحان</h2></div>
   <div class="card flex" style="margin-bottom:8px">
@@ -235,39 +182,31 @@ th{background:var(--bg);white-space:nowrap;font-weight:700}
     <div class="dd">
       <button onclick="togDD()" class="btn btn-p"><i class="fas fa-file-alt"></i> ورقة الإجابة</button>
       <div id="ddMenu" class="dd-c">
-        <a href="#" onclick="event.preventDefault();editEx()"><i class="fas fa-edit" style="color:var(--warn)"></i> تعديل الامتحان</a>
-        <a href="#" onclick="event.preventDefault();delEx()"><i class="fas fa-trash" style="color:var(--no)"></i> حذف الامتحان</a>
-        <a href="#" onclick="event.preventDefault();openModal('bcastModal')"><i class="fas fa-copy" style="color:var(--sec)"></i> تعميم الامتحان</a>
+        <a href="#" onclick="event.preventDefault();editEx()"><i class="fas fa-edit" style="color:var(--warn)"></i> تعديل</a>
+        <a href="#" onclick="event.preventDefault();delEx()"><i class="fas fa-trash" style="color:var(--no)"></i> حذف</a>
+        <a href="#" onclick="event.preventDefault();openModal('bcastModal')"><i class="fas fa-copy" style="color:var(--sec)"></i> تعميم</a>
         <hr style="margin:4px 0">
-        <a href="#" onclick="event.preventDefault();printEx('pdf')"><i class="fas fa-file-pdf" style="color:var(--dark)"></i> تحميل PDF</a>
-        <a href="#" onclick="event.preventDefault();printEx('png')"><i class="fas fa-image" style="color:var(--ok)"></i> تحميل PNG</a>
+        <a href="#" onclick="event.preventDefault();printEx('pdf')"><i class="fas fa-file-pdf"></i> PDF</a>
+        <a href="#" onclick="event.preventDefault();printEx('png')"><i class="fas fa-image" style="color:var(--ok)"></i> PNG</a>
       </div>
     </div>
   </div>
   <div class="card flex" style="margin-bottom:12px">
-    <button class="btn btn-w" id="compBtn" onclick="togComp()"><i class="fas fa-exchange-alt"></i> إظهار الكفايات</button>
+    <button class="btn btn-w" id="compBtn" onclick="togComp()"><i class="fas fa-exchange-alt"></i> الكفايات</button>
     <button class="btn btn-p" onclick="showStats()"><i class="fas fa-chart-pie"></i> إحصائيات</button>
   </div>
-  <div class="tbl-r card" style="padding:8px">
-    <table><thead><tr id="resHead"></tr></thead><tbody id="resBody"></tbody></table>
-  </div>
+  <div class="tbl-r card" style="padding:8px"><table><thead><tr id="resHead"></tr></thead><tbody id="resBody"></tbody></table></div>
 </section>
 </main>
 
-<!-- ═══ Modals ═══ -->
-<div class="modal" id="bulkModal"><div class="modal-c"><div class="modal-hd"><h3>إضافة سريعة (اسم في كل سطر)</h3><button class="close" onclick="closeM('bulkModal')">&times;</button></div><textarea id="bulkTxt" rows="10" placeholder="الاسم الأول&#10;الاسم الثاني&#10;..."></textarea><button class="btn btn-s" style="width:100%" onclick="saveBulk()">حفظ</button></div></div>
-
-<div class="modal" id="stuModal"><div class="modal-c" style="max-width:400px"><div class="modal-hd"><h3 id="stuMTitle">تعديل تلميذ</h3><button class="close" onclick="closeM('stuModal')">&times;</button></div><input type="hidden" id="stuMId"><label>الاسم الكامل</label><input id="stuMName"><label>الرقم الترتيبي</label><input type="number" id="stuMRoll"><div id="moveWrap"><label>نقل إلى قسم آخر</label><select id="stuMCls"></select></div><button class="btn btn-p" style="width:100%;margin-top:8px" onclick="saveStu()">حفظ</button></div></div>
-
-<div class="modal" id="prevModal"><div class="modal-c" style="max-width:800px"><div class="modal-hd"><div style="display:flex;align-items:center;gap:8px;flex:1"><h3 id="prevTitle" style="margin:0;font-size:.95rem"></h3><button id="prevImgBtn" onclick="showScanImg()" style="background:var(--pri);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.78rem;display:none;align-items:center;gap:4px"><i class="fas fa-image"></i> الورقة الملتقطة</button></div><button class="close" onclick="closeM('prevModal')">&times;</button></div><div id="prevCont" class="prev-grid"></div></div></div>
-
-<div class="modal" id="scanImgModal"><div class="modal-c" style="max-width:90vw;max-height:90vh;padding:10px"><div class="modal-hd"><h3 style="font-size:.95rem">ورقة الإجابة الملتقطة</h3><button class="close" onclick="closeM('scanImgModal')">&times;</button></div><img id="scanImgView" src="" style="width:100%;border-radius:6px"></div></div>
-
-<div class="modal" id="chartModal"><div class="modal-c"><div class="modal-hd"><h3>إحصائيات الكفايات</h3><button class="close" onclick="closeM('chartModal')">&times;</button></div><canvas id="statsCvs"></canvas></div></div>
-
-<div class="modal" id="bkpModal"><div class="modal-c" style="max-width:400px;text-align:center"><div class="modal-hd"><h3>النسخة الاحتياطية</h3><button class="close" onclick="closeM('bkpModal')">&times;</button></div><button class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="exportJSON()"><i class="fas fa-download"></i> تصدير JSON</button><hr style="border:0;border-top:1px solid var(--border);margin:12px 0"><input type="file" id="impFile" accept=".json" style="display:none" onchange="importJSON(event)"><button class="btn btn-w" style="width:100%" onclick="document.getElementById('impFile').click()"><i class="fas fa-upload"></i> استيراد JSON</button></div></div>
-
-<div class="modal" id="bcastModal"><div class="modal-c" style="max-width:400px"><div class="modal-hd"><h3>تعميم الامتحان</h3><button class="close" onclick="closeM('bcastModal')">&times;</button></div><div id="bcastList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:250px;overflow-y:auto"></div><button class="btn btn-p" style="width:100%" onclick="doBcast()"><i class="fas fa-check-circle"></i> تأكيد التعميم</button></div></div>
+<!-- Modals -->
+<div class="modal" id="bulkModal"><div class="modal-c"><div class="modal-hd"><h3>إضافة سريعة</h3><button class="close" onclick="closeM('bulkModal')">&times;</button></div><textarea id="bulkTxt" rows="10" placeholder="اسم في كل سطر"></textarea><button class="btn btn-s" style="width:100%" onclick="saveBulk()">حفظ</button></div></div>
+<div class="modal" id="stuModal"><div class="modal-c" style="max-width:400px"><div class="modal-hd"><h3 id="stuMTitle">تعديل</h3><button class="close" onclick="closeM('stuModal')">&times;</button></div><input type="hidden" id="stuMId"><label>الاسم</label><input id="stuMName"><label>ر.ت</label><input type="number" id="stuMRoll"><div id="moveWrap" style="display:none"><label>نقل إلى</label><select id="stuMCls"></select></div><button class="btn btn-p" style="width:100%;margin-top:8px" onclick="saveStu()">حفظ</button></div></div>
+<div class="modal" id="prevModal"><div class="modal-c" style="max-width:800px"><div class="modal-hd"><div style="display:flex;align-items:center;gap:8px;flex:1"><h3 id="prevTitle" style="margin:0;font-size:.95rem"></h3><button id="prevImgBtn" onclick="showScanImg()" style="background:var(--pri);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.78rem;display:none;align-items:center;gap:4px"><i class="fas fa-image"></i> الورقة</button></div><button class="close" onclick="closeM('prevModal')">&times;</button></div><div id="prevCont" class="prev-grid"></div></div></div>
+<div class="modal" id="scanImgModal"><div class="modal-c" style="max-width:90vw;max-height:90vh;padding:10px"><div class="modal-hd"><h3 style="font-size:.95rem">الورقة الملتقطة</h3><button class="close" onclick="closeM('scanImgModal')">&times;</button></div><img id="scanImgView" src="" style="width:100%;border-radius:6px"></div></div>
+<div class="modal" id="chartModal"><div class="modal-c"><div class="modal-hd"><h3>إحصائيات</h3><button class="close" onclick="closeM('chartModal')">&times;</button></div><canvas id="statsCvs"></canvas></div></div>
+<div class="modal" id="bkpModal"><div class="modal-c" style="max-width:400px;text-align:center"><div class="modal-hd"><h3>نسخة احتياطية</h3><button class="close" onclick="closeM('bkpModal')">&times;</button></div><button class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="exportJSON()"><i class="fas fa-download"></i> تصدير</button><hr style="border:0;border-top:1px solid var(--border);margin:12px 0"><input type="file" id="impFile" accept=".json" style="display:none" onchange="importJSON(event)"><button class="btn btn-w" style="width:100%" onclick="document.getElementById('impFile').click()"><i class="fas fa-upload"></i> استيراد</button></div></div>
+<div class="modal" id="bcastModal"><div class="modal-c" style="max-width:400px"><div class="modal-hd"><h3>تعميم الامتحان</h3><button class="close" onclick="closeM('bcastModal')">&times;</button></div><div id="bcastList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:250px;overflow-y:auto"></div><button class="btn btn-p" style="width:100%" onclick="doBcast()"><i class="fas fa-check-circle"></i> تأكيد</button></div></div>
 
 <!-- Scanner -->
 <div class="modal" id="scanModal" style="padding:0;background:#000">
@@ -278,6 +217,7 @@ th{background:var(--bg);white-space:nowrap;font-weight:700}
     <div style="display:flex;align-items:center;gap:6px">
       <button id="autoBtn" onclick="togMode()" style="background:rgba(16,185,129,.3);border:1.5px solid var(--ok);color:#fff;font-size:.72rem;cursor:pointer;border-radius:6px;padding:5px 8px;display:flex;align-items:center;gap:4px"><i id="autoIco" class="fas fa-magic"></i><span id="autoLbl">تلقائي</span></button>
       <button id="capBtn" onclick="forceCap()" style="display:none;background:rgba(245,158,11,.85);border:none;color:#fff;font-size:.82rem;cursor:pointer;border-radius:6px;padding:6px 12px;font-weight:700"><i class="fas fa-camera"></i> التقاط</button>
+      <button id="dbgBtn" onclick="togDbg()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:.72rem;cursor:pointer;border-radius:6px;padding:5px 8px">🔧</button>
     </div>
   </div>
   <div id="vid-area">
@@ -285,6 +225,7 @@ th{background:var(--bg);white-space:nowrap;font-weight:700}
     <div id="guide"><div class="cm" id="cm-tl"></div><div class="cm" id="cm-tr"></div><div class="cm" id="cm-bl"></div><div class="cm" id="cm-br"></div><div id="scanln"></div><div id="stab"></div></div>
     <canvas id="prev-canvas"></canvas>
     <canvas id="an-canvas"></canvas>
+    <div id="dbg-ov"></div>
     <div id="scan-bot"><p id="instr">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p></div>
   </div>
   <div id="res-ov">
@@ -301,20 +242,20 @@ th{background:var(--bg);white-space:nowrap;font-weight:700}
 <div id="print-wrap"><div id="print-target"></div></div>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   STATE & CONSTANTS
-   ═══════════════════════════════════════════════════════════════ */
-const DB='OMR_Pro_v1',VER=1;let db;
+/* ═══════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════ */
+const DB='OMR_v2',VER=1;let db;
 const S={classes:[],exams:[],results:{},settings:null,activeScan:null,stream:null};
 const uid=()=>'_'+Math.random().toString(36).slice(2,11);
 const closeM=id=>document.getElementById(id).classList.remove('on');
 const openModal=id=>document.getElementById(id).classList.add('on');
 const AR=['أ','ب','ج','د','هـ','و'];
-const SHEET_W=794,SHEET_H=1123; // A4 at 96 DPI
+const SW=794,SH=1123;
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    IndexedDB
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 const IDB={
   init(){return new Promise((ok,no)=>{const r=indexedDB.open(DB,VER);r.onupgradeneeded=e=>{const d=e.target.result;['classes','exams','results','settings'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};r.onsuccess=e=>{db=e.target.result;ok()};r.onerror=no})},
   all(s){return new Promise(ok=>{const r=db.transaction(s).objectStore(s).getAll();r.onsuccess=()=>ok(r.result||[])})},
@@ -323,9 +264,9 @@ const IDB={
   clr(s){return new Promise(ok=>{const t=db.transaction(s,'readwrite');t.objectStore(s).clear();t.oncomplete=ok})}
 };
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    INIT
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 async function init(){
   await IDB.init();
   S.classes=await IDB.all('classes');
@@ -344,14 +285,14 @@ function defSets(){
     {id:uid(),name:'الأولى إعدادي',classes:dc('الأولى')},
     {id:uid(),name:'الثانية إعدادي',classes:dc('الثانية')},
     {id:uid(),name:'الثالثة إعدادي',classes:dc('الثالثة')}
-  ],subjects:['اللغة العربية','اللغة الفرنسية','الرياضيات','الفيزياء','علوم الحياة والأرض','التاريخ والجغرافيا','التربية الإسلامية'].map(n=>({id:uid(),name:n,checked:false})),
+  ],subjects:['اللغة العربية','الفرنسية','الرياضيات','الفيزياء','علوم الحياة والأرض','التاريخ والجغرافيا','التربية الإسلامية'].map(n=>({id:uid(),name:n,checked:false})),
   stages:['المرحلة الأولى','المرحلة الثانية','المرحلة الثالثة','المرحلة الرابعة','المرحلة الخامسة'].map(n=>({id:uid(),name:n,checked:false})),
   years:defYears()}
 }
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    NAV
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 function togMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('on')}
 function go(t){
   document.querySelectorAll('.tab,.nav li').forEach(e=>e.classList.remove('on'));
@@ -366,9 +307,9 @@ function go(t){
 function fillDD(id,list){const s=document.getElementById(id),v=s.value;s.innerHTML='';list.filter(i=>i.checked).forEach(i=>s.innerHTML+=`<option value="${i.name}">${i.name}</option>`);if(v&&list.find(i=>i.name===v&&i.checked))s.value=v}
 function fillClsDD(id){const s=document.getElementById(id),v=s.value;s.innerHTML='<option value="">-- اختر القسم --</option>';let cc=[];S.settings.levels.forEach(l=>l.classes.forEach(c=>{if(c.checked)cc.push(c)}));cc.forEach(c=>{s.innerHTML+=`<option value="${c.id}">${c.name}</option>`;if(!S.classes.find(ac=>ac.id===c.id)){let n={id:c.id,name:c.name,students:[]};S.classes.push(n);IDB.put('classes',n)}});if(v&&cc.find(c=>c.id===v))s.value=v;else if(id==='clsSel'&&cc.length){s.value=cc[0].id;renderStu()}}
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    SETTINGS
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 function renderSets(){
   const g=document.getElementById('sLvls');g.innerHTML='';
   S.settings.levels.forEach(l=>{
@@ -381,23 +322,23 @@ function renderSets(){
 }
 async function togSet(t,lid,iid){let i;if(t==='class')i=S.settings.levels.find(l=>l.id===lid).classes.find(c=>c.id===iid);else if(t==='subject')i=S.settings.subjects.find(s=>s.id===iid);else if(t==='year')i=S.settings.years.find(s=>s.id===iid);else i=S.settings.stages.find(s=>s.id===iid);i.checked=!i.checked;await IDB.put('settings',S.settings)}
 async function edSet(t,lid,iid){let n=prompt('الاسم الجديد:');if(!n?.trim())return;let i;if(t==='class')i=S.settings.levels.find(l=>l.id===lid).classes.find(c=>c.id===iid);else if(t==='subject')i=S.settings.subjects.find(s=>s.id===iid);else if(t==='year')i=S.settings.years.find(s=>s.id===iid);else i=S.settings.stages.find(s=>s.id===iid);i.name=n.trim();await IDB.put('settings',S.settings);renderSets()}
-async function rmSet(t,lid,iid){if(!confirm('تأكيد الحذف؟'))return;if(t==='class'){let l=S.settings.levels.find(l=>l.id===lid);l.classes=l.classes.filter(c=>c.id!==iid)}else if(t==='subject')S.settings.subjects=S.settings.subjects.filter(s=>s.id!==iid);else if(t==='year')S.settings.years=S.settings.years.filter(s=>s.id!==iid);else S.settings.stages=S.settings.stages.filter(s=>s.id!==iid);await IDB.put('settings',S.settings);renderSets()}
+async function rmSet(t,lid,iid){if(!confirm('تأكيد؟'))return;if(t==='class'){let l=S.settings.levels.find(l=>l.id===lid);l.classes=l.classes.filter(c=>c.id!==iid)}else if(t==='subject')S.settings.subjects=S.settings.subjects.filter(s=>s.id!==iid);else if(t==='year')S.settings.years=S.settings.years.filter(s=>s.id!==iid);else S.settings.stages=S.settings.stages.filter(s=>s.id!==iid);await IDB.put('settings',S.settings);renderSets()}
 async function addSet(t,lid){let n=prompt('أدخل الاسم:');if(!n?.trim())return;let ni={id:uid(),name:n.trim(),checked:true};if(t==='class')S.settings.levels.find(l=>l.id===lid).classes.push(ni);else if(t==='subject')S.settings.subjects.push(ni);else if(t==='year')S.settings.years.push(ni);else S.settings.stages.push(ni);await IDB.put('settings',S.settings);renderSets()}
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    CLASSES & STUDENTS
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 function renderStu(){
   const cid=document.getElementById('clsSel').value,yr=document.getElementById('yrSel').value,tb=document.getElementById('stuTb');
   tb.innerHTML='';if(!cid||!yr)return;
   const cls=S.classes.find(c=>c.id===cid);
   cls.students.filter(s=>s.year===yr).sort((a,b)=>(a.roll||0)-(b.roll||0)).forEach((s,i)=>{
     s.roll=s.roll||(i+1);
-    tb.innerHTML+=`<tr><td>${s.roll}</td><td style="text-align:right">${s.name}</td><td class="acts"><button class="btn btn-p btn-sm" onclick="edStuModal('${cid}','${s.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-d btn-sm" onclick="delStu('${cid}','${s.id}')"><i class="fas fa-trash"></i></button></td></tr>`
+    tb.innerHTML+=`<tr><td>${s.roll}</td><td style="text-align:right">${esc(s.name)}</td><td class="acts"><button class="btn btn-p btn-sm" onclick="edStuModal('${cid}','${s.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-d btn-sm" onclick="delStu('${cid}','${s.id}')"><i class="fas fa-trash"></i></button></td></tr>`
   })
 }
 function addStuModal(){
-  if(!document.getElementById('clsSel').value||!document.getElementById('yrSel').value)return alert('اختر الموسم والقسم أولاً');
+  if(!document.getElementById('clsSel').value||!document.getElementById('yrSel').value)return alert('اختر الموسم والقسم');
   document.getElementById('stuMTitle').innerText='إضافة تلميذ';document.getElementById('stuMId').value='';document.getElementById('stuMName').value='';
   const cls=S.classes.find(c=>c.id===document.getElementById('clsSel').value),yr=document.getElementById('yrSel').value;
   let ys=cls.students.filter(s=>s.year===yr);document.getElementById('stuMRoll').value=ys.length?Math.max(...ys.map(s=>s.roll||0))+1:1;
@@ -405,7 +346,7 @@ function addStuModal(){
 }
 function edStuModal(cid,sid){
   const s=S.classes.find(c=>c.id===cid).students.find(x=>x.id===sid);
-  document.getElementById('stuMTitle').innerText='تعديل تلميذ';document.getElementById('stuMId').value=sid;document.getElementById('stuMName').value=s.name;document.getElementById('stuMRoll').value=s.roll||'';
+  document.getElementById('stuMTitle').innerText='تعديل';document.getElementById('stuMId').value=sid;document.getElementById('stuMName').value=s.name;document.getElementById('stuMRoll').value=s.roll||'';
   document.getElementById('moveWrap').style.display='block';const sel=document.getElementById('stuMCls');sel.innerHTML='';S.classes.forEach(c=>sel.innerHTML+=`<option value="${c.id}" ${c.id===cid?'selected':''}>${c.name}</option>`);
   openModal('stuModal')
 }
@@ -422,24 +363,26 @@ async function saveBulk(){
   let ys=cls.students.filter(s=>s.year===yr),roll=ys.length?Math.max(...ys.map(s=>s.roll||0))+1:1;
   names.forEach(n=>cls.students.push({id:uid(),name:n,roll:roll++,year:yr}));await IDB.put('classes',cls);closeM('bulkModal');renderStu()
 }
-async function delStu(cid,sid){if(!confirm('حذف التلميذ؟'))return;const cls=S.classes.find(c=>c.id===cid),st=cls.students.find(s=>s.id===sid),y=st.year;cls.students=cls.students.filter(s=>s.id!==sid);cls.students.filter(s=>s.year===y).sort((a,b)=>(a.roll||0)-(b.roll||0)).forEach((s,i)=>s.roll=i+1);await IDB.put('classes',cls);for(let e in S.results)if(S.results[e][sid]){delete S.results[e][sid];await IDB.del('results',`${e}___${sid}`)}renderStu()}
+async function delStu(cid,sid){if(!confirm('حذف؟'))return;const cls=S.classes.find(c=>c.id===cid),st=cls.students.find(s=>s.id===sid),y=st.year;cls.students=cls.students.filter(s=>s.id!==sid);cls.students.filter(s=>s.year===y).sort((a,b)=>(a.roll||0)-(b.roll||0)).forEach((s,i)=>s.roll=i+1);await IDB.put('classes',cls);for(let e in S.results)if(S.results[e][sid]){delete S.results[e][sid];await IDB.del('results',`${e}___${sid}`)}renderStu()}
 async function delAllStu(){
   const cid=document.getElementById('clsSel').value,yr=document.getElementById('yrSel').value;if(!cid||!yr)return;
-  const cls=S.classes.find(c=>c.id===cid);let sd=cls.students.filter(s=>s.year===yr);if(!sd.length)return alert('القسم فارغ!');
-  if(!confirm(`حذف جميع تلاميذ (${yr})؟`))return;cls.students=cls.students.filter(s=>s.year!==yr);await IDB.put('classes',cls);
+  const cls=S.classes.find(c=>c.id===cid);let sd=cls.students.filter(s=>s.year===yr);if(!sd.length)return alert('فارغ!');
+  if(!confirm('حذف الكل؟'))return;cls.students=cls.students.filter(s=>s.year!==yr);await IDB.put('classes',cls);
   for(let s of sd)for(let e in S.results)if(S.results[e][s.id]){delete S.results[e][s.id];await IDB.del('results',`${e}___${s.id}`)}
   renderStu();alert('تم')
 }
+function esc(s){return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-/* ═══════════════════════════════════════════════════════════════
-   EXAM CREATION
-   ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   ★ EXAM CREATION & SHEET GENERATION ★
+   Uses Canvas for pixel-perfect coordinates
+   ═══════════════════════════════════════════════ */
 let curSetup=null;
 function genGrid(){
   const nm=document.getElementById('exName').value,cid=document.getElementById('exCls').value;
   const qc=parseInt(document.getElementById('exQC').value),oc=parseInt(document.getElementById('exOC').value);
   const yr=document.getElementById('exYr').value,sub=document.getElementById('exSub').value,stg=document.getElementById('exStg').value;
-  if(!nm||!cid||!yr||!sub||!stg||isNaN(qc)||qc<1||qc>100)return alert('الرجاء ملء جميع البيانات بشكل صحيح (عدد الأسئلة بين 1 و 100)');
+  if(!nm||!cid||!yr||!sub||!stg||isNaN(qc)||qc<1||qc>100)return alert('الرجاء ملء جميع البيانات (1-100 سؤال)');
   const opts=AR.slice(0,oc);
   curSetup={id:document.getElementById('editExamId').value||uid(),name:nm,year:yr,subject:sub,stage:stg,classId:cid,qCount:qc,options:opts,answerKey:{}};
   const grid=document.getElementById('akGrid');grid.innerHTML='';
@@ -449,26 +392,210 @@ function genGrid(){
     grid.innerHTML+=row+'</div></div>'
   }
   document.getElementById('akBox').style.display='block';
-  document.getElementById('examTitle').innerText=document.getElementById('editExamId').value?'تعديل ورقة الامتحان':'إنشاء ورقة امتحان'
+  document.getElementById('examTitle').innerText=document.getElementById('editExamId').value?'تعديل':'إنشاء ورقة امتحان'
 }
 function togOpt(el,q,opt){
   const qk=`Q${q}`;if(!curSetup.answerKey[qk])curSetup.answerKey[qk]={};
   if(!el.classList.contains('sel')){
-    let pts=prompt(`نقطة الإجابة (${opt}):`,1);if(pts===null||isNaN(parseFloat(pts)))return;
+    let pts=prompt(`نقطة (${opt}):`,1);if(pts===null||isNaN(parseFloat(pts)))return;
     curSetup.answerKey[qk][opt]=parseFloat(pts);el.classList.add('sel');el.querySelector('.q-pts').innerText=pts
   }else{el.classList.remove('sel');delete curSetup.answerKey[qk][opt]}
 }
-async function saveExam(){
-  buildSheet(curSetup);
-  setTimeout(async()=>{
-    curSetup.layout=extractLayout();
-    const idx=S.exams.findIndex(e=>e.id===curSetup.id);
-    if(idx>=0)S.exams[idx]=curSetup;else S.exams.push(curSetup);
-    await IDB.put('exams',curSetup);alert('تم الحفظ!');
-    document.getElementById('akBox').style.display='none';document.getElementById('editExamId').value='';
-    go('results');document.getElementById('rCls').value=curSetup.classId;updExams();document.getElementById('rEx').value=curSetup.id;renderRes()
-  },400)
+
+/* ═══════════════════════════════════════════════
+   ★ CANVAS SHEET RENDERER ★
+   Generates sheet on canvas + extracts exact pixel coords
+   ═══════════════════════════════════════════════ */
+function buildSheet(ex){
+  const W=SW,H=SH;
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const x=c.getContext('2d');
+
+  // Background
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);
+
+  // Corner markers
+  const M=28,CM=22;
+  x.fillStyle='#1e293b';
+  [[M,M],[W-M-CM,M],[M,H-M-CM],[W-M-CM,H-M-CM]].forEach(([a,b])=>x.fillRect(a,b,CM,CM));
+  // Mid markers
+  x.fillRect(M,H/2-14,10,28);x.fillRect(W-M-10,H/2-14,10,28);
+
+  // ── Header ──
+  const hL=M+4,hT=M+CM+8,hW=W-M*2-8;
+
+  // Title bar
+  x.fillStyle='#4f46e5';
+  roundRect(x,hL,hT,hW,42,6);x.fill();
+  x.fillStyle='#fff';x.font='900 20px Cairo,Tajawal,sans-serif';x.textAlign='center';x.textBaseline='middle';
+  x.fillText(ex.name,hL+hW/2,hT+21);
+
+  // Subtitle
+  x.fillStyle='#475569';x.font='500 12px Cairo,Tajawal,sans-serif';
+  x.fillText(`${ex.subject||''} — ${ex.stage||''} — ${ex.year||''}`,hL+hW/2,hT+58);
+
+  // Data fields
+  const fY=hT+66,fH=40;
+  x.fillStyle='#fff';x.strokeStyle='#cbd5e1';x.lineWidth=1.5;
+  x.strokeRect(hL+2,fY,hW-4,fH);
+  const c1w=(hW-4)*.50,c2w=(hW-4)*.25,c3w=(hW-4)*.25;
+  x.beginPath();x.moveTo(hL+2+c1w,fY);x.lineTo(hL+2+c1w,fY+fH);x.stroke();
+  x.beginPath();x.moveTo(hL+2+c1w+c2w,fY);x.lineTo(hL+2+c1w+c2w,fY+fH);x.stroke();
+
+  x.fillStyle='#1e293b';x.font='700 12px Cairo,Tajawal,sans-serif';
+  x.fillText('الاسم الكامل',hL+2+c1w/2,fY+15);
+  x.fillText('القسم',hL+2+c1w+c2w/2,fY+15);
+  x.fillText('ر.ت',hL+2+c1w+c2w+c3w/2,fY+15);
+
+  // Dotted lines
+  x.fillStyle='#94a3b8';x.font='4px Arial';x.letterSpacing='3px';
+  x.fillText('. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .',hL+2+c1w/2,fY+fH-6);
+  x.fillText('. . . . . . . . . . . . . . . . . . . . . . . . . . . . .',hL+2+c1w+c2w/2,fY+fH-6);
+  x.fillText('. . . . . . . . . . . . . . . . . . .',hL+2+c1w+c2w+c3w/2,fY+fH-6);
+  x.letterSpacing='0px';
+
+  // Instruction bar
+  const iY=hT+hH()+8;
+  function hH(){return 110}
+  const instrY2=hT+110;
+  x.fillStyle='#eff6ff';x.strokeStyle='#bfdbfe';x.lineWidth=1;
+  roundRect(x,M+2,instrY2,W-M*2-4,30,4);x.fill();x.stroke();
+  x.fillStyle='#1d4ed8';x.font='700 12px Cairo,Tajawal,sans-serif';
+  x.fillText('لوّن الدائرة المناسبة — لا تضع أي علامة خارج الدوائر',W/2,instrY2+17);
+
+  // ── Grid ──
+  const gT=instrY2+38,gB=H-M-24,gH=gB-gT;
+  const nQ=ex.qCount,nOpt=ex.options.length;
+  let nCols=1;
+  if(nQ<=25)nCols=1;else if(nQ<=50)nCols=2;else if(nQ<=75)nCols=3;else nCols=4;
+  const colGap=12;
+  const colW2=(W-M*2-colGap*(nCols-1))/nCols;
+  const qPC=Math.ceil(nQ/nCols);
+  const qGap=gH/qPC;
+  const numW=Math.min(26,colW2*.1);
+  const bArea=colW2-numW-10;
+  const bDiam=Math.min(Math.max(16,qGap*.48),Math.min(30,bArea/nOpt-5));
+  const oGap=bArea/nOpt;
+  const bR=bDiam/2;
+
+  // Store layout
+  const layout={_meta:{sheetW:W,sheetH:H,bubR:bR}};
+  x.textBaseline='middle';
+
+  for(let col=0;col<nCols;col++){
+    const cX=M+col*(colW2+colGap);
+
+    // Option headers
+    x.fillStyle='#334155';x.font=`800 ${Math.round(bDiam*.55)}px Cairo,Tajawal,sans-serif`;x.textAlign='center';
+    ex.options.forEach((o,oi)=>{
+      x.fillText(o,cX+numW+8+oi*oGap+oGap/2,gT-4)
+    });
+
+    // Column separator
+    if(nCols>1&&col<nCols-1){
+      x.strokeStyle='#e2e8f0';x.lineWidth=.5;x.setLineDash([4,4]);
+      x.beginPath();x.moveTo(cX+colW2+colGap/2,gT);x.lineTo(cX+colW2+colGap/2,gB);x.stroke();
+      x.setLineDash([])
+    }
+
+    for(let q=(col*qPC+1);q<=Math.min((col+1)*qPC,nQ);q++){
+      const row=q-(col*qPC+1);
+      const cy=gT+row*qGap+qGap/2;
+
+      // Question number
+      x.fillStyle='#1e293b';x.font=`800 ${Math.round(Math.min(14,qGap*.4))}px Arial,sans-serif`;x.textAlign='right';
+      x.fillText(q+'',cX+numW-2,cy+1);
+
+      // Bubbles
+      ex.options.forEach((o,oi)=>{
+        const bx=cX+numW+8+oi*oGap+oGap/2;
+        x.beginPath();x.arc(bx,cy+1,bR,0,Math.PI*2);
+        x.strokeStyle='#1e293b';x.lineWidth=2;x.stroke();
+
+        // Store exact pixel position
+        if(!layout[`Q${q}`])layout[`Q${q}`]={};
+        layout[`Q${q}`][o]={px:bx,py:cy+1,r:bR}
+      })
+    }
+  }
+
+  // Footer
+  x.fillStyle='#94a3b8';x.font='500 9px Cairo,Tajawal,sans-serif';x.textAlign='left';
+  x.fillText('المصحح — مصحح امتحانات ذكي',M+6,H-M-6);
+  const clsName=(S.classes.find(c=>c.id===ex.classId)||{name:''}).name;
+  x.textAlign='right';x.fillText(ex.name+(clsName?' — '+clsName:''),W-M-6,H-M-6);
+
+  // Return canvas + layout
+  document.getElementById('print-target').innerHTML='';
+  document.getElementById('print-target').appendChild(c);
+  return{canvas:c,layout}
 }
+
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath()}
+
+async function saveExam(){
+  const{canvas,layout}=buildSheet(curSetup);
+  curSetup.layout=layout;
+  // Also generate SVG for printing
+  curSetup._svgHTML=buildSVG(curSetup);
+  const idx=S.exams.findIndex(e=>e.id===curSetup.id);
+  if(idx>=0)S.exams[idx]=curSetup;else S.exams.push(curSetup);
+  await IDB.put('exams',curSetup);alert('تم الحفظ!');
+  document.getElementById('akBox').style.display='none';document.getElementById('editExamId').value='';
+  go('results');document.getElementById('rCls').value=curSetup.classId;updExams();document.getElementById('rEx').value=curSetup.id;renderRes()
+}
+
+/* ═══════════════════════════════════════════════
+   SVG BUILDER (for PDF/PNG export only)
+   ═══════════════════════════════════════════════ */
+function buildSVG(ex){
+  const W=SW,H=SH,M=28,CM=22;
+  const layout=ex.layout;
+  const mk=(a,b,w,h)=>`<rect x="${a}" y="${b}" width="${w}" height="${h}" fill="#1e293b"/>`;
+  let s=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">`;
+  s+=`<rect width="${W}" height="${H}" fill="#fff"/>`;
+  s+=mk(M,M,CM,CM)+mk(W-M-CM,M,CM,CM)+mk(M,H-M-CM,CM,CM)+mk(W-M-CM,H-M-CM,CM,CM);
+  s+=mk(M,H/2-14,10,28)+mk(W-M-10,H/2-14,10,28);
+
+  // Header
+  const hL=M+4,hT=M+CM+8,hW=W-M*2-8;
+  s+=`<rect x="${hL}" y="${hT}" width="${hW}" height="42" rx="6" fill="#4f46e5"/>`;
+  s+=`<text x="${hL+hW/2}" y="${hT+26}" font-family="Cairo,Tajawal,sans-serif" font-size="20" font-weight="900" fill="#fff" text-anchor="middle">${escSvg(ex.name)}</text>`;
+  s+=`<text x="${hL+hW/2}" y="${hT+58}" font-family="Cairo,Tajawal,sans-serif" font-size="12" fill="#475569" text-anchor="middle">${escSvg((ex.subject||'')+' — '+(ex.stage||'')+' — '+(ex.year||''))}</text>`;
+
+  // Data fields
+  const fY=hT+66,fH=40;
+  s+=`<rect x="${hL+2}" y="${fY}" width="${hW-4}" height="${fH}" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/>`;
+  const c1w=(hW-4)*.50,c2w=(hW-4)*.25;
+  s+=`<line x1="${hL+2+c1w}" y1="${fY}" x2="${hL+2+c1w}" y2="${fY+fH}" stroke="#cbd5e1"/>`;
+  s+=`<line x1="${hL+2+c1w+c2w}" y1="${fY}" x2="${hL+2+c1w+c2w}" y2="${fY+fH}" stroke="#cbd5e1"/>`;
+  s+=`<text x="${hL+2+c1w/2}" y="${fY+15}" font-family="Cairo,Tajawal,sans-serif" font-size="12" font-weight="700" fill="#1e293b" text-anchor="middle">الاسم الكامل</text>`;
+  s+=`<text x="${hL+2+c1w+c2w/2}" y="${fY+15}" font-family="Cairo,Tajawal,sans-serif" font-size="12" font-weight="700" fill="#1e293b" text-anchor="middle">القسم</text>`;
+  s+=`<text x="${hL+2+c1w+c2w+(hW-4)*.25/2}" y="${fY+15}" font-family="Cairo,Tajawal,sans-serif" font-size="12" font-weight="700" fill="#1e293b" text-anchor="middle">ر.ت</text>`;
+
+  // Instruction
+  const instrY=hT+110;
+  s+=`<rect x="${M+2}" y="${instrY}" width="${W-M*2-4}" height="30" rx="4" fill="#eff6ff" stroke="#bfdbfe"/>`;
+  s+=`<text x="${W/2}" y="${instrY+17}" font-family="Cairo,Tajawal,sans-serif" font-size="12" font-weight="700" fill="#1d4ed8" text-anchor="middle">لوّن الدائرة المناسبة — لا تضع أي علامة خارج الدوائر</text>`;
+
+  // Bubbles from layout
+  for(let q in layout){
+    if(q.startsWith('_'))continue;
+    for(let o in layout[q]){
+      const b=layout[q][o];
+      s+=`<circle cx="${b.px}" cy="${b.py}" r="${b.r}" fill="none" stroke="#1e293b" stroke-width="2"/>`
+    }
+  }
+
+  // Footer
+  s+=`<text x="${M+6}" y="${H-M-6}" font-family="Cairo,Tajawal,sans-serif" font-size="9" fill="#94a3b8">المصحح</text>`;
+  const clsN=(S.classes.find(c=>c.id===ex.classId)||{name:''}).name;
+  s+=`<text x="${W-M-6}" y="${H-M-6}" font-family="Cairo,Tajawal,sans-serif" font-size="9" fill="#94a3b8" text-anchor="end">${escSvg(ex.name+(clsN?' — '+clsN:''))}</text>`;
+  s+=`</svg>`;
+  return s
+}
+function escSvg(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
 function editExSetup(id){
   const ex=S.exams.find(e=>e.id===id);document.getElementById('editExamId').value=ex.id;
   document.getElementById('exName').value=ex.name;document.getElementById('exYr').value=ex.year||'';
@@ -485,174 +612,25 @@ function editExSetup(id){
 }
 async function delExam(id){S.exams=S.exams.filter(e=>e.id!==id);await IDB.del('exams',id);if(S.results[id]){for(let s in S.results[id])await IDB.del('results',`${id}___${s}`);delete S.results[id]}}
 
-/* ═══════════════════════════════════════════════════════════════
-   SHEET GENERATION — SVG ENGINE
-   Supports 1–100 questions, dynamic columns, professional layout
-   ═══════════════════════════════════════════════════════════════ */
-function buildSheet(ex){
-  const W=SHEET_W,H=SHEET_H;
-  const M=28; // margin
-  const CM=22; // corner marker size
-  const CW=W-M*2, CH=H-M*2;
-
-  // Header area
-  const hdrH=115;
-  // Footer area
-  const ftrH=22;
-  // Instruction bar
-  const instrH=32;
-  const instrY=M+hdrH+2;
-
-  // Grid area
-  const gridTop=instrY+instrH+8;
-  const gridBot=H-M-ftrH-4;
-  const gridH=gridBot-gridTop;
-
-  // Columns
-  const nQ=ex.qCount,nOpt=ex.options.length;
-  let nCols=1;
-  if(nQ<=25)nCols=1;else if(nQ<=50)nCols=2;else if(nQ<=75)nCols=3;else nCols=4;
-  const gap=10; // gap between columns
-  const colW=(CW-(nCols-1)*gap)/nCols;
-  const qPerCol=Math.ceil(nQ/nCols);
-  const qGap=gridH/qPerCol;
-  const numW=Math.min(24,colW*0.12);
-  const bubArea=colW-numW-8;
-  const bubDiam=Math.min(Math.max(14,qGap*0.52),Math.min(28,bubArea/nOpt-4));
-  const optGap=bubArea/nOpt;
-
-  // Corner markers
-  const mk=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#1e293b"/>`;
-
-  let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="background:#fff">`;
-
-  // Background
-  svg+=`<rect width="${W}" height="${H}" fill="#fff"/>`;
-
-  // Corner markers
-  svg+=mk(M,M,CM,CM);
-  svg+=mk(W-M-CM,M,CM,CM);
-  svg+=mk(M,H-M-CM,CM,CM);
-  svg+=mk(W-M-CM,H-M-CM,CM,CM);
-
-  // Mid markers (for alignment)
-  svg+=mk(M,H/2-14,10,28);
-  svg+=mk(W-M-10,H/2-14,10,28);
-
-  // ── Header (SVG for Arabic) ──
-  const hX=M+2,hY=M+CM+6,hW=CW-4;
-  svg+=`<rect x="${hX}" y="${hY}" width="${hW}" height="${hdrH}" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>`;
-
-  // Title bar
-  svg+=`<rect x="${hX}" y="${hY}" width="${hW}" height="40" rx="6" fill="#4f46e5"/>`;
-  svg+=`<rect x="${hX}" y="${hY+20}" width="${hW}" height="20" fill="#4f46e5"/>`;
-  svg+=`<text x="${hX+hW/2}" y="${hY+28}" font-family="Cairo,Tajawal,sans-serif" font-size="20" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle">${escSvg(ex.name)}</text>`;
-
-  // Subject / Stage / Year
-  svg+=`<text x="${hX+hW/2}" y="${hY+56}" font-family="Cairo,Tajawal,sans-serif" font-size="12" fill="#475569" text-anchor="middle">${escSvg(ex.subject||'')} — ${escSvg(ex.stage||'')} — ${escSvg(ex.year||'')}</text>`;
-
-  // Data fields: Name, Class, Roll
-  const fY=hY+66,fH=hdrH-70;
-  svg+=`<rect x="${hX+4}" y="${fY}" width="${hW-8}" height="${fH}" rx="4" fill="#fff" stroke="#cbd5e1" stroke-width="1"/>`;
-  // Three columns: Name (50%), Class (25%), Roll (25%)
-  const c1x=hX+4,c1w=(hW-8)*0.50;
-  const c2x=c1x+c1w,c2w=(hW-8)*0.25;
-  const c3x=c2x+c2w,c3w=(hW-8)*0.25;
-  // Dividers
-  svg+=`<line x1="${c2x}" y1="${fY}" x2="${c2x}" y2="${fY+fH}" stroke="#cbd5e1" stroke-width="1"/>`;
-  svg+=`<line x1="${c3x}" y1="${fY}" x2="${c3x}" y2="${fY+fH}" stroke="#cbd5e1" stroke-width="1"/>`;
-  // Labels
-  svg+=`<text x="${c1x+c1w/2}" y="${fY+16}" font-family="Cairo,Tajawal,sans-serif" font-size="11" font-weight="700" fill="#1e293b" text-anchor="middle">الاسم الكامل</text>`;
-  svg+=`<text x="${c2x+c2w/2}" y="${fY+16}" font-family="Cairo,Tajawal,sans-serif" font-size="11" font-weight="700" fill="#1e293b" text-anchor="middle">القسم</text>`;
-  svg+=`<text x="${c3x+c3w/2}" y="${fY+16}" font-family="Cairo,Tajawal,sans-serif" font-size="11" font-weight="700" fill="#1e293b" text-anchor="middle">ر.ت</text>`;
-  // Dotted lines
-  const dotY=fY+fH-6;
-  svg+=`<text x="${c1x+c1w/2}" y="${dotY}" font-family="Arial" font-size="4" fill="#94a3b8" text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .</text>`;
-  svg+=`<text x="${c2x+c2w/2}" y="${dotY}" font-family="Arial" font-size="4" fill="#94a3b8" text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . .</text>`;
-  svg+=`<text x="${c3x+c3w/2}" y="${dotY}" font-family="Arial" font-size="4" fill="#94a3b8" text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . .</text>`;
-
-  // ── Instruction bar ──
-  svg+=`<rect x="${M+2}" y="${instrY}" width="${CW-4}" height="${instrH}" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>`;
-  svg+=`<text x="${W/2}" y="${instrY+instrH/2+1}" font-family="Cairo,Tajawal,sans-serif" font-size="12" font-weight="700" fill="#1d4ed8" text-anchor="middle" dominant-baseline="middle">لوّن الدائرة المناسبة — لا تضع أي علامة خارج الدوائر</text>`;
-
-  // ── Questions Grid ──
-  // Store bubble positions for extraction
-  window._bubPositions={};
-
-  for(let col=0;col<nCols;col++){
-    const colX=M+col*(colW+gap);
-    const qStart=col*qPerCol+1;
-    const qEnd=Math.min(qStart+qPerCol-1,nQ);
-
-    // Column header (option letters)
-    const optHdrY=gridTop-2;
-    ex.options.forEach((o,oi)=>{
-      const cx=colX+numW+6+oi*optGap+optGap/2;
-      svg+=`<text x="${cx}" y="${optHdrY}" font-family="Cairo,Tajawal,sans-serif" font-size="${Math.round(bubDiam*0.55)}" font-weight="800" fill="#334155" text-anchor="middle">${o}</text>`
-    });
-
-    // Light column background for visual separation
-    if(nCols>1&&col<nCols-1){
-      svg+=`<rect x="${colX}" y="${gridTop}" width="${colW}" height="${gridH}" fill="${col%2?'#fafafa':'#fff'}" rx="3"/>`
-    }
-
-    for(let q=qStart;q<=qEnd;q++){
-      const row=q-qStart;
-      const cy=gridTop+row*qGap+qGap/2;
-
-      // Question number
-      svg+=`<text x="${colX+numW}" y="${cy+1}" font-family="Arial,sans-serif" font-size="${Math.round(Math.min(13,qGap*0.42))}" font-weight="800" fill="#1e293b" text-anchor="end" dominant-baseline="middle">${q}</text>`;
-
-      // Bubbles
-      ex.options.forEach((o,oi)=>{
-        const cx=colX+numW+6+oi*optGap+optGap/2;
-        const r=bubDiam/2;
-        svg+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1e293b" stroke-width="2"/>`;
-        // Store position (normalized 0-1)
-        window._bubPositions[`Q${q}_${o}`]={x:cx/W,y:cy/H,r:r/W};
-      });
-    }
-  }
-
-  // ── Footer ──
-  const ftrY=H-M-ftrH;
-  svg+=`<text x="${M+8}" y="${ftrY+ftrH/2+1}" font-family="Cairo,Tajawal,sans-serif" font-size="9" fill="#94a3b8" dominant-baseline="middle">المصحح — مصحح امتحانات ذكي</text>`;
-  const clsName=(S.classes.find(c=>c.id===ex.classId)||{name:''}).name;
-  svg+=`<text x="${W-M-8}" y="${ftrY+ftrH/2+1}" font-family="Cairo,Tajawal,sans-serif" font-size="9" fill="#94a3b8" text-anchor="end" dominant-baseline="middle">${escSvg(ex.name)}${clsName?' — '+escSvg(clsName):''}</text>`;
-
-  svg+=`</svg>`;
-
-  document.getElementById('print-target').innerHTML=svg;
-}
-function escSvg(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-
-function extractLayout(){
-  const layout={_meta:{sheetW:SHEET_W,sheetH:SHEET_H}};
-  const bp=window._bubPositions||{};
-  for(let k in bp){
-    const[q,o]=k.split(/_(.+)/);
-    if(!layout[q])layout[q]={};
-    layout[q][o]=bp[k]
-  }
-  return layout
-}
-
 async function printEx(type){
   const eid=document.getElementById('rEx').value;if(!eid)return alert('اختر امتحاناً');
-  const ex=S.exams.find(e=>e.id===eid);buildSheet(ex);
+  const ex=S.exams.find(e=>e.id===eid);
+  // Use SVG for export
+  if(!ex._svgHTML){buildSheet(ex);ex._svgHTML=buildSVG(ex);await IDB.put('exams',ex)}
+  const wrap=document.getElementById('print-target');
+  wrap.innerHTML=ex._svgHTML;
   await new Promise(r=>setTimeout(r,500));
-  const el=document.getElementById('print-target');
-  const cvs=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#fff'});
+  const cvs=await html2canvas(wrap,{scale:2,useCORS:true,backgroundColor:'#fff'});
   const img=cvs.toDataURL('image/png');
   if(type==='png'){const a=document.createElement('a');a.download=`${ex.name}.png`;a.href=img;a.click()}
   else{const p=new jspdf.jsPDF('p','mm','a4');p.addImage(img,'PNG',0,0,210,297);p.save(`${ex.name}.pdf`)}
 }
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    RESULTS
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 let compMode=false;
-function togComp(){compMode=!compMode;document.getElementById('compBtn').innerHTML=compMode?'<i class="fas fa-exchange-alt"></i> إظهار النقط':'<i class="fas fa-exchange-alt"></i> إظهار الكفايات';renderRes()}
+function togComp(){compMode=!compMode;document.getElementById('compBtn').innerHTML=compMode?'<i class="fas fa-exchange-alt"></i> النقط':'<i class="fas fa-exchange-alt"></i> الكفايات';renderRes()}
 function getComp(sc,mx){if(!mx)return'D';let p=sc/mx*100;return p>=90?'A':p>=75?'B':p>=45?'C':'D'}
 function updExams(){
   const yr=document.getElementById('rYr').value,stg=document.getElementById('rStg').value,sub=document.getElementById('rSub').value,cid=document.getElementById('rCls').value;
@@ -668,12 +646,12 @@ function renderRes(){
   if(ex&&cls){
     document.getElementById('infoTitle').innerHTML=`${ex.name} <span style="color:var(--gray);font-size:.95rem;font-weight:normal">| ${ex.subject||''} | ${ex.stage||''} | ${cls.name}</span>`;
     let maxT=0;for(let i=1;i<=ex.qCount;i++){let qm=0;Object.values(ex.answerKey[`Q${i}`]||{}).forEach(p=>qm+=p);if(!qm)qm=1;maxT+=qm}
-    document.getElementById('infoStats').innerText=`الأسئلة: ${ex.qCount} | الخيارات: ${ex.options.length} | التلاميذ: ${cls.students.filter(s=>s.year===ex.year).length} | المجموع الأقصى: ${maxT}`;
+    document.getElementById('infoStats').innerText=`أسئلة: ${ex.qCount} | خيارات: ${ex.options.length} | أقصى: ${maxT}`;
     info.style.display='block'
   }
   let stus=cls.students;if(ex?.year)stus=stus.filter(s=>s.year===ex.year);if(sq)stus=stus.filter(s=>s.name.toLowerCase().includes(sq));
-  let hh='<th>الكاميرا</th><th>ر.ت</th><th style="text-align:right">الاسم الكامل</th>';
-  for(let i=1;i<=ex.qCount;i++)hh+=`<th>س${i}</th>`;
+  let hh='<th>📷</th><th>ر.ت</th><th style="text-align:right">الاسم</th>';
+  for(let i=1;i<=ex.qCount;i++)hh+=`<th>${i}</th>`;
   head.innerHTML=hh+'<th>النتيجة</th><th>إجراءات</th>';
   let maxT=0,maxQ={};for(let i=1;i<=ex.qCount;i++){let qm=0;Object.values(ex.answerKey[`Q${i}`]||{}).forEach(p=>qm+=p);if(!qm)qm=1;maxQ[`Q${i}`]=qm;maxT+=qm}
   stus.forEach(s=>{
@@ -686,7 +664,6 @@ function renderRes(){
     body.innerHTML+=`<tr>${bh}</tr>`
   })
 }
-function esc(s){return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
 let chartI=null;
 function showStats(){
@@ -694,7 +671,7 @@ function showStats(){
   const ex=S.exams.find(e=>e.id===eid);let mx=0;for(let q in ex.answerKey)Object.values(ex.answerKey[q]).forEach(p=>mx+=p);if(!mx)mx=ex.qCount;
   const ct={A:0,B:0,C:0,D:0};S.classes.find(c=>c.id===cid).students.forEach(s=>{let t=S.results[eid]?.[s.id]?.total||0;ct[getComp(t,mx)]++});
   openModal('chartModal');if(chartI)chartI.destroy();
-  chartI=new Chart(document.getElementById('statsCvs'),{type:'doughnut',data:{labels:['A (ممتاز)','B (جيد)','C (متوسط)','D (ضعيف)'],datasets:[{data:[ct.A,ct.B,ct.C,ct.D],backgroundColor:['#22c55e','#3b82f6','#f59e0b','#ef4444']}]}})
+  chartI=new Chart(document.getElementById('statsCvs'),{type:'doughnut',data:{labels:['A','B','C','D'],datasets:[{data:[ct.A,ct.B,ct.C,ct.D],backgroundColor:['#22c55e','#3b82f6','#f59e0b','#ef4444']}]}})
 }
 
 function openPrev(eid,sid){
@@ -722,45 +699,54 @@ function openPrev(eid,sid){
 }
 function showScanImg(){const b=document.getElementById('prevImgBtn'),i=document.getElementById('scanImgView');if(b&&i){i.src=b.getAttribute('data-img')||'';openModal('scanImgModal')}}
 function openEditSc(eid,sid){
-  const ex=S.exams.find(e=>e.id===eid),res=S.results[eid][sid];document.getElementById('editScoreSId')?0:0;
-  // Reuse a simple prompt-based edit
-  let scores={};for(let i=1;i<=ex.qCount;i++){let v=prompt(`س${i} (الحالية: ${res.scores?.[`Q${i}`]||0}):`,res.scores?.[`Q${i}`]||0);if(v===null)return;scores[`Q${i}`]=parseFloat(v)||0}
+  const ex=S.exams.find(e=>e.id===eid),res=S.results[eid][sid];
+  let scores={};for(let i=1;i<=ex.qCount;i++){let v=prompt(`س${i} (${res.scores?.[`Q${i}`]||0}):`,res.scores?.[`Q${i}`]||0);if(v===null)return;scores[`Q${i}`]=parseFloat(v)||0}
   res.scores=scores;res.total=Object.values(scores).reduce((a,b)=>a+b,0);
   IDB.put('results',res);renderRes()
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PERSPECTIVE TRANSFORM
-   ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   ★ PERSPECTIVE TRANSFORM ★
+   ═══════════════════════════════════════════════ */
 function applyH(M,x,y){const w=M[6]*x+M[7]*y+M[8];return{x:(M[0]*x+M[1]*y+M[2])/w,y:(M[3]*x+M[4]*y+M[5])/w}}
-function gaussSolve(A,b){
+function gaussS(A,b){
   const n=b.length;
   for(let c=0;c<n;c++){let mx=c;for(let r=c+1;r<n;r++)if(Math.abs(A[r][c])>Math.abs(A[mx][c]))mx=r;[A[c],A[mx]]=[A[mx],A[c]];[b[c],b[mx]]=[b[mx],b[c]];for(let r=c+1;r<n;r++){const f=A[r][c]/A[c][c];for(let k=c;k<n;k++)A[r][k]-=f*A[c][k];b[r]-=f*b[c]}}
   const x=new Array(n).fill(0);for(let i=n-1;i>=0;i--){x[i]=b[i];for(let j=i+1;j<n;j++)x[i]-=A[i][j]*x[j];x[i]/=A[i][i]}return x
 }
-function compHomog(src,dst){
+function compHom(src,dst){
   const A=[],b=[];
   for(let i=0;i<4;i++){A.push([src[i].x,src[i].y,1,0,0,0,-dst[i].x*src[i].x,-dst[i].x*src[i].y]);b.push(dst[i].x);A.push([0,0,0,src[i].x,src[i].y,1,-dst[i].y*src[i].x,-dst[i].y*src[i].y]);b.push(dst[i].y)}
-  const h=gaussSolve(A.map(r=>[...r]),b);return[h[0],h[1],h[2],h[3],h[4],h[5],h[6],h[7],1]
+  const h=gaussS(A.map(r=>[...r]),b);return[h[0],h[1],h[2],h[3],h[4],h[5],h[6],h[7],1]
 }
 function warpImg(ctx,sw,sh,srcPts,ow,oh){
   const dstPts=[{x:0,y:0},{x:ow-1,y:0},{x:ow-1,y:oh-1},{x:0,y:oh-1}];
-  const H=compHomog(dstPts,srcPts);
+  const H=compHom(dstPts,srcPts);
   const sd=ctx.getImageData(0,0,sw,sh).data;
-  const out=new Uint8ClampedArray(ow*oh*4);
-  for(let dy=0;dy<oh;dy++){for(let dx=0;dx<ow;dx++){const{x:sx,y:sy}=applyH(H,dx,dy);const xi=Math.round(sx),yi=Math.round(sy);if(xi<0||xi>=sw||yi<0||yi>=sh)continue;const si=(yi*sw+xi)*4,di=(dy*ow+dx)*4;out[di]=sd[si];out[di+1]=sd[si+1];out[di+2]=sd[si+2];out[di+3]=sd[si+3]}}
-  const oc=document.createElement('canvas');oc.width=ow;oc.height=oh;oc.getContext('2d').putImageData(new ImageData(out,ow,oh),0,0);return oc
+  const oc=document.createElement('canvas');oc.width=ow;oc.height=oh;
+  const ox=oc.getContext('2d');const od=ox.createImageData(ow,oh);const out=od.data;
+  for(let dy=0;dy<oh;dy++){for(let dx=0;dx<ow;dx++){
+    const{x:sx,y:sy}=applyH(H,dx,dy);
+    const xi=Math.round(sx),yi=Math.round(sy);
+    if(xi<0||xi>=sw||yi<0||yi>=sh)continue;
+    const si=(yi*sw+xi)*4,di=(dy*ow+dx)*4;
+    out[di]=sd[si];out[di+1]=sd[si+1];out[di+2]=sd[si+2];out[di+3]=255
+  }}
+  ox.putImageData(od,0,0);return oc
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SCANNER ENGINE
-   ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   ★ SCANNER ENGINE ★
+   ═══════════════════════════════════════════════ */
 const vid=document.getElementById('vid');
 const prevC=document.getElementById('prev-canvas');
-const prevCtx=prevC.getContext('2d');
+const prevCtx=prevC.getContext('2d',{willReadFrequently:true});
 const anC=document.getElementById('an-canvas');
-const anCtx=anC.getContext('2d');
-let scanRAF=null,scanning=false,stabF=0,autoMode=true;
+const anCtx=anC.getContext('2d',{willReadFrequently:true});
+let scanRAF=null,scanning=false,stabF=0,autoMode=true,dbgMode=false;
+
+function togDbg(){dbgMode=!dbgMode;document.getElementById('dbg-ov').style.display=dbgMode?'block':'none'}
+function dbg(t){if(dbgMode)document.getElementById('dbg-ov').innerHTML=t}
 
 function applyModeUI(){
   const cb=document.getElementById('capBtn'),ab=document.getElementById('autoBtn'),ai=document.getElementById('autoIco'),al=document.getElementById('autoLbl'),ins=document.getElementById('instr');
@@ -771,21 +757,87 @@ function togMode(){autoMode=!autoMode;applyModeUI()}
 
 function shutterSound(){
   try{const ac=new(AudioContext||webkitAudioContext)();if(ac.state==='suspended')ac.resume();const t=ac.currentTime;
-  // Mirror slap
   const b1=ac.createBuffer(1,ac.sampleRate*.04,ac.sampleRate),d1=b1.getChannelData(0);for(let i=0;i<d1.length;i++)d1[i]=(Math.random()*2-1)*Math.exp(-i/(d1.length*.15));
-  const s1=ac.createBufferSource();s1.buffer=b1;const f1=ac.createBiquadFilter();f1.type='bandpass';f1.frequency.value=2800;const g1=ac.createGain();g1.gain.setValueAtTime(1.2,t);g1.gain.exponentialRampToValueAtTime(.001,t+.04);s1.connect(f1);f1.connect(g1);g1.connect(ac.destination);s1.start(t);
-  // Shutter
-  const b2=ac.createBuffer(1,ac.sampleRate*.08,ac.sampleRate),d2=b2.getChannelData(0);for(let i=0;i<d2.length;i++)d2[i]=(Math.random()*2-1)*Math.exp(-i/(d2.length*.2))*.9;
-  const s2=ac.createBufferSource();s2.buffer=b2;const f2=ac.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1200;const g2=ac.createGain();g2.gain.setValueAtTime(0,t+.012);g2.gain.linearRampToValueAtTime(1,t+.025);g2.gain.exponentialRampToValueAtTime(.001,t+.1);s2.connect(f2);f2.connect(g2);g2.connect(ac.destination);s2.start(t+.012);
-  // Close
-  const b3=ac.createBuffer(1,ac.sampleRate*.05,ac.sampleRate),d3=b3.getChannelData(0);for(let i=0;i<d3.length;i++)d3[i]=(Math.random()*2-1)*Math.exp(-i/(d3.length*.3))*.7;
-  const s3=ac.createBufferSource();s3.buffer=b3;const f3=ac.createBiquadFilter();f3.type='lowpass';f3.frequency.value=600;const g3=ac.createGain();g3.gain.setValueAtTime(.8,t+.09);g3.gain.exponentialRampToValueAtTime(.001,t+.14);s3.connect(f3);f3.connect(g3);g3.connect(ac.destination);s3.start(t+.09)
+  const s1=ac.createBufferSource();s1.buffer=b1;const g1=ac.createGain();g1.gain.setValueAtTime(.8,t);g1.gain.exponentialRampToValueAtTime(.001,t+.04);s1.connect(g1);g1.connect(ac.destination);s1.start(t);
+  const b2=ac.createBuffer(1,ac.sampleRate*.06,ac.sampleRate),d2=b2.getChannelData(0);for(let i=0;i<d2.length;i++)d2[i]=(Math.random()*2-1)*Math.exp(-i/(d2.length*.2))*.7;
+  const s2=ac.createBufferSource();s2.buffer=b2;const g2=ac.createGain();g2.gain.setValueAtTime(0,t+.01);g2.gain.linearRampToValueAtTime(.8,t+.02);g2.gain.exponentialRampToValueAtTime(.001,t+.08);s2.connect(g2);g2.connect(ac.destination);s2.start(t+.01)
   }catch(e){}
 }
 
+/* ═══════════════════════════════════════════════
+   ★ FIX: Coordinate mapping accounts for object-fit:cover ★
+   ═══════════════════════════════════════════════ */
+function screenToVideo(sx,sy){
+  const rv=vid.getBoundingClientRect();
+  const vw=vid.videoWidth||1920,vh=vid.videoHeight||1080;
+  // Account for object-fit: cover
+  const cssAsp=rv.width/rv.height;
+  const vidAsp=vw/vh;
+  let sc,oX=0,oY=0;
+  if(vidAsp>cssAsp){sc=rv.height/vh;oX=(rv.width-vw*sc)/2}
+  else{sc=rv.width/vh;oY=(rv.height-vh*sc)/2}
+  return{x:(sx-oX)/sc,y:(sy-oY)/sc}
+}
+
+function getCornerCoords(){
+  const rv=vid.getBoundingClientRect();
+  const gr=document.getElementById('guide').getBoundingClientRect();
+  return[
+    screenToVideo(gr.left-rv.left,gr.top-rv.top),
+    screenToVideo(gr.right-rv.left,gr.top-rv.top),
+    screenToVideo(gr.right-rv.left,gr.bottom-rv.top),
+    screenToVideo(gr.left-rv.left,gr.bottom-rv.top)
+  ]
+}
+
+/* ═══════════════════════════════════════════════
+   ★ FIX: Improved darkness measurement ★
+   ═══════════════════════════════════════════════ */
+function measureDark(ctx,cx,cy,rad){
+  cx=Math.round(cx);cy=Math.round(cy);rad=Math.round(rad);
+  const cw=ctx.canvas.width,ch=ctx.canvas.height;
+  if(rad<2)return 0;
+  if(cx-rad<0||cy-rad<0||cx+rad>cw||cy+rad>ch)return 0;
+
+  const img=ctx.getImageData(cx-rad,cy-rad,rad*2,rad*2).data;
+  const rSq=rad*rad;
+  const innerR=rad*.72;
+  const innerSq=innerR*innerR;
+
+  // Sample background from ring outside circle
+  let bgR=0,bgG=0,bgB=0,bgN=0;
+  const ringInner=rad*rad,ringOuter=(rad*1.8)*(rad*1.8);
+  for(let i=0;i<img.length;i+=4){
+    const px=(i/4)%(rad*2)-rad;
+    const py=Math.floor((i/4)/(rad*2))-rad;
+    const d2=px*px+py*py;
+    if(d2>=ringInner&&d2<=ringOuter){bgR+=img[i];bgG+=img[i+1];bgB+=img[i+2];bgN++}
+  }
+  const bgLum=bgN>0?(.299*(bgR/bgN)+.587*(bgG/bgN)+.114*(bgB/bgN)):220;
+
+  // Adaptive threshold: 55% of background luminance
+  const thresh=Math.min(bgLum*.55,140);
+
+  // Count dark pixels inside 72% of bubble radius
+  let darkN=0,totalN=0;
+  for(let i=0;i<img.length;i+=4){
+    const px=(i/4)%(rad*2)-rad;
+    const py=Math.floor((i/4)/(rad*2))-rad;
+    if(px*px+py*py<=innerSq){
+      totalN++;
+      const lum=.299*img[i]+.587*img[i+1]+.114*img[i+2];
+      if(lum<thresh)darkN++
+    }
+  }
+  return totalN?darkN/totalN:0
+}
+
+/* ═══════════════════════════════════════════════
+   ★ SCANNER LOOP & CAPTURE ★
+   ═══════════════════════════════════════════════ */
 async function startScan(eid,sid,sName){
   const ex=S.exams.find(e=>e.id===eid);
-  if(!ex.layout||!ex.layout._meta)return alert('مخطط ورقة الإجابة غير موجود.\nيرجى تعديل الامتحان وحفظه من جديد.');
+  if(!ex.layout||!ex.layout._meta)return alert('مخطط الورقة غير موجود.\nيرجى تعديل الامتحان وحفظه من جديد.');
   S.activeScan={exam:ex,studentId:sid,extChoices:{}};
   document.getElementById('scanTitle').innerText=`تصحيح: ${sName}`;
   openModal('scanModal');resetUI();
@@ -795,7 +847,7 @@ async function startScan(eid,sid,sName){
     vid.onloadedmetadata=()=>{
       const mc=document.querySelector('#scanModal .modal-c');
       const cw=mc?mc.offsetWidth:innerWidth,ch=mc?mc.offsetHeight:innerHeight;
-      const ratio=SHEET_H/SHEET_W;let gw,gh;
+      const ratio=SH/SW;let gw,gh;
       if(ch/cw>ratio){gw=cw*.82;gh=gw*ratio}else{gh=ch*.72;gw=gh/ratio}
       const gr=document.getElementById('guide');gr.style.width=gw+'px';gr.style.height=gh+'px';gr.style.top=((ch-gh)/2)+'px';gr.style.left=((cw-gw)/2)+'px';
       setTimeout(()=>{scanning=true;scanLoop()},500)
@@ -809,80 +861,110 @@ function resetUI(){
   ['cm-tl','cm-tr','cm-bl','cm-br'].forEach(id=>document.getElementById(id)?.classList.remove('ok'));
   applyModeUI()
 }
-function nativeCoords(sx,sy,rv,vw,vh){const sc=Math.max(vw/rv.width,vh/rv.height),rW=vw*sc,rH=vh*sc,oX=(rW-rv.width)/2,oY=(rH-rv.height)/2;return{x:(sx+oX)/sc,y:(sy+oY)/sc}}
-
-function measureDark(ctx,cx,cy,rad,thresh=128){
-  cx=Math.round(cx);cy=Math.round(cy);rad=Math.round(rad);
-  const cw=ctx.canvas.width,ch=ctx.canvas.height;
-  if(cx-rad<0||cy-rad<0||cx+rad>cw||cy+rad>ch)return 0;
-  const img=ctx.getImageData(cx-rad,cy-rad,rad*2,rad*2).data;
-  const rSq=rad*rad;let tR=0,tG=0,tB=0,bgC=0,dC=0,tot=0;
-  // Background from ring outside circle
-  for(let i=0;i<img.length;i+=4){const px=(i/4)%(rad*2)-rad,py=Math.floor((i/4)/(rad*2))-rad;const d2=px*px+py*py;if(d2>rSq&&d2<=(rad*2)*(rad*2)){tR+=img[i];tG+=img[i+1];tB+=img[i+2];bgC++}}
-  const bgL=bgC>0?(.299*(tR/bgC)+.587*(tG/bgC)+.114*(tB/bgC)):220;
-  const aT=Math.min(bgL*.62,thresh);
-  const innerSq=(rad*.78)*(rad*.78);
-  for(let i=0;i<img.length;i+=4){const px=(i/4)%(rad*2)-rad,py=Math.floor((i/4)/(rad*2))-rad;if(px*px+py*py<=innerSq){tot++;if(.299*img[i]+.587*img[i+1]+.114*img[i+2]<aT)dC++}}
-  return tot?dC/tot:0
-}
 
 function scanLoop(){
   if(!scanning)return;
-  anC.width=vid.videoWidth;anC.height=vid.videoHeight;anCtx.drawImage(vid,0,0);
-  const rv=vid.getBoundingClientRect(),gr=document.getElementById('guide').getBoundingClientRect();
+  anC.width=vid.videoWidth;anC.height=vid.videoHeight;
+  anCtx.drawImage(vid,0,0);
+  const corners=getCornerCoords();
   const vw=vid.videoWidth,vh=vid.videoHeight;
-  const corners=[nativeCoords(gr.left-rv.left,gr.top-rv.top,rv,vw,vh),nativeCoords(gr.right-rv.left,gr.top-rv.top,rv,vw,vh),nativeCoords(gr.right-rv.left,gr.bottom-rv.top,rv,vw,vh),nativeCoords(gr.left-rv.left,gr.bottom-rv.top,rv,vw,vh)];
   const ckR=Math.min(vw,vh)*.018;
   const insets=[{x:1,y:1},{x:-1,y:1},{x:-1,y:-1},{x:1,y:-1}];
   const cmIds=['cm-tl','cm-tr','cm-br','cm-bl'];
   let aligned=0;
   cmIds.forEach((id,i)=>{
     const el=document.getElementById(id);if(!el)return;
-    const cx=corners[i].x+insets[i].x*ckR*1.1,cy=corners[i].y+insets[i].y*ckR*1.1;
+    const cx=corners[i].x+insets[i].x*ckR*1.2,cy=corners[i].y+insets[i].y*ckR*1.2;
     let dp=0;const off=[-ckR*.4,0,ckR*.4];
-    for(let dx of off)for(let dy of off)if(measureDark(anCtx,cx+dx,cy+dy,ckR*.45,140)>.25)dp++;
+    for(let dx of off)for(let dy of off)if(measureDark(anCtx,cx+dx,cy+dy,ckR*.48)>.22)dp++;
+    // Check inner area is light
     const ix=corners[i].x+insets[i].x*ckR*3.5,iy=corners[i].y+insets[i].y*ckR*3.5;
-    const il=measureDark(anCtx,ix,iy,ckR,140)<.25;
+    const il=measureDark(anCtx,ix,iy,ckR)<.22;
     if(dp>=2&&il){el.classList.add('ok');aligned++}else el.classList.remove('ok')
   });
+
+  dbg(`Vid: ${vw}×${vh}<br>Corners: ${corners.map(c=>`(${Math.round(c.x)},${Math.round(c.y)})`).join(' ')}<br>Aligned: ${aligned}/4`);
+
   const sb=document.getElementById('stab');
   if(!autoMode){stabF=0;sb.style.width='0%';scanRAF=requestAnimationFrame(scanLoop);return}
-  const STAB=18;
+  const STAB=16;
   if(aligned>=4){stabF++;sb.style.width=(stabF/STAB*100)+'%';if(stabF>=STAB){scanning=false;shutterSound();sb.style.width='0%';setTimeout(capture,50);return}}
   else{stabF=0;sb.style.width='0%'}
   scanRAF=requestAnimationFrame(scanLoop)
 }
 function forceCap(){if(!scanning)return;scanning=false;shutterSound();document.getElementById('stab').style.width='0%';capture()}
 
+/* ═══════════════════════════════════════════════
+   ★ MAIN CAPTURE & CORRECTION ★
+   ═══════════════════════════════════════════════ */
 function capture(){
-  const rv=vid.getBoundingClientRect(),gr=document.getElementById('guide').getBoundingClientRect();
+  const corners=getCornerCoords();
   const vw=vid.videoWidth,vh=vid.videoHeight;
-  const srcPts=[nativeCoords(gr.left-rv.left,gr.top-rv.top,rv,vw,vh),nativeCoords(gr.right-rv.left,gr.top-rv.top,rv,vw,vh),nativeCoords(gr.right-rv.left,gr.bottom-rv.top,rv,vw,vh),nativeCoords(gr.left-rv.left,gr.bottom-rv.top,rv,vw,vh)];
-  const outH=1000,outW=Math.round(outH*(SHEET_W/SHEET_H));
-  const fc=document.createElement('canvas');fc.width=vw;fc.height=vh;fc.getContext('2d').drawImage(vid,0,0);
-  const warped=warpImg(fc.getContext('2d'),vw,vh,srcPts,outW,outH);
-  const cc=document.createElement('canvas');cc.width=outW;cc.height=outH;cc.getContext('2d').drawImage(warped,0,0);
-  const cCtx=cc.getContext('2d');
-  prevC.width=outW;prevC.height=outH;prevCtx.drawImage(warped,0,0);
-  vid.style.display='none';document.getElementById('guide').style.display='none';prevC.style.display='block';
 
-  const lay=S.activeScan.exam.layout,key=S.activeScan.exam.answerKey;
-  const meta=lay._meta||{};
-  const bubR=Math.max(Math.round((meta.sheetW?((lay[`Q1`]?.[Object.keys(lay[`Q1`]||{})[0]]?.r||.018)*outW):14)),6);
+  // Warped image: match sheet aspect ratio
+  const outH=1200,outW=Math.round(outH*(SW/SH));
 
-  // Draw correct answer highlights (yellow)
-  for(let q in lay){if(q.startsWith('_'))continue;const cOpts=Object.keys(key[q]||{});for(let o in lay[q]){if(!cOpts.includes(o))continue;const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH),r=Math.round(lay[q][o].r*outW);prevCtx.beginPath();prevCtx.arc(px,py,r,0,2*Math.PI);prevCtx.strokeStyle='#f59e0b';prevCtx.lineWidth=2.5;prevCtx.stroke()}}
+  // Draw full video frame to temp canvas
+  const fc=document.createElement('canvas');fc.width=vw;fc.height=vh;
+  fc.getContext('2d').drawImage(vid,0,0);
 
-  // Read student answers
-  let fc_={};
-  for(let q in lay){if(q.startsWith('_'))continue;let filled=[];
-    for(let o in lay[q]){const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH),r=Math.round(lay[q][o].r*outW);
-      if(measureDark(cCtx,px,py,r,130)>.12)filled.push({opt:o,px,py,r})}
-    if(filled.length){fc_[q]=filled.map(f=>f.opt).join(', ');
-      const cOpts=Object.keys(key[q]||{});
-      filled.forEach(f=>{const ok=cOpts.includes(f.opt);prevCtx.beginPath();prevCtx.arc(f.px,f.py,f.r,0,2*Math.PI);prevCtx.strokeStyle=ok?'#22c55e':'#ef4444';prevCtx.lineWidth=4;prevCtx.stroke();if(ok){prevCtx.beginPath();prevCtx.arc(f.px,f.py,f.r-3,0,2*Math.PI);prevCtx.fillStyle='rgba(34,197,94,.25)';prevCtx.fill()}})
+  // Perspective warp
+  const warped=warpImg(fc.getContext('2d'),vw,vh,corners,outW,outH);
+
+  // Analysis canvas
+  const cc=document.createElement('canvas');cc.width=outW;cc.height=outH;
+  cc.getContext('2d').drawImage(warped,0,0);
+  const cCtx=cc.getContext('2d',{willReadFrequently:true});
+
+  // Preview canvas
+  prevC.width=outW;prevC.height=outH;
+  prevCtx.drawImage(warped,0,0);
+  vid.style.display='none';document.getElementById('guide').style.display='none';
+  prevC.style.display='block';
+
+  // ★ Scale factors: sheet pixel coords → warped image pixel coords ★
+  const lay=S.activeScan.exam.layout;
+  const key=S.activeScan.exam.answerKey;
+  const sX=outW/SW,sY=outH/SH;
+
+  // Draw correct answers (yellow rings)
+  for(let q in lay){
+    if(q.startsWith('_'))continue;
+    const cOpts=Object.keys(key[q]||{});
+    for(let o in lay[q]){
+      if(!cOpts.includes(o))continue;
+      const px=lay[q][o].px*sX,py=lay[q][o].py*sY,r=lay[q][o].r*sX;
+      prevCtx.beginPath();prevCtx.arc(px,py,r,0,Math.PI*2);
+      prevCtx.strokeStyle='#f59e0b';prevCtx.lineWidth=2;prevCtx.stroke()
     }
   }
+
+  // ★ Read student answers ★
+  let fc_={};
+  let dbgInfo='';
+  for(let q in lay){
+    if(q.startsWith('_'))continue;
+    let filled=[];
+    for(let o in lay[q]){
+      const px=lay[q][o].px*sX,py=lay[q][o].py*sY,r=lay[q][o].r*sX;
+      const dark=measureDark(cCtx,px,py,r);
+      if(dark>.10)filled.push({opt:o,px,py,r,dark})
+    }
+    if(filled.length){
+      fc_[q]=filled.map(f=>f.opt).join(', ');
+      const cOpts=Object.keys(key[q]||{});
+      filled.forEach(f=>{
+        const ok=cOpts.includes(f.opt);
+        prevCtx.beginPath();prevCtx.arc(f.px,f.py,f.r,0,Math.PI*2);
+        prevCtx.strokeStyle=ok?'#22c55e':'#ef4444';prevCtx.lineWidth=4;prevCtx.stroke();
+        if(ok){prevCtx.beginPath();prevCtx.arc(f.px,f.py,f.r-3,0,Math.PI*2);prevCtx.fillStyle='rgba(34,197,94,.25)';prevCtx.fill()}
+      });
+      if(dbgMode)dbgInfo+=`${q}: ${filled.map(f=>f.opt+'('+Math.round(f.dark*100)+'%)').join(', ')}<br>`
+    }
+  }
+
+  dbg(`Scale: ${sX.toFixed(3)} × ${sY.toFixed(3)}<br>Out: ${outW}×${outH}<br>Sheet: ${SW}×${SH}<br><br>${dbgInfo||'No bubbles detected!'}`);
+
   const tot=calcScore(fc_,key);
   S.activeScan.extChoices=fc_;S.activeScan.tot=tot;
   document.getElementById('scan-bot').style.display='none';
@@ -891,6 +973,9 @@ function capture(){
   document.getElementById('res-ov').style.display='flex'
 }
 
+/* ═══════════════════════════════════════════════
+   ★ SCORING ENGINE ★
+   ═══════════════════════════════════════════════ */
 function calcScore(choices,answerKey){
   let total=0;
   for(let q in answerKey){
@@ -899,10 +984,8 @@ function calcScore(choices,answerKey){
     const sOpts=(choices[q]||'').split(', ').filter(Boolean);
     if(!sOpts.length)continue;
     if(cCount===1){
-      // Single-answer question: full marks only if exactly correct
       if(sOpts.length===1&&sOpts[0]===cOpts[0])total+=answerKey[q][cOpts[0]]
     }else{
-      // Multi-answer question
       const fullPts=cOpts.reduce((s,o)=>s+(answerKey[q][o]||0),0);
       const ptPer=fullPts/cCount;
       const correct=sOpts.filter(o=>cOpts.includes(o));
@@ -927,33 +1010,30 @@ async function confirmSave(){
   await IDB.put('results',res);stopScan();renderRes()
 }
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    BACKUP, BROADCAST, DROPDOWN
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════ */
 function exportJSON(){const d={classes:S.classes,exams:S.exams,results:[],settings:S.settings};for(let e in S.results)for(let s in S.results[e])d.results.push(S.results[e][s]);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));a.download=`OMR_${new Date().toISOString().split('T')[0]}.json`;a.click()}
-function importJSON(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=async e=>{try{const d=JSON.parse(e.target.result);await IDB.clr('classes');await IDB.clr('exams');await IDB.clr('results');for(let i of(d.classes||[]))await IDB.put('classes',i);for(let i of(d.exams||[]))await IDB.put('exams',i);for(let i of(d.results||[]))await IDB.put('results',i);if(d.settings)await IDB.put('settings',d.settings);alert('تم الاستيراد!');location.reload()}catch(er){alert('خطأ في الملف')}};r.readAsText(f)}
+function importJSON(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=async e=>{try{const d=JSON.parse(e.target.result);await IDB.clr('classes');await IDB.clr('exams');await IDB.clr('results');for(let i of(d.classes||[]))await IDB.put('classes',i);for(let i of(d.exams||[]))await IDB.put('exams',i);for(let i of(d.results||[]))await IDB.put('results',i);if(d.settings)await IDB.put('settings',d.settings);alert('تم!');location.reload()}catch(er){alert('خطأ')}};r.readAsText(f)}
 function togDD(){document.getElementById('ddMenu').classList.toggle('on')}
 document.addEventListener('click',e=>{if(!e.target.closest('.dd'))document.querySelectorAll('.dd-c.on').forEach(d=>d.classList.remove('on'))});
 function editEx(){const eid=document.getElementById('rEx').value;if(eid)editExSetup(eid)}
-async function delEx(){const eid=document.getElementById('rEx').value;if(eid&&confirm('حذف الامتحان وجميع نتائجه؟')){await delExam(eid);updExams()}}
+async function delEx(){const eid=document.getElementById('rEx').value;if(eid&&confirm('حذف؟')){await delExam(eid);updExams()}}
 function openBcast(){
   const eid=document.getElementById('rEx').value;if(!eid)return alert('اختر امتحاناً');const ex=S.exams.find(e=>e.id===eid);
-  let lvl=S.settings?.levels?.find(l=>l.classes.some(c=>c.id===ex.classId));if(!lvl)return alert('المستوى غير موجود');
+  let lvl=S.settings?.levels?.find(l=>l.classes.some(c=>c.id===ex.classId));if(!lvl)return alert('غير موجود');
   const list=document.getElementById('bcastList');list.innerHTML='';let found=0;
   lvl.classes.forEach(c=>{if(c.id===ex.classId||!c.checked)return;const exists=S.exams.some(e=>e.classId===c.id&&e.name===ex.name&&e.year===ex.year&&e.subject===ex.subject);if(!exists){list.innerHTML+=`<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:5px"><input type="checkbox" class="bchk" value="${c.id}" style="width:auto;margin:0"><strong>${c.name}</strong></label>`;found++}});
-  if(!found){list.innerHTML='<p style="color:var(--no);text-align:center;font-weight:700">جميع الأقسام تمتلك هذا الامتحان!</p>'}
+  if(!found)list.innerHTML='<p style="color:var(--no);text-align:center;font-weight:700">جميع الأقسام تمتلك هذا الامتحان!</p>';
   openModal('bcastModal')
 }
 async function doBcast(){
   const eid=document.getElementById('rEx').value,ex=S.exams.find(e=>e.id===eid),cbs=document.querySelectorAll('.bchk:checked');
-  if(!cbs.length)return alert('حدد قسماً واحداً على الأقل');
+  if(!cbs.length)return alert('حدد قسماً');
   for(let cb of cbs){const ne=JSON.parse(JSON.stringify(ex));ne.id=uid();ne.classId=cb.value;S.exams.push(ne);await IDB.put('exams',ne)}
   alert(`تم التعميم على (${cbs.length}) قسم!`);closeM('bcastModal');updExams()
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   BOOT
-   ═══════════════════════════════════════════════════════════════ */
 window.onload=init;
 </script>
 </body>
