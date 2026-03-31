@@ -1038,20 +1038,59 @@ function resetScannerUI(){
 function getNativeCoords(screenX,screenY,rv,vw,vh){const scale=Math.max(rv.width/vw,rv.height/vh);const rW=vw*scale,rH=vh*scale;const offX=(rW-rv.width)/2,offY=(rH-rv.height)/2;return{x:(screenX+offX)/scale,y:(screenY+offY)/scale};}
 
 // measureDarkness: يقيس نسبة الظلام داخل دائرة في الصورة
-function measureDarkness(ctx,cx,cy,rad,thresh=128){
-  cx=Math.round(cx);cy=Math.round(cy);rad=Math.round(rad);
-  if(cx-rad<0||cy-rad<0||cx+rad>ctx.canvas.width||cy+rad>ctx.canvas.height)return 0;
-  const img=ctx.getImageData(cx-rad,cy-rad,rad*2,rad*2).data;
-  const rSq=rad*rad;
-  let tR=0,tG=0,tB=0,bgC=0,dC=0,t=0;
-  // لون الخلفية من الحلقة المحيطة
-  for(let i=0;i<img.length;i+=4){const px=(i/4)%(rad*2)-rad,py=Math.floor((i/4)/(rad*2))-rad;const d2=px*px+py*py;if(d2>rSq&&d2<=(rad*2.0)*(rad*2.0)){tR+=img[i];tG+=img[i+1];tB+=img[i+2];bgC++;}}
-  const bgLum=bgC>0?(0.299*(tR/bgC)+0.587*(tG/bgC)+0.114*(tB/bgC)):220;
-  const adaptT=Math.min(bgLum*0.65,thresh);
-  // قراءة 80% من نصف القطر لتجنب حواف الإطار
-  const innerSq=(rad*0.80)*(rad*0.80);
-  for(let i=0;i<img.length;i+=4){const px=(i/4)%(rad*2)-rad,py=Math.floor((i/4)/(rad*2))-rad;if(px*px+py*py<=innerSq){t++;if(0.299*img[i]+0.587*img[i+1]+0.114*img[i+2]<adaptT)dC++;}}
-  return t===0?0:dC/t;
+// measureDarkness: يقيس نسبة الظلام داخل الدائرة
+// يستخدم 60% من نصف القطر الداخلي للقراءة (يتجنب إطار الدائرة المطبوع)
+// العتبة تكيفية: 55% من لمعان الخلفية المحيطة
+function measureDarkness(ctx, cx, cy, rad, thresh=128){
+  cx=Math.round(cx); cy=Math.round(cy); rad=Math.round(rad);
+  if(rad < 2) return 0;
+  // نقرأ منطقة أكبر من الدائرة لحساب الخلفية
+  const area = Math.min(rad*3, Math.floor(Math.min(ctx.canvas.width, ctx.canvas.height)*0.15));
+  const ax   = Math.max(0, cx-area), ay = Math.max(0, cy-area);
+  const aw   = Math.min(ctx.canvas.width-ax, area*2);
+  const ah   = Math.min(ctx.canvas.height-ay, area*2);
+  if(aw < 2 || ah < 2) return 0;
+
+  const img  = ctx.getImageData(ax, ay, aw, ah).data;
+  const ocx  = cx - ax, ocy = cy - ay; // مركز الدائرة داخل المنطقة
+
+  let bgSum=0, bgCount=0, darkCount=0, totalCount=0;
+  const innerR = rad * 0.60; // 60% من نصف القطر = منطقة الكشف
+  const outerR = rad * 1.40; // خارج الدائرة = خلفية
+
+  for(let y=0; y<ah; y++){
+    for(let x=0; x<aw; x++){
+      const dx=x-ocx, dy=y-ocy, d=Math.sqrt(dx*dx+dy*dy);
+      const i=(y*aw+x)*4;
+      const lum=0.299*img[i]+0.587*img[i+1]+0.114*img[i+2];
+      if(d > rad && d < outerR){ // منطقة الخلفية
+        bgSum+=lum; bgCount++;
+      }
+      if(d < innerR){ // منطقة الكشف الداخلية
+        totalCount++;
+        if(lum < thresh) darkCount++; // حساب أولي بالعتبة الثابتة
+      }
+    }
+  }
+
+  if(totalCount === 0) return 0;
+  // العتبة التكيفية: 55% من لمعان الخلفية (كلما كانت الخلفية فاتحة كانت العتبة أعلى)
+  const bgLum   = bgCount > 0 ? bgSum/bgCount : 230;
+  const adaptT  = bgLum * 0.55; // 55% → عتبة أعلى من الأصل (كان 65%)
+
+  // إعادة الحساب بالعتبة التكيفية
+  darkCount = 0;
+  for(let y=0; y<ah; y++){
+    for(let x=0; x<aw; x++){
+      const dx=x-ocx, dy=y-ocy, d=Math.sqrt(dx*dx+dy*dy);
+      if(d < innerR){
+        const i=(y*aw+x)*4;
+        const lum=0.299*img[i]+0.587*img[i+1]+0.114*img[i+2];
+        if(lum < adaptT) darkCount++;
+      }
+    }
+  }
+  return darkCount / totalCount;
 }
 
 // scanLoop: اكتشاف المربعات السوداء وقياس الاستقرار
@@ -1077,9 +1116,26 @@ function scanLoop(){
     const cx=corners[i].x+insets[i].x*checkR*1.1,cy=corners[i].y+insets[i].y*checkR*1.1;
     let darkPts=0;
     const off=[-checkR*.4,0,checkR*.4];
-    for(let dx of off)for(let dy of off)if(measureDarkness(analysisCtx,cx+dx,cy+dy,checkR*.48,140)>0.25)darkPts++;
+    // نستخدم مقياس خفيف للزوايا (أسرع من measureDarkness الكاملة)
+    for(let dx of off)for(let dy of off){
+      const r=Math.round(checkR*.48), px=Math.round(cx+dx), py=Math.round(cy+dy);
+      if(px-r<0||py-r<0||px+r>analysisCanvas.width||py+r>analysisCanvas.height) continue;
+      const d=analysisCtx.getImageData(px-r,py-r,r*2,r*2).data;
+      let dk=0,tot=0;
+      for(let j=0;j<d.length;j+=4){const l=0.299*d[j]+0.587*d[j+1]+0.114*d[j+2];tot++;if(l<100)dk++;}
+      if(tot>0&&dk/tot>0.30)darkPts++;
+    }
     const inx=corners[i].x+insets[i].x*checkR*3.5,iny=corners[i].y+insets[i].y*checkR*3.5;
-    const innerLight=measureDarkness(analysisCtx,inx,iny,checkR,140)<0.25;
+    // فحص الداخل: يجب أن يكون فاتحاً
+    const ir=Math.round(checkR*.6);
+    const inPx=Math.round(inx),inPy=Math.round(iny);
+    let innerLight=true;
+    if(inPx-ir>=0&&inPy-ir>=0&&inPx+ir<analysisCanvas.width&&inPy+ir<analysisCanvas.height){
+      const d2=analysisCtx.getImageData(inPx-ir,inPy-ir,ir*2,ir*2).data;
+      let lSum=0,lCnt=0;
+      for(let j=0;j<d2.length;j+=4){lSum+=0.299*d2[j]+0.587*d2[j+1]+0.114*d2[j+2];lCnt++;}
+      innerLight=lCnt>0&&(lSum/lCnt)>160;
+    }
     if(darkPts>=2&&innerLight){el.classList.add('ok');aligned++;}else el.classList.remove('ok');
   });
   const sb=document.getElementById('stab-bar');
@@ -1128,15 +1184,16 @@ function captureAndProcess(){
   // نصف قطر الدائرة المحسوب من النسبة المخزنة
   const ratio = (meta.bubbleRadiusRatio && meta.bubbleRadiusRatio > 0)
     ? meta.bubbleRadiusRatio : (OMR.BD/2/OMR.W);
-  // bubbleR للعرض (دوائر الألوان الظاهرة)
-  const bubbleR     = Math.max(Math.round(ratio * outW), 6);
-  // bubbleR للكشف أصغر (70%) لتجنب قراءة حافة الدائرة المطبوعة
-  const detectR     = Math.max(Math.round(bubbleR * 0.70), 4);
+  // bubbleR: نصف قطر الدائرة بالبكسل في الصورة الملتقطة
+  const bubbleR = Math.max(Math.round(ratio * outW), 6);
+  // detectR: نصف القطر المستخدم في الكشف = 60% (innerR في measureDarkness)
+  // لا حاجة لتحويله هنا — measureDarkness تحسب innerR=rad*0.60 داخلياً
+  const detectR = bubbleR;
   // دوائر صفراء على الإجابات الصحيحة
   for(let q in lay){if(q.startsWith('_'))continue;const cOpts=Object.keys(key[q]||{});for(let o in lay[q]){if(!cOpts.includes(o))continue;const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);previewCtx.beginPath();previewCtx.arc(px,py,bubbleR,0,2*Math.PI);previewCtx.strokeStyle='#f59e0b';previewCtx.lineWidth=2.5;previewCtx.stroke();}}
   // قراءة إجابات التلميذ
   let fc={};
-  for(let q in lay){if(q.startsWith('_'))continue;let filled=[];for(let o in lay[q]){const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);if(measureDarkness(cleanCtx,px,py,detectR,135)>0.18)filled.push({opt:o,px,py});}
+  for(let q in lay){if(q.startsWith('_'))continue;let filled=[];for(let o in lay[q]){const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);if(measureDarkness(cleanCtx,px,py,detectR,135)>0.10)filled.push({opt:o,px,py});}
     if(filled.length>0){fc[q]=filled.map(f=>f.opt).join(', ');const cOpts=Object.keys(key[q]||{});filled.forEach(f=>{const ok=cOpts.includes(f.opt);previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR,0,2*Math.PI);previewCtx.strokeStyle=ok?'#22c55e':'#ef4444';previewCtx.lineWidth=4;previewCtx.stroke();if(ok){previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR-3,0,2*Math.PI);previewCtx.fillStyle='rgba(34,197,94,.28)';previewCtx.fill();}});}}
   // النتيجة
   const tot=calculateScore(fc,key);
