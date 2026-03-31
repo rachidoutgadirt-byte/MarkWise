@@ -2,1298 +2,959 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>المصحح</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>المصحح — تصحيح امتحانات بالكاميرا</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-:root{--primary:#4f46e5;--secondary:#8b5cf6;--dark:#0f172a;--light:#f1f5f9;--success:#10b981;--danger:#f43f5e;--warning:#f59e0b;--gray:#64748b;--border:#cbd5e1;--font:"Tajawal",sans-serif;}
-*{margin:0;padding:0;box-sizing:border-box;font-family:var(--font);}
-body{background:var(--light);color:var(--dark);display:flex;height:100vh;overflow:hidden;}
-.mobile-header{display:none;background:linear-gradient(90deg,var(--primary),var(--secondary));color:white;padding:15px 20px;align-items:center;justify-content:space-between;z-index:200;box-shadow:0 2px 10px rgba(0,0,0,.15);}
-.sidebar{width:250px;background:linear-gradient(180deg,var(--dark),#1e293b);color:white;display:flex;flex-direction:column;z-index:100;transition:transform .3s;}
-.sidebar-header{padding:20px;text-align:center;font-size:1.5rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);}
-.nav-links{list-style:none;padding:10px 0;flex:1;overflow-y:auto;}
-.nav-links li{padding:15px 20px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:10px;}
-.nav-links li:hover,.nav-links li.active{background:var(--primary);}
-.sidebar-footer{padding:15px;border-top:1px solid rgba(255,255,255,.1);margin-top:auto;}
-.main-content{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:15px 20px;background:white;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.05);}
-.tab-pane{display:none;animation:fadeIn .3s;flex:1;}
-.tab-pane.active{display:block;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.card{background:white;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:20px;}
-.btn{padding:10px 15px;border:none;border-radius:8px;cursor:pointer;color:white;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:all .3s;font-size:.9rem;box-shadow:0 2px 4px rgba(0,0,0,.1);}
-.btn-sm{padding:6px 12px;font-size:.85rem;}.btn-icon{padding:8px 10px;border-radius:6px;}
-.btn-primary{background:var(--primary);}.btn-success{background:var(--success);}.btn-danger{background:var(--danger);}.btn-warning{background:var(--warning);color:#000;}.btn-dark{background:var(--dark);}
-.btn:hover{transform:translateY(-2px);box-shadow:0 4px 8px rgba(0,0,0,.15);opacity:.95;}.btn:active{transform:translateY(0);}
-input,select,textarea{padding:10px;border:1px solid var(--border);border-radius:5px;width:100%;margin-bottom:10px;outline:none;font-family:var(--font);}
-input:focus,select:focus,textarea:focus{border-color:var(--primary);}
-table{width:100%;border-collapse:collapse;margin-top:15px;background:white;}
-th,td{padding:10px;text-align:center;border-bottom:1px solid var(--border);font-size:.9rem;}
-th{background:var(--light);white-space:nowrap;}
-.flex-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.actions-cell{display:flex;justify-content:center;gap:5px;}
-.exam-grid-setup{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;margin-bottom:20px;}
-.q-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;padding:10px;background:var(--light);border-radius:5px;}
-.q-option{width:40px;height:40px;border-radius:50%;border:2px solid var(--border);display:flex;justify-content:center;align-items:center;cursor:pointer;background:white;font-weight:700;position:relative;}
-.q-option.selected{background:var(--success);color:white;border-color:var(--success);}
-.q-score-badge{position:absolute;top:-8px;left:-8px;font-size:11px;font-weight:700;background:var(--warning);color:#000;border-radius:50%;width:22px;height:22px;display:none;justify-content:center;align-items:center;border:2px solid #fff;}
-.q-option.selected .q-score-badge{display:flex;}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);z-index:1000;justify-content:center;align-items:center;}
-.modal-content{background:white;padding:20px;border-radius:10px;width:95%;max-width:600px;max-height:90vh;overflow-y:auto;}
-.modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:15px;}
-.close-btn{background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--danger);}
-.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;direction:rtl;}
-.prev-q-row{display:flex;align-items:center;gap:5px;background:var(--light);padding:6px 10px;border-radius:6px;margin-bottom:4px;}
-.prev-bubble{width:25px;height:25px;border-radius:50%;border:2px solid var(--border);display:flex;justify-content:center;align-items:center;font-size:12px;font-weight:700;background:white;}
-.prev-bubble.correct-choice{border-color:var(--success);background:#dcfce7;}
-.prev-bubble.wrong-choice{border-color:var(--danger);background:#fee2e2;}
-.prev-bubble.missed-choice{border-color:var(--warning);background:#fef3c7;border-style:dashed;}
-.comp-A{background:var(--success);color:white;padding:2px 6px;border-radius:4px;font-weight:700;}
-.comp-B{background:var(--secondary);color:white;padding:2px 6px;border-radius:4px;font-weight:700;}
-.comp-C{background:var(--warning);color:black;padding:2px 6px;border-radius:4px;font-weight:700;}
-.comp-D{background:var(--danger);color:white;padding:2px 6px;border-radius:4px;font-weight:700;}
-#print-wrapper{position:absolute;top:-9999px;left:-9999px;}
-.omr-sheet{width:794px;height:1123px;background:white;position:relative;box-sizing:border-box;overflow:hidden;direction:ltr;}
-.omr-marker{position:absolute;background:black;}
-.omr-mid-marker{position:absolute;background:black;}
-.dropdown{position:relative;display:inline-block;}
-.dropdown-content{display:none;position:absolute;background:white;min-width:220px;box-shadow:0 10px 25px rgba(0,0,0,.15);z-index:100;border-radius:8px;padding:8px;left:0;border:1px solid var(--border);}
-.dropdown-content a{color:var(--dark);padding:10px 15px;text-decoration:none;display:flex;align-items:center;gap:12px;font-size:.95rem;font-weight:500;border-radius:6px;white-space:nowrap;transition:all .2s;}
-.dropdown-content a:hover{background:var(--light);color:var(--primary);}
-.show{display:block;}
-.settings-section{margin-bottom:30px;}
-.settings-title{font-size:1.2rem;color:var(--primary);margin-bottom:5px;}
-.settings-desc{font-size:.85rem;color:var(--gray);margin-bottom:15px;}
-.settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:15px;}
-.settings-card{border:1px solid var(--border);border-radius:8px;padding:15px;background:var(--light);}
-.settings-card h4{margin-bottom:10px;color:var(--dark);text-align:center;border-bottom:2px solid var(--primary);padding-bottom:5px;}
-.settings-list{list-style:none;max-height:200px;overflow-y:auto;margin-bottom:10px;}
-.settings-list li{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--border);background:white;margin-bottom:8px;border-radius:8px;}
-.settings-list label{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.95rem;white-space:nowrap;color:var(--dark);font-weight:500;margin:0;}
-.settings-list input[type="checkbox"]{margin:0;width:18px;height:18px;cursor:pointer;accent-color:var(--primary);flex-shrink:0;}
-.settings-actions{display:flex;gap:10px;align-items:center;}
-.settings-actions button{background:none;border:none;cursor:pointer;font-size:1.1rem;transition:transform .2s;}
-.settings-actions button:hover{transform:scale(1.2);}
-.btn-edit-item{color:var(--warning);}.btn-del-item{color:var(--danger);}
-.flex-wrap-list{display:flex;flex-wrap:wrap;gap:12px;}
-.flex-wrap-list li{flex:1 1 220px;max-width:100%;}
-.draggable-row{cursor:grab;}.draggable-row.dragging{opacity:.5;background:#e2e8f0;}
-.drag-handle{cursor:grab;color:var(--gray);margin-left:10px;}
-.drag-over{border-top:2px solid var(--primary);}
+:root{
+  --pri:#4f46e5;--pri2:#818cf8;--sec:#8b5cf6;
+  --bg:#f1f5f9;--card:#fff;--dark:#0f172a;--gray:#64748b;--border:#cbd5e1;
+  --ok:#10b981;--no:#ef4444;--warn:#f59e0b;
+  --font:'Tajawal','Cairo',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--dark);display:flex;height:100vh;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{width:250px;background:linear-gradient(180deg,var(--dark),#1e293b);color:#fff;display:flex;flex-direction:column;z-index:100;transition:transform .3s}
+.sidebar-hd{padding:20px;text-align:center;font-size:1.4rem;font-weight:800;border-bottom:1px solid rgba(255,255,255,.08)}
+.nav{list-style:none;padding:8px 0;flex:1;overflow-y:auto}
+.nav li{padding:14px 20px;cursor:pointer;display:flex;align-items:center;gap:12px;font-weight:600;transition:.15s;border-radius:0}
+.nav li:hover,.nav li.on{background:var(--pri)}
+.sidebar-ft{padding:14px;border-top:1px solid rgba(255,255,255,.08);margin-top:auto}
+
+/* ── Main ── */
+.main{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column}
+.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:14px 18px;background:var(--card);border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.tab{display:none;animation:fadeIn .25s;flex:1}
+.tab.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.05);margin-bottom:16px}
+.btn{padding:10px 16px;border:none;border-radius:8px;cursor:pointer;color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:6px;transition:.2s;font-size:.88rem;box-shadow:0 2px 4px rgba(0,0,0,.08)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.12)}
+.btn:active{transform:none}
+.btn-p{background:var(--pri)}.btn-s{background:var(--ok)}.btn-d{background:var(--no)}.btn-w{background:var(--warn);color:#000}.btn-k{background:var(--dark)}
+.btn-sm{padding:6px 12px;font-size:.82rem}
+input,select,textarea{padding:10px 12px;border:1px solid var(--border);border-radius:7px;width:100%;margin-bottom:8px;outline:none;font-family:var(--font);font-size:.92rem}
+input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff}
+th,td{padding:9px 10px;text-align:center;border-bottom:1px solid var(--border);font-size:.88rem}
+th{background:var(--bg);white-space:nowrap;font-weight:700}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.flex>select,.flex>input{margin:0}
+.acts{display:flex;justify-content:center;gap:4px}
+
+/* ── Settings ── */
+.sets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.sets-card{border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--bg)}
+.sets-card h4{margin-bottom:8px;text-align:center;border-bottom:2px solid var(--pri);padding-bottom:5px;font-size:1rem}
+.sets-lst{list-style:none;max-height:200px;overflow-y:auto;margin-bottom:8px}
+.sets-lst li{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--border);background:#fff;margin-bottom:6px;border-radius:6px}
+.sets-lst label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.92rem;margin:0}
+.sets-lst input[type=checkbox]{width:17px;height:17px;accent-color:var(--pri)}
+.sets-acts button{background:none;border:none;cursor:pointer;font-size:1rem;transition:transform .15s}
+.sets-acts button:hover{transform:scale(1.2)}
+.btn-ed{color:var(--warn)}.btn-rm{color:var(--no)}
+
+/* ── Exam grid ── */
+.exam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.q-row{display:flex;gap:8px;align-items:center;padding:10px;background:var(--bg);border-radius:6px;margin-bottom:6px}
+.q-opt{width:38px;height:38px;border-radius:50%;border:2px solid var(--border);display:flex;justify-content:center;align-items:center;cursor:pointer;background:#fff;font-weight:800;position:relative;transition:.15s}
+.q-opt.sel{background:var(--ok);color:#fff;border-color:var(--ok)}
+.q-pts{position:absolute;top:-7px;left:-7px;font-size:10px;font-weight:800;background:var(--warn);color:#000;border-radius:50%;width:20px;height:20px;display:none;justify-content:center;align-items:center;border:2px solid #fff}
+.q-opt.sel .q-pts{display:flex}
+
+/* ── Modal ── */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;justify-content:center;align-items:center}
+.modal.on{display:flex}
+.modal-c{background:#fff;padding:20px;border-radius:12px;width:95%;max-width:600px;max-height:90vh;overflow-y:auto}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:14px}
+.close{background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--no)}
+.prev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.prev-row{display:flex;align-items:center;gap:4px;background:var(--bg);padding:5px 8px;border-radius:6px;margin-bottom:3px}
+.prev-bub{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);display:flex;justify-content:center;align-items:center;font-size:11px;font-weight:800;background:#fff}
+.prev-bub.ok{border-color:var(--ok);background:#dcfce7}
+.prev-bub.no{border-color:var(--no);background:#fee2e2}
+.prev-bub.miss{border-color:var(--warn);background:#fef3c7;border-style:dashed}
+.comp-A{background:var(--ok);color:#fff;padding:2px 7px;border-radius:4px;font-weight:800}
+.comp-B{background:var(--sec);color:#fff;padding:2px 7px;border-radius:4px;font-weight:800}
+.comp-C{background:var(--warn);color:#000;padding:2px 7px;border-radius:4px;font-weight:800}
+.comp-D{background:var(--no);color:#fff;padding:2px 7px;border-radius:4px;font-weight:800}
+
+/* ── Dropdown ── */
+.dd{position:relative;display:inline-block}
+.dd-c{display:none;position:absolute;background:#fff;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;border-radius:8px;padding:6px;left:0;border:1px solid var(--border)}
+.dd-c a{color:var(--dark);padding:10px 14px;text-decoration:none;display:flex;align-items:center;gap:10px;font-size:.92rem;border-radius:6px;white-space:nowrap;transition:.15s}
+.dd-c a:hover{background:var(--bg)}
+.dd-c.on{display:block}
+
+/* ── Print wrapper ── */
+#print-wrap{position:absolute;top:-9999px;left:-9999px}
+
+/* ── Scanner ── */
+#scanModal .modal-c{width:100vw;height:100dvh;max-width:none;max-height:none;padding:0;border-radius:0;display:flex;flex-direction:column;background:#000;position:relative;overflow:hidden}
+#vid{width:100%;height:100%;object-fit:cover;display:block}
+#guide{position:absolute;border:2px solid rgba(255,255,255,.3);box-shadow:0 0 0 5000px rgba(0,0,0,.5);z-index:4;box-sizing:border-box}
+.cm{position:absolute;width:44px;height:44px;z-index:6;transition:.1s}
+.cm.ok{border-color:var(--ok)!important;background:rgba(16,185,129,.18)!important}
+#cm-tl{top:0;left:0;border-top:4px solid rgba(255,255,255,.85);border-left:4px solid rgba(255,255,255,.85)}
+#cm-tr{top:0;right:0;border-top:4px solid rgba(255,255,255,.85);border-right:4px solid rgba(255,255,255,.85)}
+#cm-bl{bottom:0;left:0;border-bottom:4px solid rgba(255,255,255,.85);border-left:4px solid rgba(255,255,255,.85)}
+#cm-br{bottom:0;right:0;border-bottom:4px solid rgba(255,255,255,.85);border-right:4px solid rgba(255,255,255,.85)}
+#stab{position:absolute;bottom:-4px;left:0;height:4px;background:var(--ok);width:0;transition:width .08s;z-index:8;border-radius:0 3px 3px 0}
+#scanln{position:absolute;left:0;width:100%;height:2px;background:rgba(16,185,129,.8);box-shadow:0 0 8px var(--ok);animation:scanA 2s infinite ease-in-out;z-index:7}
+@keyframes scanA{0%{top:3%}50%{top:97%}100%{top:3%}}
+#vid-area{flex:1;position:relative;overflow:hidden;min-height:0}
+#prev-canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:none;background:#000;z-index:12}
+#an-canvas{display:none}
+#res-ov{display:none;flex-direction:column;align-items:center;background:rgba(0,0,0,.92);padding:12px 16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0));gap:10px;flex-shrink:0;width:100%}
+#res-name{color:rgba(255,255,255,.75);font-size:.9rem;font-weight:600}
+#res-score{color:var(--ok);font-size:1.7rem;font-weight:900}
+#res-btns{display:flex;gap:10px;width:100%;max-width:480px}
+#res-btns .btn{flex:1;padding:11px 8px;font-size:.9rem}
+#scan-bot{position:absolute;bottom:0;left:0;width:100%;padding:12px;background:rgba(0,0,0,.75);z-index:20;text-align:center}
+#scan-bot p{color:#fff;font-weight:700;font-size:.9rem;margin:0}
+#scan-top{position:absolute;top:0;left:0;width:100%;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.6);z-index:22;gap:8px}
+
+/* ── Mobile ── */
+.mob-hd{display:none;background:linear-gradient(90deg,var(--pri),var(--sec));color:#fff;padding:14px 18px;align-items:center;justify-content:center;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.mob-hd i.menu{position:absolute;right:18px;font-size:1.4rem;cursor:pointer}
+.sbov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250}
+.sbov.on{display:block}
 @media(max-width:768px){
-  body{flex-direction:column;}
-  .sidebar-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:250;}
-  .sidebar-overlay.show{display:block;}
-  #closeMenuBtn{display:block!important;}
-  .mobile-header{display:flex;}
-  .sidebar{position:fixed;top:0;right:0;height:100%;transform:translateX(100%);width:260px;z-index:300;}
-  .sidebar.open{transform:translateX(0);}
-  .sidebar-header{margin-top:20px;}
-  .main-content{padding:10px;}
-  .table-responsive{overflow-x:auto;}
+  body{flex-direction:column}
+  .mob-hd{display:flex;position:relative}
+  .sidebar{position:fixed;top:0;right:0;height:100%;transform:translateX(100%);width:260px;z-index:300}
+  .sidebar.open{transform:none}
+  .main{padding:10px}
+  .tbl-r{overflow-x:auto}
 }
-/* ===== SCANNER ===== */
-#scannerModal .modal-content{
-  width:100vw;
-  height:100dvh;
-  max-width:none;max-height:none;
-  padding:0;border-radius:0;
-  display:flex;flex-direction:column;
-  background:#000;
-  position:relative;
-  overflow:hidden;
-}
-#video-feed{width:100%;height:100%;object-fit:cover;display:block;}
-#guide-rect{position:absolute;border:2px solid rgba(255,255,255,.35);box-shadow:0 0 0 4000px rgba(0,0,0,.55);z-index:4;box-sizing:border-box;}
-.cm{position:absolute;width:48px;height:48px;z-index:6;transition:border-color .1s,background .1s;}
-.cm.ok{border-color:#22c55e!important;background:rgba(34,197,94,.2)!important;}
-#cm-tl{top:0;left:0;border-top:4px solid rgba(255,255,255,.9);border-left:4px solid rgba(255,255,255,.9);}
-#cm-tr{top:0;right:0;border-top:4px solid rgba(255,255,255,.9);border-right:4px solid rgba(255,255,255,.9);}
-#cm-bl{bottom:0;left:0;border-bottom:4px solid rgba(255,255,255,.9);border-left:4px solid rgba(255,255,255,.9);}
-#cm-br{bottom:0;right:0;border-bottom:4px solid rgba(255,255,255,.9);border-right:4px solid rgba(255,255,255,.9);}
-#stab-bar{position:absolute;bottom:-5px;left:0;height:5px;background:#22c55e;width:0;transition:width .08s linear;z-index:8;border-radius:0 3px 3px 0;}
-#scan-line{position:absolute;left:0;width:100%;height:2px;background:rgba(34,197,94,.85);box-shadow:0 0 10px #22c55e;animation:scanAnim 2.2s infinite ease-in-out;z-index:7;}
-@keyframes scanAnim{0%{top:3%}50%{top:97%}100%{top:3%}}
-/* ===== نتيجة التصحيح ===== */
-/* الـ canvas يملأ الشاشة — شريط النتيجة في الأسفل فوقه */
-#video-area{
-  flex:1;
-  position:relative;
-  overflow:hidden;
-  min-height:0;
-}
-#preview-canvas{
-  position:absolute;top:0;left:0;
-  width:100%;height:100%;
-  display:none;background:#000;z-index:12;
-}
-/* result-overlay: عنصر عادي في flex column — يظهر دائماً */
-#result-overlay{
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  background:rgba(0,0,0,0.92);
-  padding:12px 16px;
-  padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));
-  gap:10px;
-  flex-shrink:0;
-  width:100%;
-  box-sizing:border-box;
-}
-#result-student-name{
-  color:rgba(255,255,255,0.75);
-  font-size:0.9rem;
-  font-weight:500;
-  text-align:center;
-}
-#result-score{
-  color:#22c55e;
-  font-size:1.7rem;
-  font-weight:800;
-  line-height:1.1;
-  text-align:center;
-}
-#result-btns{
-  display:flex;
-  flex-direction:row;
-  gap:10px;
-  width:100%;
-  max-width:480px;
-}
-#result-btns .btn{
-  flex:1;
-  padding:11px 8px;
-  font-size:0.92rem;
-  min-height:44px;
-}
-#scanner-bottom{position:absolute;bottom:0;left:0;width:100%;padding:12px 14px;background:rgba(0,0,0,.78);z-index:20;text-align:center;}
-#scanner-instr{color:white;font-weight:700;font-size:.92rem;margin:0;}
-#scanner-topbar{position:absolute;top:0;left:0;width:100%;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.65);z-index:22;gap:8px;}
-#analysis-canvas{display:none;}
 </style>
 </head>
 <body>
-<div class="mobile-header" style="position:relative;justify-content:center;">
-  <i class="fas fa-bars" style="position:absolute;right:20px;font-size:1.5rem;cursor:pointer;" onclick="toggleMenu()"></i>
-  <div style="background:rgba(255,255,255,.2);width:45px;height:45px;border-radius:50%;display:flex;justify-content:center;align-items:center;">
-    <i class="fas fa-check-double" style="font-size:1.5rem;color:white;"></i>
+
+<!-- Mobile header -->
+<div class="mob-hd">
+  <i class="fas fa-bars menu" onclick="togMenu()"></i>
+  <div style="background:rgba(255,255,255,.2);width:42px;height:42px;border-radius:50%;display:flex;justify-content:center;align-items:center">
+    <i class="fas fa-check-double" style="font-size:1.3rem"></i>
   </div>
 </div>
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+<div class="sbov" id="sbOv" onclick="togMenu()"></div>
+
+<!-- Sidebar -->
 <nav class="sidebar" id="sidebar">
-  <div class="sidebar-header">
-    <i class="fas fa-check-double" style="color:var(--success);margin-left:5px;"></i> المصحح
-    <i class="fas fa-times" style="position:absolute;top:15px;right:15px;cursor:pointer;font-size:1.2rem;display:none;" id="closeMenuBtn" onclick="toggleMenu()"></i>
-  </div>
-  <ul class="nav-links">
-    <li id="nav-classes"     onclick="switchTab('classes')"><i class="fas fa-users"></i><span>لوائح الأقسام</span></li>
-    <li id="nav-create-exam" onclick="switchTab('create-exam')"><i class="fas fa-plus-circle"></i><span>إنشاء امتحان</span></li>
-    <li id="nav-results"     onclick="switchTab('results')"><i class="fas fa-chart-bar"></i><span>تصحيح الامتحان</span></li>
-    <li id="nav-settings"    onclick="switchTab('settings')"><i class="fas fa-cog"></i><span>الإعدادات</span></li>
+  <div class="sidebar-hd"><i class="fas fa-check-double" style="color:var(--ok)"></i> المصحح</div>
+  <ul class="nav">
+    <li id="n-classes" onclick="go('classes')"><i class="fas fa-users"></i> لوائح الأقسام</li>
+    <li id="n-exam" onclick="go('exam')"><i class="fas fa-plus-circle"></i> إنشاء امتحان</li>
+    <li id="n-results" onclick="go('results')"><i class="fas fa-chart-bar"></i> تصحيح الامتحان</li>
+    <li id="n-settings" onclick="go('settings')"><i class="fas fa-cog"></i> الإعدادات</li>
   </ul>
-  <div class="sidebar-footer">
-    <button class="btn btn-dark" style="width:100%;" onclick="openBackupModal()"><i class="fas fa-database"></i> نسخة احتياطية</button>
+  <div class="sidebar-ft">
+    <button class="btn btn-k" style="width:100%" onclick="openModal('bkpModal')"><i class="fas fa-database"></i> نسخة احتياطية</button>
   </div>
 </nav>
-<main class="main-content">
-<!-- لوائح الأقسام -->
-<section id="classes" class="tab-pane">
-  <div class="header" style="display:block;"><h2 style="margin-bottom:5px;">لوائح الأقسام</h2><p style="font-size:.9rem;color:var(--gray);">حدد الموسم والقسم ثم أضف التلاميذ.</p></div>
+
+<!-- Main -->
+<main class="main">
+
+<!-- ═══ لوائح الأقسام ═══ -->
+<section id="classes" class="tab">
+  <div class="hdr"><h2>لوائح الأقسام</h2><p style="font-size:.88rem;color:var(--gray)">حدد الموسم والقسم ثم أضف التلاميذ</p></div>
   <div class="card">
-    <div class="flex-row" style="margin-bottom:15px;align-items:flex-end;">
-      <div style="flex:1;"><label style="font-size:12px;color:var(--gray);">الموسم الدراسي</label><select id="yearSelect" onchange="renderStudents()"></select></div>
-      <div style="flex:1;"><label style="font-size:12px;color:var(--gray);">القسم</label><select id="classSelect" onchange="renderStudents()"></select></div>
+    <div class="flex" style="margin-bottom:12px;align-items:flex-end">
+      <div style="flex:1"><label style="font-size:11px;color:var(--gray)">الموسم الدراسي</label><select id="yrSel" onchange="renderStu()"></select></div>
+      <div style="flex:1"><label style="font-size:11px;color:var(--gray)">القسم</label><select id="clsSel" onchange="renderStu()"></select></div>
     </div>
-    <div class="flex-row" style="margin-bottom:15px;justify-content:flex-end;">
-      <button class="btn btn-danger" onclick="deleteAllStudentsInClass()" style="margin-right:auto;"><i class="fas fa-trash-alt"></i> حذف اللائحة</button>
-      <button class="btn btn-warning" onclick="openBulkAddModal()"><i class="fas fa-paste"></i> إضافة سريعة</button>
-      <button class="btn btn-success" onclick="openAddStudentModal()"><i class="fas fa-user-plus"></i> إضافة تلميذ</button>
+    <div class="flex" style="margin-bottom:12px;justify-content:flex-end">
+      <button class="btn btn-d" onclick="delAllStu()" style="margin-right:auto"><i class="fas fa-trash-alt"></i> حذف اللائحة</button>
+      <button class="btn btn-w" onclick="openModal('bulkModal')"><i class="fas fa-paste"></i> إضافة سريعة</button>
+      <button class="btn btn-s" onclick="addStuModal()"><i class="fas fa-user-plus"></i> إضافة تلميذ</button>
     </div>
-    <div class="table-responsive">
-      <table><thead><tr><th>ر.ت</th><th>الاسم الكامل</th><th>إجراءات</th></tr></thead><tbody id="studentsTableBody"></tbody></table>
-    </div>
+    <div class="tbl-r"><table><thead><tr><th>ر.ت</th><th>الاسم الكامل</th><th>إجراءات</th></tr></thead><tbody id="stuTb"></tbody></table></div>
   </div>
 </section>
-<!-- الإعدادات -->
-<section id="settings" class="tab-pane">
-  <div class="header"><h2>إعدادات النظام</h2></div>
-  <div style="display:flex;gap:15px;flex-wrap:wrap;">
-    <div class="card settings-section" style="flex:1;min-width:250px;">
-      <h3 class="settings-title">الموسم الدراسي</h3><p class="settings-desc">علّم على الموسم الحالي.</p>
-      <ul class="settings-list flex-wrap-list" id="settingsYearsList"></ul>
-      <button class="btn btn-primary btn-sm" onclick="addNewSettingItem('year')"><i class="fas fa-plus"></i> إضافة موسم</button>
-    </div>
-    <div class="card settings-section" style="flex:1;min-width:250px;">
-      <h3 class="settings-title">المراحل</h3><p class="settings-desc">علّم على المراحل المستهدفة.</p>
-      <ul class="settings-list flex-wrap-list" id="settingsStagesList"></ul>
-      <button class="btn btn-primary btn-sm" onclick="addNewSettingItem('stage')"><i class="fas fa-plus"></i> إضافة مرحلة</button>
-    </div>
+
+<!-- ═══ الإعدادات ═══ -->
+<section id="settings" class="tab">
+  <div class="hdr"><h2>إعدادات النظام</h2></div>
+  <div class="flex" style="flex-wrap:wrap;gap:14px">
+    <div class="card" style="flex:1;min-width:240px"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">الموسم الدراسي</h3><p style="font-size:.82rem;color:var(--gray);margin-bottom:10px">علّم على الموسم الحالي</p><ul class="sets-lst" id="sYrs"></ul><button class="btn btn-p btn-sm" onclick="addSet('year')"><i class="fas fa-plus"></i> إضافة موسم</button></div>
+    <div class="card" style="flex:1;min-width:240px"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">المراحل</h3><p style="font-size:.82rem;color:var(--gray);margin-bottom:10px">علّم على المراحل المستهدفة</p><ul class="sets-lst" id="sStg"></ul><button class="btn btn-p btn-sm" onclick="addSet('stage')"><i class="fas fa-plus"></i> إضافة مرحلة</button></div>
   </div>
-  <div class="card settings-section">
-    <h3 class="settings-title">الأقسام المسندة</h3><p class="settings-desc">علّم على أقسامك.</p>
-    <div class="settings-grid" id="settingsLevelsGrid"></div>
-  </div>
-  <div class="card settings-section">
-    <h3 class="settings-title">المواد الدراسية</h3><p class="settings-desc">علّم على مادتك.</p>
-    <ul class="settings-list flex-wrap-list" id="settingsSubjectsList"></ul>
-    <button class="btn btn-primary btn-sm" onclick="addNewSettingItem('subject')"><i class="fas fa-plus"></i> إضافة مادة</button>
-  </div>
+  <div class="card"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">الأقسام المسندة</h3><p style="font-size:.82rem;color:var(--gray);margin-bottom:10px">علّم على أقسامك</p><div class="sets-grid" id="sLvls"></div></div>
+  <div class="card"><h3 style="color:var(--pri);margin-bottom:4px;font-size:1.1rem">المواد الدراسية</h3><p style="font-size:.82rem;color:var(--gray);margin-bottom:10px">علّم على مادتك</p><ul class="sets-lst" id="sSubs"></ul><button class="btn btn-p btn-sm" onclick="addSet('subject')"><i class="fas fa-plus"></i> إضافة مادة</button></div>
 </section>
-<!-- إنشاء امتحان -->
-<section id="create-exam" class="tab-pane">
-  <div class="header" style="display:block;"><h2 id="createExamTitle" style="margin-bottom:5px;">إنشاء ورقة امتحان</h2><p style="font-size:.9rem;color:var(--gray);">اضبط الإعدادات ثم انقر على "توليد الشبكة".</p></div>
-  <input type="hidden" id="editingExamId" value="">
-  <div class="card exam-grid-setup">
-    <div><label>الموسم الدراسي</label><select id="examYearSelect"></select></div>
-    <div><label>المادة</label><select id="examSubjectSelect"></select></div>
-    <div><label>المرحلة</label><select id="examStageSelect"></select></div>
-    <div><label>القسم</label><select id="examClassSelect"></select></div>
-    <div><label>اسم الامتحان</label><input type="text" id="examName" placeholder="مثال: الفرض الأول"></div>
-    <div><label>عدد الأسئلة</label><input type="number" id="examQCount" value="10" min="1" max="40" onchange="updateOptionCount()"></div>
+
+<!-- ═══ إنشاء امتحان ═══ -->
+<section id="exam" class="tab">
+  <div class="hdr"><h2 id="examTitle">إنشاء ورقة امتحان</h2></div>
+  <input type="hidden" id="editExamId" value="">
+  <div class="card exam-grid">
+    <div><label>الموسم الدراسي</label><select id="exYr"></select></div>
+    <div><label>المادة</label><select id="exSub"></select></div>
+    <div><label>المرحلة</label><select id="exStg"></select></div>
+    <div><label>القسم</label><select id="exCls"></select></div>
+    <div><label>اسم الامتحان</label><input id="exName" placeholder="مثال: الفرض الأول"></div>
+    <div><label>عدد الأسئلة (1-100)</label><input type="number" id="exQC" value="20" min="1" max="100"></div>
     <div><label>عدد الخيارات</label>
-      <select id="examOptionCount">
-        <option value="4">4 خيارات (أ ب ج د)</option>
-        <option value="5">5 خيارات (أ ب ج د هـ)</option>
-        <option value="6">6 خيارات (أ ب ج د هـ و)</option>
-        <option value="7">7 خيارات</option>
-        <option value="8">8 خيارات</option>
-        <option value="9">9 خيارات</option>
-      </select>
-      <small id="optCountInfo" style="color:var(--warning);font-weight:600;display:block;margin-top:4px;"></small>
+      <select id="exOC"><option value="4">4 خيارات (أ ب ج د)</option><option value="5">5 خيارات</option><option value="6">6 خيارات</option></select>
     </div>
   </div>
-  <div class="card"><button class="btn btn-primary" onclick="generateExamGrid()"><i class="fas fa-cogs"></i> توليد الشبكة</button></div>
-  <div class="card" id="examAnswerKeyContainer" style="display:none;">
-    <h3>حدد الإجابات الصحيحة</h3>
-    <div id="examQuestionsGrid" style="margin-top:15px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;"></div>
-    <button class="btn btn-success" style="margin-top:20px;" onclick="saveExam()"><i class="fas fa-save"></i> حفظ الامتحان</button>
+  <div class="card"><button class="btn btn-p" onclick="genGrid()"><i class="fas fa-cogs"></i> توليد شبكة الإجابات</button></div>
+  <div class="card" id="akBox" style="display:none">
+    <h3>حدد الإجابات الصحيحة (انقر على الدوائر)</h3>
+    <div id="akGrid" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px"></div>
+    <button class="btn btn-s" style="margin-top:18px" onclick="saveExam()"><i class="fas fa-save"></i> حفظ الامتحان</button>
   </div>
 </section>
-<!-- النتائج -->
-<section id="results" class="tab-pane">
-  <div class="header" style="display:block;"><h2 style="margin-bottom:5px;">تصحيح الامتحان</h2><p style="font-size:.9rem;color:var(--gray);">اختر الامتحان ثم امسح أوراق التلاميذ بالكاميرا.</p></div>
-  <div class="card flex-row" style="margin-bottom:10px;">
-    <select id="resultYearSelect"    onchange="updateResultExams()" style="flex:1;margin:0;"><option value="">- الموسم -</option></select>
-    <select id="resultStageSelect"   onchange="updateResultExams()" style="flex:1;margin:0;"><option value="">- المرحلة -</option></select>
-    <select id="resultSubjectSelect" onchange="updateResultExams()" style="flex:1;margin:0;"><option value="">- المادة -</option></select>
-    <select id="resultClassSelect"   onchange="updateResultExams()" style="flex:1;margin:0;"></select>
+
+<!-- ═══ تصحيح الامتحان ═══ -->
+<section id="results" class="tab">
+  <div class="hdr"><h2>تصحيح الامتحان</h2></div>
+  <div class="card flex" style="margin-bottom:8px">
+    <select id="rYr" onchange="updExams()" style="flex:1"><option value="">- الموسم -</option></select>
+    <select id="rStg" onchange="updExams()" style="flex:1"><option value="">- المرحلة -</option></select>
+    <select id="rSub" onchange="updExams()" style="flex:1"><option value="">- المادة -</option></select>
+    <select id="rCls" onchange="updExams()" style="flex:1"></select>
   </div>
-  <div class="card flex-row" style="margin-bottom:15px;">
-    <select id="resultExamSelect" onchange="renderResultsTable()" style="flex:2;margin:0;"></select>
-    <input type="text" id="searchStudent" placeholder="بحث باسم التلميذ..." onkeyup="renderResultsTable()" style="flex:1;margin:0;">
+  <div class="card flex" style="margin-bottom:12px">
+    <select id="rEx" onchange="renderRes()" style="flex:2;margin:0"></select>
+    <input id="rSearch" placeholder="بحث باسم التلميذ..." onkeyup="renderRes()" style="flex:1;margin:0">
   </div>
-  <div class="card flex-row" style="justify-content:space-between;">
-    <div id="examInfoCard" style="text-align:right;flex:1;display:none;">
-      <h3 id="infoExamTitle" style="color:var(--primary);margin:0;"></h3>
-      <p id="infoExamDetails" style="font-size:.9rem;color:var(--gray);margin:0;display:none;"></p>
-      <p id="infoExamStats"   style="font-size:.9rem;margin:0;"></p>
+  <div class="card flex" style="justify-content:space-between">
+    <div id="exInfo" style="text-align:right;flex:1;display:none">
+      <h3 id="infoTitle" style="color:var(--pri);margin:0"></h3>
+      <p id="infoStats" style="font-size:.88rem;color:var(--gray);margin:0"></p>
     </div>
-    <div class="dropdown">
-      <button onclick="toggleDropdown()" class="btn btn-primary"><i class="fas fa-file-alt"></i> ورقة الإجابة</button>
-      <div id="myDropdown" class="dropdown-content">
-        <a href="#" onclick="event.preventDefault();editCurrentExam()"><i class="fas fa-edit" style="color:var(--warning);"></i> تعديل الامتحان</a>
-        <a href="#" onclick="event.preventDefault();deleteCurrentExam()"><i class="fas fa-trash" style="color:var(--danger);"></i> حذف الامتحان</a>
-        <a href="#" onclick="event.preventDefault();openBroadcastModal()"><i class="fas fa-copy" style="color:var(--secondary);"></i> تعميم الامتحان</a>
-        <hr style="margin:5px 0;">
-        <a href="#" onclick="event.preventDefault();printCurrentExam('pdf')"><i class="fas fa-file-pdf" style="color:var(--dark);"></i> تحميل PDF</a>
-        <a href="#" onclick="event.preventDefault();printCurrentExam('png')"><i class="fas fa-image" style="color:var(--success);"></i> تحميل PNG</a>
+    <div class="dd">
+      <button onclick="togDD()" class="btn btn-p"><i class="fas fa-file-alt"></i> ورقة الإجابة</button>
+      <div id="ddMenu" class="dd-c">
+        <a href="#" onclick="event.preventDefault();editEx()"><i class="fas fa-edit" style="color:var(--warn)"></i> تعديل الامتحان</a>
+        <a href="#" onclick="event.preventDefault();delEx()"><i class="fas fa-trash" style="color:var(--no)"></i> حذف الامتحان</a>
+        <a href="#" onclick="event.preventDefault();openModal('bcastModal')"><i class="fas fa-copy" style="color:var(--sec)"></i> تعميم الامتحان</a>
+        <hr style="margin:4px 0">
+        <a href="#" onclick="event.preventDefault();printEx('pdf')"><i class="fas fa-file-pdf" style="color:var(--dark)"></i> تحميل PDF</a>
+        <a href="#" onclick="event.preventDefault();printEx('png')"><i class="fas fa-image" style="color:var(--ok)"></i> تحميل PNG</a>
       </div>
     </div>
   </div>
-  <div class="card flex-row" style="margin-bottom:15px;">
-    <button id="toggleCompBtn" class="btn btn-warning" onclick="toggleCompetencies()"><i class="fas fa-exchange-alt"></i> إظهار الكفايات</button>
-    <button class="btn btn-primary" onclick="showStatistics()"><i class="fas fa-chart-pie"></i> إحصائيات</button>
+  <div class="card flex" style="margin-bottom:12px">
+    <button class="btn btn-w" id="compBtn" onclick="togComp()"><i class="fas fa-exchange-alt"></i> إظهار الكفايات</button>
+    <button class="btn btn-p" onclick="showStats()"><i class="fas fa-chart-pie"></i> إحصائيات</button>
   </div>
-  <div class="table-responsive card" style="padding:10px;">
-    <table><thead><tr id="resultsTableHead"></tr></thead><tbody id="resultsTableBody"></tbody></table>
+  <div class="tbl-r card" style="padding:8px">
+    <table><thead><tr id="resHead"></tr></thead><tbody id="resBody"></tbody></table>
   </div>
 </section>
 </main>
-<!-- MODALS -->
-<div class="modal" id="bulkAddModal"><div class="modal-content">
-  <div class="modal-header"><h3>إضافة سريعة</h3><button class="close-btn" onclick="closeModal('bulkAddModal')">&times;</button></div>
-  <textarea id="bulkStudentsText" rows="10" style="margin-bottom:15px;"></textarea>
-  <button class="btn btn-success" onclick="saveBulkStudents()" style="width:100%;">حفظ</button>
-</div></div>
-<div class="modal" id="studentModal"><div class="modal-content" style="max-width:400px;">
-  <div class="modal-header"><h3 id="studentModalTitle">تعديل تلميذ</h3><button class="close-btn" onclick="closeModal('studentModal')">&times;</button></div>
-  <input type="hidden" id="editStudentId">
-  <label>الاسم الكامل</label><input type="text" id="editStudentName">
-  <label>الرقم الترتيبي</label><input type="number" id="editStudentRoll">
-  <div id="moveClassWrapper"><label>نقل إلى قسم آخر</label><select id="editStudentClass"></select></div>
-  <button class="btn btn-primary" onclick="saveStudentChanges()" style="width:100%;margin-top:10px;">حفظ التغييرات</button>
-</div></div>
-<div class="modal" id="editScoreModal"><div class="modal-content">
-  <div class="modal-header"><h3>تعديل النقط يدوياً</h3><button class="close-btn" onclick="closeModal('editScoreModal')">&times;</button></div>
-  <input type="hidden" id="editScoreSId">
-  <div id="editScoreGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-bottom:15px;"></div>
-  <button class="btn btn-primary" onclick="saveManualScores()" style="width:100%;">حفظ</button>
-</div></div>
-<div class="modal" id="previewModal"><div class="modal-content" style="max-width:800px;">
-  <div class="modal-header">
-    <div style="display:flex;align-items:center;gap:10px;flex:1;">
-      <h3 id="previewModalTitle" style="margin:0;font-size:1rem;">إجابات التلميذ(ة)</h3>
-      <button id="previewImageBtn" onclick="showScannedImage()" title="معاينة ورقة الإجابة الملتقطة"
-        style="background:var(--primary);border:none;color:white;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:.8rem;display:none;align-items:center;gap:5px;white-space:nowrap;">
-        <i class="fas fa-image"></i> الورقة الملتقطة
-      </button>
-    </div>
-    <button class="close-btn" onclick="closeModal('previewModal')">&times;</button>
-  </div>
-  <div id="previewContainer" class="preview-grid"></div>
-</div></div>
-<!-- نافذة عرض صورة الورقة الملتقطة -->
-<div class="modal" id="scannedImageModal">
-  <div class="modal-content" style="max-width:90vw;max-height:90vh;padding:10px;">
-    <div class="modal-header" style="margin-bottom:8px;">
-      <h3 style="font-size:1rem;">ورقة الإجابة الملتقطة</h3>
-      <button class="close-btn" onclick="closeModal('scannedImageModal')">&times;</button>
-    </div>
-    <img id="scannedImageView" src="" style="width:100%;border-radius:6px;display:block;" alt="ورقة الإجابة">
-  </div>
-</div>
-<div class="modal" id="chartModal"><div class="modal-content">
-  <div class="modal-header"><h3>إحصائيات الكفايات</h3><button class="close-btn" onclick="closeModal('chartModal')">&times;</button></div>
-  <canvas id="statsChart"></canvas>
-</div></div>
-<div class="modal" id="backupModal"><div class="modal-content" style="max-width:400px;text-align:center;">
-  <div class="modal-header"><h3>النسخة الاحتياطية</h3><button class="close-btn" onclick="closeModal('backupModal')">&times;</button></div>
-  <button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="exportData()"><i class="fas fa-download"></i> تصدير JSON</button>
-  <hr style="border:0;border-top:1px solid var(--border);margin:15px 0;">
-  <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
-  <button class="btn btn-warning" style="width:100%;" onclick="document.getElementById('importFile').click()"><i class="fas fa-upload"></i> استيراد JSON</button>
-</div></div>
-<div class="modal" id="broadcastModal"><div class="modal-content" style="max-width:400px;">
-  <div class="modal-header"><h3>تعميم الامتحان</h3><button class="close-btn" onclick="closeModal('broadcastModal')">&times;</button></div>
-  <div id="broadcastClassesList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;max-height:250px;overflow-y:auto;padding:5px;"></div>
-  <button class="btn btn-primary" id="confirmBroadcastBtn" onclick="confirmBroadcastExam()" style="width:100%;"><i class="fas fa-check-circle"></i> تأكيد التعميم</button>
-</div></div>
-<!-- SCANNER MODAL -->
-<div class="modal" id="scannerModal" style="padding:0;background:#000;">
-<div class="modal-content">
-  <!-- الشريط العلوي -->
-  <div id="scanner-topbar">
-    <button onclick="stopScanner()" style="background:none;border:none;color:white;font-size:1.4rem;cursor:pointer;flex-shrink:0;"><i class="fas fa-arrow-left"></i></button>
-    <h3 id="scannerTitle" style="color:white;margin:0;font-size:1rem;text-align:center;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></h3>
-    <div style="display:flex;align-items:center;gap:7px;flex-shrink:0;">
-      <button id="autoModeBtn" onclick="toggleScanMode()" style="background:rgba(34,197,94,.35);border:1.5px solid #22c55e;color:white;font-size:.75rem;cursor:pointer;border-radius:7px;padding:5px 9px;display:flex;align-items:center;gap:4px;">
-        <i id="autoModeIcon" class="fas fa-magic"></i><span id="autoModeLabel">تلقائي</span>
-      </button>
-      <button id="manualCaptureBtn" onclick="forceCapture()" style="display:none;background:rgba(245,158,11,.85);border:none;color:white;font-size:.85rem;cursor:pointer;border-radius:7px;padding:7px 13px;font-weight:700;">
-        <i class="fas fa-camera"></i> التقاط
-      </button>
+
+<!-- ═══ Modals ═══ -->
+<div class="modal" id="bulkModal"><div class="modal-c"><div class="modal-hd"><h3>إضافة سريعة (اسم في كل سطر)</h3><button class="close" onclick="closeM('bulkModal')">&times;</button></div><textarea id="bulkTxt" rows="10" placeholder="الاسم الأول&#10;الاسم الثاني&#10;..."></textarea><button class="btn btn-s" style="width:100%" onclick="saveBulk()">حفظ</button></div></div>
+
+<div class="modal" id="stuModal"><div class="modal-c" style="max-width:400px"><div class="modal-hd"><h3 id="stuMTitle">تعديل تلميذ</h3><button class="close" onclick="closeM('stuModal')">&times;</button></div><input type="hidden" id="stuMId"><label>الاسم الكامل</label><input id="stuMName"><label>الرقم الترتيبي</label><input type="number" id="stuMRoll"><div id="moveWrap"><label>نقل إلى قسم آخر</label><select id="stuMCls"></select></div><button class="btn btn-p" style="width:100%;margin-top:8px" onclick="saveStu()">حفظ</button></div></div>
+
+<div class="modal" id="prevModal"><div class="modal-c" style="max-width:800px"><div class="modal-hd"><div style="display:flex;align-items:center;gap:8px;flex:1"><h3 id="prevTitle" style="margin:0;font-size:.95rem"></h3><button id="prevImgBtn" onclick="showScanImg()" style="background:var(--pri);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.78rem;display:none;align-items:center;gap:4px"><i class="fas fa-image"></i> الورقة الملتقطة</button></div><button class="close" onclick="closeM('prevModal')">&times;</button></div><div id="prevCont" class="prev-grid"></div></div></div>
+
+<div class="modal" id="scanImgModal"><div class="modal-c" style="max-width:90vw;max-height:90vh;padding:10px"><div class="modal-hd"><h3 style="font-size:.95rem">ورقة الإجابة الملتقطة</h3><button class="close" onclick="closeM('scanImgModal')">&times;</button></div><img id="scanImgView" src="" style="width:100%;border-radius:6px"></div></div>
+
+<div class="modal" id="chartModal"><div class="modal-c"><div class="modal-hd"><h3>إحصائيات الكفايات</h3><button class="close" onclick="closeM('chartModal')">&times;</button></div><canvas id="statsCvs"></canvas></div></div>
+
+<div class="modal" id="bkpModal"><div class="modal-c" style="max-width:400px;text-align:center"><div class="modal-hd"><h3>النسخة الاحتياطية</h3><button class="close" onclick="closeM('bkpModal')">&times;</button></div><button class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="exportJSON()"><i class="fas fa-download"></i> تصدير JSON</button><hr style="border:0;border-top:1px solid var(--border);margin:12px 0"><input type="file" id="impFile" accept=".json" style="display:none" onchange="importJSON(event)"><button class="btn btn-w" style="width:100%" onclick="document.getElementById('impFile').click()"><i class="fas fa-upload"></i> استيراد JSON</button></div></div>
+
+<div class="modal" id="bcastModal"><div class="modal-c" style="max-width:400px"><div class="modal-hd"><h3>تعميم الامتحان</h3><button class="close" onclick="closeM('bcastModal')">&times;</button></div><div id="bcastList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:250px;overflow-y:auto"></div><button class="btn btn-p" style="width:100%" onclick="doBcast()"><i class="fas fa-check-circle"></i> تأكيد التعميم</button></div></div>
+
+<!-- Scanner -->
+<div class="modal" id="scanModal" style="padding:0;background:#000">
+<div class="modal-c">
+  <div id="scan-top">
+    <button onclick="stopScan()" style="background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer"><i class="fas fa-arrow-left"></i></button>
+    <h3 id="scanTitle" style="color:#fff;margin:0;font-size:.95rem;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></h3>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button id="autoBtn" onclick="togMode()" style="background:rgba(16,185,129,.3);border:1.5px solid var(--ok);color:#fff;font-size:.72rem;cursor:pointer;border-radius:6px;padding:5px 8px;display:flex;align-items:center;gap:4px"><i id="autoIco" class="fas fa-magic"></i><span id="autoLbl">تلقائي</span></button>
+      <button id="capBtn" onclick="forceCap()" style="display:none;background:rgba(245,158,11,.85);border:none;color:#fff;font-size:.82rem;cursor:pointer;border-radius:6px;padding:6px 12px;font-weight:700"><i class="fas fa-camera"></i> التقاط</button>
     </div>
   </div>
-  <!-- منطقة الفيديو: flex:1 تملأ المساحة المتبقية -->
-  <div id="video-area">
-    <video id="video-feed" autoplay playsinline></video>
-    <div id="guide-rect">
-      <div class="cm" id="cm-tl"></div><div class="cm" id="cm-tr"></div>
-      <div class="cm" id="cm-bl"></div><div class="cm" id="cm-br"></div>
-      <div id="scan-line"></div>
-      <div id="stab-bar"></div>
-    </div>
-    <canvas id="preview-canvas"></canvas>
-    <canvas id="analysis-canvas"></canvas>
-    <!-- شريط التوجيه داخل video-area (position:absolute) -->
-    <div id="scanner-bottom"><p id="scanner-instr">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p></div>
+  <div id="vid-area">
+    <video id="vid" autoplay playsinline></video>
+    <div id="guide"><div class="cm" id="cm-tl"></div><div class="cm" id="cm-tr"></div><div class="cm" id="cm-bl"></div><div class="cm" id="cm-br"></div><div id="scanln"></div><div id="stab"></div></div>
+    <canvas id="prev-canvas"></canvas>
+    <canvas id="an-canvas"></canvas>
+    <div id="scan-bot"><p id="instr">وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر</p></div>
   </div>
-  <!-- شريط النتيجة: flex-shrink:0 — يظهر أسفل الـ flex column مباشرة -->
-  <div id="result-overlay">
-    <div id="result-student-name"></div>
-    <div id="result-score"></div>
-    <div id="result-btns">
-      <button class="btn btn-warning" onclick="retakePhoto()"><i class="fas fa-redo"></i> إعادة التصحيح</button>
-      <button class="btn btn-success" onclick="confirmSaveScanned()"><i class="fas fa-check-circle"></i> حفظ النتيجة</button>
+  <div id="res-ov">
+    <div id="res-name"></div>
+    <div id="res-score"></div>
+    <div id="res-btns">
+      <button class="btn btn-w" onclick="retake()"><i class="fas fa-redo"></i> إعادة</button>
+      <button class="btn btn-s" onclick="confirmSave()"><i class="fas fa-check-circle"></i> حفظ</button>
     </div>
   </div>
 </div>
 </div>
-<!-- قالب الطباعة -->
-<div id="print-wrapper"><div class="omr-sheet" id="omr-print-template"><div id="omr-sheet-inner"></div></div></div>
+
+<div id="print-wrap"><div id="print-target"></div></div>
 
 <script>
-// ================================================================
-// IndexedDB
-// ================================================================
-const DB_NAME='OMR_System_V3',DB_VERSION=1;let db;
+/* ═══════════════════════════════════════════════════════════════
+   STATE & CONSTANTS
+   ═══════════════════════════════════════════════════════════════ */
+const DB='OMR_Pro_v1',VER=1;let db;
+const S={classes:[],exams:[],results:{},settings:null,activeScan:null,stream:null};
+const uid=()=>'_'+Math.random().toString(36).slice(2,11);
+const closeM=id=>document.getElementById(id).classList.remove('on');
+const openModal=id=>document.getElementById(id).classList.add('on');
+const AR=['أ','ب','ج','د','هـ','و'];
+const SHEET_W=794,SHEET_H=1123; // A4 at 96 DPI
+
+/* ═══════════════════════════════════════════════════════════════
+   IndexedDB
+   ═══════════════════════════════════════════════════════════════ */
 const IDB={
-  init(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{let d=e.target.result;['classes','exams','results','settings'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'});});};r.onsuccess=e=>{db=e.target.result;res();};r.onerror=e=>rej(e);});},
-  async getAll(s){return new Promise(r=>{const q=db.transaction(s,'readonly').objectStore(s).getAll();q.onsuccess=()=>r(q.result||[]);});},
-  async put(s,d){return new Promise(r=>{const tx=db.transaction(s,'readwrite');tx.objectStore(s).put(d);tx.oncomplete=()=>r();});},
-  async delete(s,id){return new Promise(r=>{const tx=db.transaction(s,'readwrite');tx.objectStore(s).delete(id);tx.oncomplete=()=>r();});},
-  async clear(s){return new Promise(r=>{const tx=db.transaction(s,'readwrite');tx.objectStore(s).clear();tx.oncomplete=()=>r();});}
+  init(){return new Promise((ok,no)=>{const r=indexedDB.open(DB,VER);r.onupgradeneeded=e=>{const d=e.target.result;['classes','exams','results','settings'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};r.onsuccess=e=>{db=e.target.result;ok()};r.onerror=no})},
+  all(s){return new Promise(ok=>{const r=db.transaction(s).objectStore(s).getAll();r.onsuccess=()=>ok(r.result||[])})},
+  put(s,d){return new Promise(ok=>{const t=db.transaction(s,'readwrite');t.objectStore(s).put(d);t.oncomplete=ok})},
+  del(s,id){return new Promise(ok=>{const t=db.transaction(s,'readwrite');t.objectStore(s).delete(id);t.oncomplete=ok})},
+  clr(s){return new Promise(ok=>{const t=db.transaction(s,'readwrite');t.objectStore(s).clear();t.oncomplete=ok})}
 };
 
-const AppState={classes:[],exams:[],results:{},settings:null,activeScan:null,videoStream:null};
-const generateId=()=>'_'+Math.random().toString(36).substr(2,9);
-const closeModal=id=>document.getElementById(id).style.display='none';
-const ARABIC_LETTERS=['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
-
-async function initApp(){
-  try{
-    await IDB.init();
-    AppState.classes=await IDB.getAll('classes');
-    AppState.exams=await IDB.getAll('exams');
-    const rawRes=await IDB.getAll('results');
-    AppState.results={};
-    rawRes.forEach(r=>{const[eId,sId]=r.id.split('___');if(!AppState.results[eId])AppState.results[eId]={};AppState.results[eId][sId]=r;});
-    const saved=await IDB.getAll('settings');
-    if(saved.length>0&&saved[0]&&saved[0].levels&&saved[0].subjects){
-      AppState.settings=saved[0];
-      if(!AppState.settings.years){AppState.settings.years=['2025/2026','2026/2027','2027/2028','2028/2029','2029/2030'].map(n=>({id:generateId(),name:n,checked:false}));await IDB.put('settings',AppState.settings);}
-    }else{AppState.settings=getDefaultSettings();await IDB.put('settings',AppState.settings);}
-    const ui=JSON.parse(localStorage.getItem('omr_uistate_v3'))||{tab:'settings'};
-    switchTab(ui.tab,false);
-    if(ui.tab==='results'&&ui.classId){document.getElementById('resultClassSelect').value=ui.classId;updateResultExams();if(ui.examId){document.getElementById('resultExamSelect').value=ui.examId;renderResultsTable();}}
-    if(ui.tab==='classes'&&ui.classId){document.getElementById('classSelect').value=ui.classId;renderStudents();}
-    if(window.innerWidth<=768)document.getElementById('closeMenuBtn').style.display='block';
-  }catch(e){console.error(e);}
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════ */
+async function init(){
+  await IDB.init();
+  S.classes=await IDB.all('classes');
+  S.exams=await IDB.all('exams');
+  const rr=await IDB.all('results');
+  S.results={};rr.forEach(r=>{const[e,s]=r.id.split('___');if(!S.results[e])S.results[e]={};S.results[e][s]=r});
+  const ss=await IDB.all('settings');
+  if(ss.length&&ss[0]&&ss[0].levels){S.settings=ss[0];if(!S.settings.years)S.settings.years=defYears()}
+  else{S.settings=defSets();await IDB.put('settings',S.settings)}
+  go('settings');
+}
+function defYears(){return['2025/2026','2026/2027','2027/2028','2028/2029','2029/2030'].map(n=>({id:uid(),name:n,checked:false}))}
+function defSets(){
+  const dc=p=>Array.from({length:10},(_,i)=>({id:uid(),name:`${p} ${i+1}`,checked:false}));
+  return{id:'global',levels:[
+    {id:uid(),name:'الأولى إعدادي',classes:dc('الأولى')},
+    {id:uid(),name:'الثانية إعدادي',classes:dc('الثانية')},
+    {id:uid(),name:'الثالثة إعدادي',classes:dc('الثالثة')}
+  ],subjects:['اللغة العربية','اللغة الفرنسية','الرياضيات','الفيزياء','علوم الحياة والأرض','التاريخ والجغرافيا','التربية الإسلامية'].map(n=>({id:uid(),name:n,checked:false})),
+  stages:['المرحلة الأولى','المرحلة الثانية','المرحلة الثالثة','المرحلة الرابعة','المرحلة الخامسة'].map(n=>({id:uid(),name:n,checked:false})),
+  years:defYears()}
 }
 
-function saveUIState(){const s={tab:document.querySelector('.tab-pane.active')?.id||'classes',year:document.getElementById('yearSelect')?.value||'',classId:document.getElementById('classSelect')?.value||document.getElementById('resultClassSelect')?.value||'',examId:document.getElementById('resultExamSelect')?.value||''};localStorage.setItem('omr_uistate_v3',JSON.stringify(s));}
-
-function getDefaultSettings(){
-  const dc=p=>Array.from({length:10},(_,i)=>({id:generateId(),name:`${p} ${i+1}`,checked:false}));
-  return{id:'global_settings',
-    levels:[{id:generateId(),name:'الأولى إعدادي',classes:dc('الأولى')},{id:generateId(),name:'الثانية إعدادي',classes:dc('الثانية')},{id:generateId(),name:'الثالثة إعدادي',classes:dc('الثالثة')}],
-    subjects:['اللغة العربية','اللغة الفرنسية','الرياضيات','الفيزياء','علوم الحياة والأرض'].map(n=>({id:generateId(),name:n,checked:false})),
-    stages:['المرحلة الأولى','المرحلة الثانية','المرحلة الثالثة','المرحلة الرابعة','المرحلة الخامسة'].map(n=>({id:generateId(),name:n,checked:false})),
-    years:['2025/2026','2026/2027','2027/2028','2028/2029','2029/2030'].map(n=>({id:generateId(),name:n,checked:false}))};
+/* ═══════════════════════════════════════════════════════════════
+   NAV
+   ═══════════════════════════════════════════════════════════════ */
+function togMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbOv').classList.toggle('on')}
+function go(t){
+  document.querySelectorAll('.tab,.nav li').forEach(e=>e.classList.remove('on'));
+  document.getElementById(t)?.classList.add('on');
+  document.getElementById('n-'+t)?.classList.add('on');
+  if(t==='classes'){fillDD('yrSel',S.settings.years);fillClsDD('clsSel')}
+  if(t==='exam'){fillDD('exYr',S.settings.years);fillDD('exSub',S.settings.subjects);fillDD('exStg',S.settings.stages);fillClsDD('exCls')}
+  if(t==='results'){fillDD('rYr',S.settings.years);fillDD('rStg',S.settings.stages);fillDD('rSub',S.settings.subjects);fillClsDD('rCls')}
+  if(t==='settings')renderSets();
+  if(innerWidth<=768){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('on')}
 }
+function fillDD(id,list){const s=document.getElementById(id),v=s.value;s.innerHTML='';list.filter(i=>i.checked).forEach(i=>s.innerHTML+=`<option value="${i.name}">${i.name}</option>`);if(v&&list.find(i=>i.name===v&&i.checked))s.value=v}
+function fillClsDD(id){const s=document.getElementById(id),v=s.value;s.innerHTML='<option value="">-- اختر القسم --</option>';let cc=[];S.settings.levels.forEach(l=>l.classes.forEach(c=>{if(c.checked)cc.push(c)}));cc.forEach(c=>{s.innerHTML+=`<option value="${c.id}">${c.name}</option>`;if(!S.classes.find(ac=>ac.id===c.id)){let n={id:c.id,name:c.name,students:[]};S.classes.push(n);IDB.put('classes',n)}});if(v&&cc.find(c=>c.id===v))s.value=v;else if(id==='clsSel'&&cc.length){s.value=cc[0].id;renderStu()}}
 
-// ================================================================
-// Settings
-// ================================================================
-function renderSettings(){
-  const g=document.getElementById('settingsLevelsGrid');g.innerHTML='';
-  AppState.settings.levels.forEach(lvl=>{
-    let h=`<div class="settings-card"><h4>${lvl.name}</h4><ul class="settings-list">`;
-    lvl.classes.forEach(c=>{h+=`<li><label><input type="checkbox" ${c.checked?'checked':''} onchange="toggleSetting('class','${lvl.id}','${c.id}')"> ${c.name}</label><div class="settings-actions"><button class="btn-edit-item" onclick="editSettingItem('class','${lvl.id}','${c.id}')"><i class="fas fa-edit"></i></button><button class="btn-del-item" onclick="deleteSettingItem('class','${lvl.id}','${c.id}')"><i class="fas fa-trash"></i></button></div></li>`;});
-    g.innerHTML+=h+`</ul><button class="btn btn-primary btn-sm" style="width:100%" onclick="addNewSettingItem('class','${lvl.id}')"><i class="fas fa-plus"></i> إضافة قسم</button></div>`;
+/* ═══════════════════════════════════════════════════════════════
+   SETTINGS
+   ═══════════════════════════════════════════════════════════════ */
+function renderSets(){
+  const g=document.getElementById('sLvls');g.innerHTML='';
+  S.settings.levels.forEach(l=>{
+    let h=`<div class="sets-card"><h4>${l.name}</h4><ul class="sets-lst">`;
+    l.classes.forEach(c=>{h+=`<li><label><input type="checkbox" ${c.checked?'checked':''} onchange="togSet('class','${l.id}','${c.id}')"> ${c.name}</label><div class="sets-acts"><button class="btn-ed" onclick="edSet('class','${l.id}','${c.id}')"><i class="fas fa-edit"></i></button><button class="btn-rm" onclick="rmSet('class','${l.id}','${c.id}')"><i class="fas fa-trash"></i></button></div></li>`});
+    g.innerHTML+=h+`</ul><button class="btn btn-p btn-sm" style="width:100%" onclick="addSet('class','${l.id}')"><i class="fas fa-plus"></i> إضافة قسم</button></div>`
   });
-  const rl=(id,arr,type)=>{const l=document.getElementById(id);l.innerHTML='';arr.forEach(item=>{l.innerHTML+=`<li><label><input type="checkbox" ${item.checked?'checked':''} onchange="toggleSetting('${type}','','${item.id}')"> ${item.name}</label><div class="settings-actions"><button class="btn-edit-item" onclick="editSettingItem('${type}','','${item.id}')"><i class="fas fa-edit"></i></button><button class="btn-del-item" onclick="deleteSettingItem('${type}','','${item.id}')"><i class="fas fa-trash"></i></button></div></li>`;});};
-  rl('settingsSubjectsList',AppState.settings.subjects,'subject');
-  rl('settingsStagesList',AppState.settings.stages,'stage');
-  rl('settingsYearsList',AppState.settings.years,'year');
+  const rl=(id,arr,type)=>{const l=document.getElementById(id);l.innerHTML='';arr.forEach(i=>{l.innerHTML+=`<li><label><input type="checkbox" ${i.checked?'checked':''} onchange="togSet('${type}','','${i.id}')"> ${i.name}</label><div class="sets-acts"><button class="btn-ed" onclick="edSet('${type}','','${i.id}')"><i class="fas fa-edit"></i></button><button class="btn-rm" onclick="rmSet('${type}','','${i.id}')"><i class="fas fa-trash"></i></button></div></li>`})};
+  rl('sSubs',S.settings.subjects,'subject');rl('sStg',S.settings.stages,'stage');rl('sYrs',S.settings.years,'year')
 }
-async function toggleSetting(type,lvlId,itemId){let item;if(type==='class')item=AppState.settings.levels.find(l=>l.id===lvlId).classes.find(c=>c.id===itemId);else if(type==='subject')item=AppState.settings.subjects.find(s=>s.id===itemId);else if(type==='year')item=AppState.settings.years.find(s=>s.id===itemId);else item=AppState.settings.stages.find(s=>s.id===itemId);item.checked=!item.checked;await IDB.put('settings',AppState.settings);}
-async function editSettingItem(type,lvlId,itemId){let item,n=prompt('أدخل الاسم الجديد:');if(!n||!n.trim())return;if(type==='class')item=AppState.settings.levels.find(l=>l.id===lvlId).classes.find(c=>c.id===itemId);else if(type==='subject')item=AppState.settings.subjects.find(s=>s.id===itemId);else if(type==='year')item=AppState.settings.years.find(s=>s.id===itemId);else item=AppState.settings.stages.find(s=>s.id===itemId);item.name=n.trim();await IDB.put('settings',AppState.settings);renderSettings();}
-async function deleteSettingItem(type,lvlId,itemId){if(!confirm('تأكيد الحذف؟'))return;if(type==='class'){let l=AppState.settings.levels.find(l=>l.id===lvlId);l.classes=l.classes.filter(c=>c.id!==itemId);}else if(type==='subject')AppState.settings.subjects=AppState.settings.subjects.filter(s=>s.id!==itemId);else if(type==='year')AppState.settings.years=AppState.settings.years.filter(s=>s.id!==itemId);else AppState.settings.stages=AppState.settings.stages.filter(s=>s.id!==itemId);await IDB.put('settings',AppState.settings);renderSettings();}
-async function addNewSettingItem(type,lvlId){let n=prompt('أدخل الاسم:');if(!n||!n.trim())return;let ni={id:generateId(),name:n.trim(),checked:true};if(type==='class')AppState.settings.levels.find(l=>l.id===lvlId).classes.push(ni);else if(type==='subject')AppState.settings.subjects.push(ni);else if(type==='year')AppState.settings.years.push(ni);else AppState.settings.stages.push(ni);await IDB.put('settings',AppState.settings);renderSettings();}
-function populateSettingsDropdown(id,list){const s=document.getElementById(id);const v=s.value;s.innerHTML='';list.filter(i=>i.checked).forEach(item=>s.innerHTML+=`<option value="${item.name}">${item.name}</option>`);if(v&&list.find(i=>i.name===v&&i.checked))s.value=v;}
-function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarOverlay')?.classList.toggle('show');}
-function switchTab(tId,save=true){
-  document.querySelectorAll('.tab-pane,.nav-links li').forEach(el=>el.classList.remove('active'));
-  document.getElementById(tId)?.classList.add('active');
-  document.getElementById('nav-'+tId)?.classList.add('active');
-  if(tId==='classes'){populateSettingsDropdown('yearSelect',AppState.settings.years);populateClassesDropdown('classSelect');}
-  if(tId==='create-exam'){populateSettingsDropdown('examYearSelect',AppState.settings.years);populateSettingsDropdown('examSubjectSelect',AppState.settings.subjects);populateSettingsDropdown('examStageSelect',AppState.settings.stages);populateClassesDropdown('examClassSelect');}
-  if(tId==='results'){populateSettingsDropdown('resultYearSelect',AppState.settings.years);populateSettingsDropdown('resultStageSelect',AppState.settings.stages);populateSettingsDropdown('resultSubjectSelect',AppState.settings.subjects);populateClassesDropdown('resultClassSelect');}
-  if(tId==='settings')renderSettings();
-  if(window.innerWidth<=768){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay')?.classList.remove('show');}
-  if(save)saveUIState();
+async function togSet(t,lid,iid){let i;if(t==='class')i=S.settings.levels.find(l=>l.id===lid).classes.find(c=>c.id===iid);else if(t==='subject')i=S.settings.subjects.find(s=>s.id===iid);else if(t==='year')i=S.settings.years.find(s=>s.id===iid);else i=S.settings.stages.find(s=>s.id===iid);i.checked=!i.checked;await IDB.put('settings',S.settings)}
+async function edSet(t,lid,iid){let n=prompt('الاسم الجديد:');if(!n?.trim())return;let i;if(t==='class')i=S.settings.levels.find(l=>l.id===lid).classes.find(c=>c.id===iid);else if(t==='subject')i=S.settings.subjects.find(s=>s.id===iid);else if(t==='year')i=S.settings.years.find(s=>s.id===iid);else i=S.settings.stages.find(s=>s.id===iid);i.name=n.trim();await IDB.put('settings',S.settings);renderSets()}
+async function rmSet(t,lid,iid){if(!confirm('تأكيد الحذف؟'))return;if(t==='class'){let l=S.settings.levels.find(l=>l.id===lid);l.classes=l.classes.filter(c=>c.id!==iid)}else if(t==='subject')S.settings.subjects=S.settings.subjects.filter(s=>s.id!==iid);else if(t==='year')S.settings.years=S.settings.years.filter(s=>s.id!==iid);else S.settings.stages=S.settings.stages.filter(s=>s.id!==iid);await IDB.put('settings',S.settings);renderSets()}
+async function addSet(t,lid){let n=prompt('أدخل الاسم:');if(!n?.trim())return;let ni={id:uid(),name:n.trim(),checked:true};if(t==='class')S.settings.levels.find(l=>l.id===lid).classes.push(ni);else if(t==='subject')S.settings.subjects.push(ni);else if(t==='year')S.settings.years.push(ni);else S.settings.stages.push(ni);await IDB.put('settings',S.settings);renderSets()}
+
+/* ═══════════════════════════════════════════════════════════════
+   CLASSES & STUDENTS
+   ═══════════════════════════════════════════════════════════════ */
+function renderStu(){
+  const cid=document.getElementById('clsSel').value,yr=document.getElementById('yrSel').value,tb=document.getElementById('stuTb');
+  tb.innerHTML='';if(!cid||!yr)return;
+  const cls=S.classes.find(c=>c.id===cid);
+  cls.students.filter(s=>s.year===yr).sort((a,b)=>(a.roll||0)-(b.roll||0)).forEach((s,i)=>{
+    s.roll=s.roll||(i+1);
+    tb.innerHTML+=`<tr><td>${s.roll}</td><td style="text-align:right">${s.name}</td><td class="acts"><button class="btn btn-p btn-sm" onclick="edStuModal('${cid}','${s.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-d btn-sm" onclick="delStu('${cid}','${s.id}')"><i class="fas fa-trash"></i></button></td></tr>`
+  })
+}
+function addStuModal(){
+  if(!document.getElementById('clsSel').value||!document.getElementById('yrSel').value)return alert('اختر الموسم والقسم أولاً');
+  document.getElementById('stuMTitle').innerText='إضافة تلميذ';document.getElementById('stuMId').value='';document.getElementById('stuMName').value='';
+  const cls=S.classes.find(c=>c.id===document.getElementById('clsSel').value),yr=document.getElementById('yrSel').value;
+  let ys=cls.students.filter(s=>s.year===yr);document.getElementById('stuMRoll').value=ys.length?Math.max(...ys.map(s=>s.roll||0))+1:1;
+  document.getElementById('moveWrap').style.display='none';openModal('stuModal')
+}
+function edStuModal(cid,sid){
+  const s=S.classes.find(c=>c.id===cid).students.find(x=>x.id===sid);
+  document.getElementById('stuMTitle').innerText='تعديل تلميذ';document.getElementById('stuMId').value=sid;document.getElementById('stuMName').value=s.name;document.getElementById('stuMRoll').value=s.roll||'';
+  document.getElementById('moveWrap').style.display='block';const sel=document.getElementById('stuMCls');sel.innerHTML='';S.classes.forEach(c=>sel.innerHTML+=`<option value="${c.id}" ${c.id===cid?'selected':''}>${c.name}</option>`);
+  openModal('stuModal')
+}
+async function saveStu(){
+  const sid=document.getElementById('stuMId').value,name=document.getElementById('stuMName').value.trim(),roll=parseInt(document.getElementById('stuMRoll').value)||0,ocid=document.getElementById('clsSel').value,yr=document.getElementById('yrSel').value;
+  if(!name)return;
+  if(sid){const nc=document.getElementById('stuMCls').value,oc=S.classes.find(c=>c.id===ocid),si=oc.students.findIndex(x=>x.id===sid),sd=oc.students[si];sd.name=name;sd.roll=roll;if(ocid!==nc){oc.students.splice(si,1);S.classes.find(c=>c.id===nc).students.push(sd);await IDB.put('classes',oc);await IDB.put('classes',S.classes.find(c=>c.id===nc))}else await IDB.put('classes',oc)}
+  else{const cls=S.classes.find(c=>c.id===ocid);cls.students.push({id:uid(),name,roll,year:yr});await IDB.put('classes',cls)}
+  closeM('stuModal');renderStu()
+}
+async function saveBulk(){
+  const cid=document.getElementById('clsSel').value,yr=document.getElementById('yrSel').value;if(!cid||!yr)return alert('اختر الموسم والقسم');
+  const cls=S.classes.find(c=>c.id===cid),names=document.getElementById('bulkTxt').value.split('\n').map(n=>n.trim()).filter(n=>n);
+  let ys=cls.students.filter(s=>s.year===yr),roll=ys.length?Math.max(...ys.map(s=>s.roll||0))+1:1;
+  names.forEach(n=>cls.students.push({id:uid(),name:n,roll:roll++,year:yr}));await IDB.put('classes',cls);closeM('bulkModal');renderStu()
+}
+async function delStu(cid,sid){if(!confirm('حذف التلميذ؟'))return;const cls=S.classes.find(c=>c.id===cid),st=cls.students.find(s=>s.id===sid),y=st.year;cls.students=cls.students.filter(s=>s.id!==sid);cls.students.filter(s=>s.year===y).sort((a,b)=>(a.roll||0)-(b.roll||0)).forEach((s,i)=>s.roll=i+1);await IDB.put('classes',cls);for(let e in S.results)if(S.results[e][sid]){delete S.results[e][sid];await IDB.del('results',`${e}___${sid}`)}renderStu()}
+async function delAllStu(){
+  const cid=document.getElementById('clsSel').value,yr=document.getElementById('yrSel').value;if(!cid||!yr)return;
+  const cls=S.classes.find(c=>c.id===cid);let sd=cls.students.filter(s=>s.year===yr);if(!sd.length)return alert('القسم فارغ!');
+  if(!confirm(`حذف جميع تلاميذ (${yr})؟`))return;cls.students=cls.students.filter(s=>s.year!==yr);await IDB.put('classes',cls);
+  for(let s of sd)for(let e in S.results)if(S.results[e][s.id]){delete S.results[e][s.id];await IDB.del('results',`${e}___${s.id}`)}
+  renderStu();alert('تم')
 }
 
-// ================================================================
-// Classes & Students
-// ================================================================
-function populateClassesDropdown(id){const sel=document.getElementById(id);const val=sel.value;sel.innerHTML='<option value="">-- اختر القسم --</option>';let cc=[];if(AppState.settings?.levels)AppState.settings.levels.forEach(l=>l.classes.forEach(c=>{if(c.checked)cc.push(c);}));cc.forEach(c=>{sel.innerHTML+=`<option value="${c.id}">${c.name}</option>`;if(!AppState.classes.find(ac=>ac.id===c.id)){let nc={id:c.id,name:c.name,students:[]};AppState.classes.push(nc);IDB.put('classes',nc);}});const ui=JSON.parse(localStorage.getItem('omr_uistate_v3'))||{};if(id==='classSelect'&&ui.year)document.getElementById('yearSelect').value=ui.year;if(val&&cc.find(c=>c.id===val))sel.value=val;else if(id==='classSelect'&&cc.length>0){sel.value=cc[0].id;renderStudents();}}
-function renderStudents(){const cid=document.getElementById('classSelect').value,year=document.getElementById('yearSelect').value,tb=document.getElementById('studentsTableBody');tb.innerHTML='';if(!cid||!year)return;const cls=AppState.classes.find(c=>c.id===cid);let ys=cls.students.filter(s=>s.year===year);ys.sort((a,b)=>(a.roll||0)-(b.roll||0)).forEach((s,i)=>{s.roll=s.roll||(i+1);tb.innerHTML+=`<tr class="draggable-row" draggable="true" ondragstart="dragStart(event,'${s.id}')" ondragover="dragOver(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'${cid}','${year}','${s.id}')"><td><i class="fas fa-grip-lines drag-handle"></i> ${s.roll}</td><td style="text-align:right;">${s.name}</td><td class="actions-cell"><button class="btn btn-primary btn-icon" onclick="openEditStudent('${cid}','${s.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-icon" onclick="deleteStudent('${cid}','${s.id}')"><i class="fas fa-trash"></i></button></td></tr>`;});saveUIState();}
-function openBulkAddModal(){if(!document.getElementById('classSelect').value||!document.getElementById('yearSelect').value)return alert('اختر الموسم والقسم أولاً');document.getElementById('bulkStudentsText').value='';document.getElementById('bulkAddModal').style.display='flex';}
-async function saveBulkStudents(){const cid=document.getElementById('classSelect').value,year=document.getElementById('yearSelect').value,cls=AppState.classes.find(c=>c.id===cid),names=document.getElementById('bulkStudentsText').value.split('\n').map(n=>n.trim()).filter(n=>n);let ys=cls.students.filter(s=>s.year===year);let roll=ys.length?Math.max(...ys.map(s=>s.roll||0))+1:1;names.forEach(name=>cls.students.push({id:generateId(),name,roll:roll++,year}));await IDB.put('classes',cls);closeModal('bulkAddModal');renderStudents();}
-function openAddStudentModal(){if(!document.getElementById('classSelect').value||!document.getElementById('yearSelect').value)return alert('اختر الموسم والقسم أولاً');document.getElementById('studentModalTitle').innerText='إضافة تلميذ';document.getElementById('editStudentId').value='';document.getElementById('editStudentName').value='';const cls=AppState.classes.find(c=>c.id===document.getElementById('classSelect').value),year=document.getElementById('yearSelect').value;let ys=cls.students.filter(s=>s.year===year);document.getElementById('editStudentRoll').value=ys.length?Math.max(...ys.map(s=>s.roll||0))+1:1;document.getElementById('moveClassWrapper').style.display='none';document.getElementById('studentModal').style.display='flex';}
-function openEditStudent(cid,sid){const s=AppState.classes.find(c=>c.id===cid).students.find(x=>x.id===sid);document.getElementById('studentModalTitle').innerText='تعديل تلميذ';document.getElementById('editStudentId').value=sid;document.getElementById('editStudentName').value=s.name;document.getElementById('editStudentRoll').value=s.roll||'';document.getElementById('moveClassWrapper').style.display='block';const sel=document.getElementById('editStudentClass');sel.innerHTML='';AppState.classes.forEach(c=>sel.innerHTML+=`<option value="${c.id}" ${c.id===cid?'selected':''}>${c.name}</option>`);document.getElementById('studentModal').style.display='flex';}
-async function saveStudentChanges(){const sid=document.getElementById('editStudentId').value,name=document.getElementById('editStudentName').value.trim(),roll=parseInt(document.getElementById('editStudentRoll').value)||0,oldCid=document.getElementById('classSelect').value,year=document.getElementById('yearSelect').value;if(!name)return;if(sid){const newCid=document.getElementById('editStudentClass').value,oldCls=AppState.classes.find(c=>c.id===oldCid),sIdx=oldCls.students.findIndex(x=>x.id===sid),sData=oldCls.students[sIdx];sData.name=name;sData.roll=roll;if(oldCid!==newCid){oldCls.students.splice(sIdx,1);AppState.classes.find(c=>c.id===newCid).students.push(sData);await IDB.put('classes',oldCls);await IDB.put('classes',AppState.classes.find(c=>c.id===newCid));}else await IDB.put('classes',oldCls);}else{const cls=AppState.classes.find(c=>c.id===oldCid);cls.students.push({id:generateId(),name,roll,year});await IDB.put('classes',cls);}closeModal('studentModal');renderStudents();}
-async function deleteStudent(cid,sid){if(!confirm('حذف التلميذ؟'))return;const cls=AppState.classes.find(c=>c.id===cid),st=cls.students.find(s=>s.id===sid),y=st.year;cls.students=cls.students.filter(s=>s.id!==sid);cls.students.filter(s=>s.year===y).sort((a,b)=>(a.roll||0)-(b.roll||0)).forEach((s,i)=>s.roll=i+1);await IDB.put('classes',cls);for(let eid in AppState.results){if(AppState.results[eid][sid]){delete AppState.results[eid][sid];await IDB.delete('results',`${eid}___${sid}`);}}renderStudents();}
-async function deleteAllStudentsInClass(){const cid=document.getElementById('classSelect').value,year=document.getElementById('yearSelect').value;if(!cid||!year)return alert('الرجاء تحديد الموسم والقسم');const cls=AppState.classes.find(c=>c.id===cid);let sd=cls.students.filter(s=>s.year===year);if(!sd.length)return alert('القسم فارغ!');if(!confirm(`حذف جميع تلاميذ هذا القسم للموسم (${year})؟`))return;cls.students=cls.students.filter(s=>s.year!==year);await IDB.put('classes',cls);for(let s of sd){for(let eid in AppState.results){if(AppState.results[eid][s.id]){delete AppState.results[eid][s.id];await IDB.delete('results',`${eid}___${s.id}`);}}}renderStudents();alert('تم المسح بنجاح.');}
-
-// ================================================================
-// OMR Constants — A4: 794×1123 px
-// ================================================================
-const OMR={W:794,H:1123,CM:22,CO:10,
-  get RL(){return this.CO;},get RT(){return this.CO;},
-  get RR(){return this.W-this.CO;},get RB(){return this.H-this.CO;},
-  get RW(){return this.RR-this.RL;},get RH(){return this.RB-this.RT;},
-  BD:28,Q_GAP:38,OPT_GAP:44,NUM_W:30,NUM_GAP:8,BLK:10,HDR_H:220,PAD:35};
-
-// ================================================================
-// Exam Creation
-// ================================================================
-// ================================================================
-// updateOptionCount: تحديث قائمة الخيارات بناءً على عدد الأسئلة
-// ≤20 سؤال → 1 عمود → max 9 خيارات
-// >20 سؤال → 2 عمود → max 6 خيارات (لتجنب التداخل)
-// ================================================================
-function updateOptionCount(){
-  const qCount = parseInt(document.getElementById('examQCount').value) || 10;
-  const sel    = document.getElementById('examOptionCount');
-  const curVal = parseInt(sel.value) || 4;
-
-  // تحديد الحد الأقصى للخيارات
-  const maxOpts = qCount <= 20 ? 9 : 6;
-
-  // إعادة بناء القائمة
-  const labels = ['','','','4 خيارات (أ ب ج د)','5 خيارات (أ ب ج د هـ)',
-    '6 خيارات (أ ب ج د هـ و)','7 خيارات','8 خيارات','9 خيارات'];
-  sel.innerHTML = '';
-  for(let n = 4; n <= maxOpts; n++){
-    const opt = document.createElement('option');
-    opt.value = n;
-    opt.textContent = labels[n] || n + ' خيارات';
-    sel.appendChild(opt);
+/* ═══════════════════════════════════════════════════════════════
+   EXAM CREATION
+   ═══════════════════════════════════════════════════════════════ */
+let curSetup=null;
+function genGrid(){
+  const nm=document.getElementById('exName').value,cid=document.getElementById('exCls').value;
+  const qc=parseInt(document.getElementById('exQC').value),oc=parseInt(document.getElementById('exOC').value);
+  const yr=document.getElementById('exYr').value,sub=document.getElementById('exSub').value,stg=document.getElementById('exStg').value;
+  if(!nm||!cid||!yr||!sub||!stg||isNaN(qc)||qc<1||qc>100)return alert('الرجاء ملء جميع البيانات بشكل صحيح (عدد الأسئلة بين 1 و 100)');
+  const opts=AR.slice(0,oc);
+  curSetup={id:document.getElementById('editExamId').value||uid(),name:nm,year:yr,subject:sub,stage:stg,classId:cid,qCount:qc,options:opts,answerKey:{}};
+  const grid=document.getElementById('akGrid');grid.innerHTML='';
+  for(let i=1;i<=qc;i++){
+    let row=`<div class="q-row"><strong>س${i}:</strong><div style="display:flex;gap:4px">`;
+    opts.forEach(o=>row+=`<div class="q-opt" onclick="togOpt(this,${i},'${o}')">${o}<span class="q-pts"></span></div>`);
+    grid.innerHTML+=row+'</div></div>'
   }
-
-  // الإبقاء على القيمة السابقة إن أمكن، وإلا أصغر قيمة مناسبة
-  sel.value = Math.min(curVal, maxOpts);
-
-  // إظهار تنبيه إذا تغير الحد
-  const info = document.getElementById('optCountInfo');
-  if(info){
-    info.textContent = qCount > 20
-      ? '⚠️ عمودان — الحد الأقصى ' + maxOpts + ' خيارات'
-      : '';
-  }
+  document.getElementById('akBox').style.display='block';
+  document.getElementById('examTitle').innerText=document.getElementById('editExamId').value?'تعديل ورقة الامتحان':'إنشاء ورقة امتحان'
 }
-
-let currentSetup=null;
-function generateExamGrid(){
-  const name=document.getElementById('examName').value,cid=document.getElementById('examClassSelect').value;
-  const qCount=parseInt(document.getElementById('examQCount').value),optCount=parseInt(document.getElementById('examOptionCount').value);
-  const year=document.getElementById('examYearSelect').value,subject=document.getElementById('examSubjectSelect').value,stage=document.getElementById('examStageSelect').value;
-  if(!name||!cid||!year||!subject||!stage||isNaN(qCount))return alert('الرجاء ملء جميع البيانات');
-  const options=ARABIC_LETTERS.slice(0,optCount);
-  currentSetup={id:document.getElementById('editingExamId').value||generateId(),name,year,subject,stage,classId:cid,qCount,options,answerKey:{}};
-  const grid=document.getElementById('examQuestionsGrid');grid.innerHTML='';
-  for(let i=1;i<=qCount;i++){let row=`<div class="q-row"><strong>س${i}:</strong><div style="display:flex;gap:5px;">`;options.forEach(opt=>row+=`<div class="q-option" onclick="toggleOption(this,${i},'${opt}')">${opt}<span class="q-score-badge"></span></div>`);grid.innerHTML+=row+'</div></div>';}
-  document.getElementById('examAnswerKeyContainer').style.display='block';
-  document.getElementById('createExamTitle').innerText=document.getElementById('editingExamId').value?'تعديل ورقة الامتحان':'إنشاء ورقة امتحان';
+function togOpt(el,q,opt){
+  const qk=`Q${q}`;if(!curSetup.answerKey[qk])curSetup.answerKey[qk]={};
+  if(!el.classList.contains('sel')){
+    let pts=prompt(`نقطة الإجابة (${opt}):`,1);if(pts===null||isNaN(parseFloat(pts)))return;
+    curSetup.answerKey[qk][opt]=parseFloat(pts);el.classList.add('sel');el.querySelector('.q-pts').innerText=pts
+  }else{el.classList.remove('sel');delete curSetup.answerKey[qk][opt]}
 }
-function toggleOption(el,qId,opt){const qKey=`Q${qId}`;if(!currentSetup.answerKey[qKey])currentSetup.answerKey[qKey]={};if(!el.classList.contains('selected')){let pts=prompt(`نقطة الإجابة (${opt}):`,1);if(pts===null||isNaN(parseFloat(pts))||pts.trim()==='')return;currentSetup.answerKey[qKey][opt]=parseFloat(pts);el.classList.add('selected');el.querySelector('.q-score-badge').innerText=pts;}else{el.classList.remove('selected');delete currentSetup.answerKey[qKey][opt];}}
 async function saveExam(){
-  buildPrintTemplate(currentSetup);
+  buildSheet(curSetup);
   setTimeout(async()=>{
-    currentSetup.layout=extractBubbleCoordinates();
-    const idx=AppState.exams.findIndex(e=>e.id===currentSetup.id);
-    if(idx>=0)AppState.exams[idx]=currentSetup;else AppState.exams.push(currentSetup);
-    await IDB.put('exams',currentSetup);
-    alert('تم الحفظ بنجاح!');
-    document.getElementById('examAnswerKeyContainer').style.display='none';
-    document.getElementById('editingExamId').value='';
-    switchTab('results');
-    document.getElementById('resultClassSelect').value=currentSetup.classId;
-    updateResultExams();
-    document.getElementById('resultExamSelect').value=currentSetup.id;
-    renderResultsTable();
-  },300);
+    curSetup.layout=extractLayout();
+    const idx=S.exams.findIndex(e=>e.id===curSetup.id);
+    if(idx>=0)S.exams[idx]=curSetup;else S.exams.push(curSetup);
+    await IDB.put('exams',curSetup);alert('تم الحفظ!');
+    document.getElementById('akBox').style.display='none';document.getElementById('editExamId').value='';
+    go('results');document.getElementById('rCls').value=curSetup.classId;updExams();document.getElementById('rEx').value=curSetup.id;renderRes()
+  },400)
 }
-// FIX4: حفظ answerKey قبل generateExamGrid
-function editExamSetup(id){
-  const ex=AppState.exams.find(e=>e.id===id);
-  document.getElementById('editingExamId').value=ex.id;
-  document.getElementById('examName').value=ex.name;
-  document.getElementById('examYearSelect').value=ex.year||'';
-  document.getElementById('examSubjectSelect').value=ex.subject||'';
-  document.getElementById('examStageSelect').value=ex.stage||'';
-  document.getElementById('examClassSelect').value=ex.classId;
-  document.getElementById('examQCount').value=ex.qCount;
-  document.getElementById('examOptionCount').value=ex.options.length;
-  switchTab('create-exam');
-  // FIX4: انتظار تحديث DOM قبل generateExamGrid
-  const savedKey4=JSON.parse(JSON.stringify(ex.answerKey));
-  const savedId4=ex.id;
-  // إظهار الزر فوراً
-  document.getElementById('examAnswerKeyContainer').style.display='none';
+function editExSetup(id){
+  const ex=S.exams.find(e=>e.id===id);document.getElementById('editExamId').value=ex.id;
+  document.getElementById('exName').value=ex.name;document.getElementById('exYr').value=ex.year||'';
+  document.getElementById('exSub').value=ex.subject||'';document.getElementById('exStg').value=ex.stage||'';
+  document.getElementById('exCls').value=ex.classId;document.getElementById('exQC').value=ex.qCount;
+  document.getElementById('exOC').value=ex.options.length;
+  go('exam');
+  const sk=JSON.parse(JSON.stringify(ex.answerKey)),sid=ex.id;
+  document.getElementById('akBox').style.display='none';
   setTimeout(()=>{
-    generateExamGrid();
-    currentSetup.id=savedId4;
-    currentSetup.answerKey=savedKey4;
-    // إعادة تلوين الدوائر المحددة سابقاً
-    for(let i=1;i<=ex.qCount;i++){const qk=`Q${i}`;if(savedKey4[qk]){for(let opt in savedKey4[qk]){const pts=savedKey4[qk][opt];const row=document.getElementById('examQuestionsGrid').children[i-1];if(!row)continue;const od=row.querySelectorAll('.q-option');const oi=ex.options.indexOf(opt);if(oi>=0&&od[oi]){od[oi].classList.add('selected');od[oi].querySelector('.q-score-badge').innerText=pts;}}}}
-  },100);
+    genGrid();curSetup.id=sid;curSetup.answerKey=sk;
+    for(let i=1;i<=ex.qCount;i++){const qk=`Q${i}`;if(sk[qk])for(let o in sk[qk]){const pts=sk[qk][o],row=document.getElementById('akGrid').children[i-1];if(!row)continue;const od=row.querySelectorAll('.q-opt'),oi=ex.options.indexOf(o);if(oi>=0&&od[oi]){od[oi].classList.add('sel');od[oi].querySelector('.q-pts').innerText=pts}}}
+  },100)
 }
-async function deleteExam(id){AppState.exams=AppState.exams.filter(e=>e.id!==id);await IDB.delete('exams',id);if(AppState.results[id]){for(let sid in AppState.results[id])await IDB.delete('results',`${id}___${sid}`);delete AppState.results[id];}}
+async function delExam(id){S.exams=S.exams.filter(e=>e.id!==id);await IDB.del('exams',id);if(S.results[id]){for(let s in S.results[id])await IDB.del('results',`${id}___${s}`);delete S.results[id]}}
 
-// ================================================================
-// buildPrintTemplate — ورقة إجابة بـ SVG للعربية الصحيحة
-// ================================================================
-function buildPrintTemplate(ex){
-  const opts=ex.options, nOpt=opts.length;
-  const {CM,CO,W,H,PAD} = OMR;
+/* ═══════════════════════════════════════════════════════════════
+   SHEET GENERATION — SVG ENGINE
+   Supports 1–100 questions, dynamic columns, professional layout
+   ═══════════════════════════════════════════════════════════════ */
+function buildSheet(ex){
+  const W=SHEET_W,H=SHEET_H;
+  const M=28; // margin
+  const CM=22; // corner marker size
+  const CW=W-M*2, CH=H-M*2;
 
-  // ════ نظام العمود الذكي ════
-  // ≤20 سؤال: عمود واحد يتوسط الورقة — نتيح حتى 9 خيارات
-  // >20 سؤال: عمودان متوازيان — نتيح حتى 6 خيارات
-  const numCols = ex.qCount <= 20 ? 1 : 2;
-  const BLK     = 10; // أسئلة في كل كتلة
+  // Header area
+  const hdrH=115;
+  // Footer area
+  const ftrH=22;
+  // Instruction bar
+  const instrH=32;
+  const instrY=M+hdrH+2;
 
-  // ── أبعاد المنطقة الداخلية ──
-  const innerW = W - CO*2 - PAD*2;  // ~704px
+  // Grid area
+  const gridTop=instrY+instrH+8;
+  const gridBot=H-M-ftrH-4;
+  const gridH=gridBot-gridTop;
 
-  // ── حساب حجم الدوائر والفجوات بناءً على عدد الأسئلة وعدد الأعمدة ──
-  const availH   = H - OMR.HDR_H - 8 - CO - CM - 50;
-  const rowsPerCol = Math.ceil(ex.qCount / numCols);
-  const blkCount   = Math.ceil(rowsPerCol / BLK);
+  // Columns
+  const nQ=ex.qCount,nOpt=ex.options.length;
+  let nCols=1;
+  if(nQ<=25)nCols=1;else if(nQ<=50)nCols=2;else if(nQ<=75)nCols=3;else nCols=4;
+  const gap=10; // gap between columns
+  const colW=(CW-(nCols-1)*gap)/nCols;
+  const qPerCol=Math.ceil(nQ/nCols);
+  const qGap=gridH/qPerCol;
+  const numW=Math.min(24,colW*0.12);
+  const bubArea=colW-numW-8;
+  const bubDiam=Math.min(Math.max(14,qGap*0.52),Math.min(28,bubArea/nOpt-4));
+  const optGap=bubArea/nOpt;
 
-  // Q_GAP: المسافة بين مراكز الصفوف (تصغر مع كثرة الأسئلة)
-  const dynQ_GAP = numCols === 1
-    ? Math.min(80, Math.max(48, Math.floor((availH - blkCount*32) / Math.max(rowsPerCol,1))))
-    : Math.min(60, Math.max(40, Math.floor((availH - blkCount*28) / Math.max(rowsPerCol,1))));
+  // Corner markers
+  const mk=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#1e293b"/>`;
 
-  // Bubble diameter
-  const dynBD = numCols === 1
-    ? Math.min(54, Math.max(38, dynQ_GAP - 4))
-    : Math.min(42, Math.max(28, dynQ_GAP - 6));
+  let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="background:#fff">`;
 
-  // OPT_GAP: المسافة بين مراكز الدوائر الأفقية (≥ dynBD + 8)
-  const dynOPT_GAP = Math.max(dynBD + 10, numCols === 1 ? 52 : 40);
+  // Background
+  svg+=`<rect width="${W}" height="${H}" fill="#fff"/>`;
 
-  // عرض كتلة سؤال واحد = رقم + فجوة + دوائر
-  const blockW = OMR.NUM_W + OMR.NUM_GAP + nOpt * dynOPT_GAP;
+  // Corner markers
+  svg+=mk(M,M,CM,CM);
+  svg+=mk(W-M-CM,M,CM,CM);
+  svg+=mk(M,H-M-CM,CM,CM);
+  svg+=mk(W-M-CM,H-M-CM,CM,CM);
 
-  // توزيع الأعمدة
-  let colW, gridLeft;
-  if(numCols === 1){
-    // عمود واحد يتوسط الورقة
-    gridLeft = CO + PAD + Math.max(0, Math.floor((innerW - blockW) / 2));
-    colW     = innerW; // غير مستخدم فعلياً لكن نحفظه
-  } else {
-    // عمودان: فجوة 30px بين العمودين
-    const gap  = 30;
-    colW       = Math.floor((innerW - gap) / 2);
-    gridLeft   = CO + PAD;
-  }
+  // Mid markers (for alignment)
+  svg+=mk(M,H/2-14,10,28);
+  svg+=mk(W-M-10,H/2-14,10,28);
 
-  const colGap  = numCols === 1 ? 0 : Math.floor((innerW - 2*colW) / 1);
-  const blocksPerCol = Math.ceil(Math.ceil(ex.qCount/numCols) / BLK);
-  // CM,CO,W,H,PAD already destructured above
-  const midY=Math.round(H/2)-14;
-  // ---- مربعات الزوايا ----
-  let html=`
-<div class="omr-marker" style="width:${CM}px;height:${CM}px;top:${CO}px;left:${CO}px;"></div>
-<div class="omr-marker" style="width:${CM}px;height:${CM}px;top:${CO}px;right:${CO}px;"></div>
-<div class="omr-marker" style="width:${CM}px;height:${CM}px;bottom:${CO}px;left:${CO}px;"></div>
-<div class="omr-marker" style="width:${CM}px;height:${CM}px;bottom:${CO}px;right:${CO}px;"></div>
-<div class="omr-mid-marker" style="width:14px;height:28px;top:${midY}px;left:${CO}px;"></div>
-<div class="omr-mid-marker" style="width:14px;height:28px;top:${midY}px;right:${CO}px;"></div>`;
-  // ---- الترويسة بـ SVG (تحل مشكلة العربية المفككة) ----
-  const hL=OMR.RL+OMR.PAD,hR=OMR.RR-OMR.PAD,hT=OMR.CO+OMR.CM+12;
-  // SVG الترويسة بعرض كامل الورقة
-  const svgL = OMR.CO + 2;           // 12px من حافة الورقة
-  const svgW = OMR.W - svgL * 2;     // عرض كامل: ~770px
-  const p    = Math.round(svgW*0.025); // padding داخلي 2.5%
-  html+=`
-<svg xmlns="http://www.w3.org/2000/svg"
-     style="position:absolute;left:${svgL}px;top:${hT}px;"
-     width="${svgW}" height="168">
+  // ── Header (SVG for Arabic) ──
+  const hX=M+2,hY=M+CM+6,hW=CW-4;
+  svg+=`<rect x="${hX}" y="${hY}" width="${hW}" height="${hdrH}" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>`;
 
-  <!-- شريط العنوان الداكن -->
-  <rect x="0" y="0" width="${svgW}" height="58" rx="7" fill="#d1d9e0"/>
-  <rect x="0" y="14" width="${svgW}" height="44" fill="#e2e8ed"/>
+  // Title bar
+  svg+=`<rect x="${hX}" y="${hY}" width="${hW}" height="40" rx="6" fill="#4f46e5"/>`;
+  svg+=`<rect x="${hX}" y="${hY+20}" width="${hW}" height="20" fill="#4f46e5"/>`;
+  svg+=`<text x="${hX+hW/2}" y="${hY+28}" font-family="Cairo,Tajawal,sans-serif" font-size="20" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle">${escSvg(ex.name)}</text>`;
 
-  <!-- خط فاصل سفلي للشريط -->
-  <line x1="0" y1="57" x2="${svgW}" y2="57" stroke="#94a3b8" stroke-width="1"/>
+  // Subject / Stage / Year
+  svg+=`<text x="${hX+hW/2}" y="${hY+56}" font-family="Cairo,Tajawal,sans-serif" font-size="12" fill="#475569" text-anchor="middle">${escSvg(ex.subject||'')} — ${escSvg(ex.stage||'')} — ${escSvg(ex.year||'')}</text>`;
 
-  <!-- اسم الامتحان — يمين — كبير وعريض -->
-  <text x="${svgW - p}" y="31"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="22" font-weight="800" fill="#0f172a" text-anchor="end"
-    dominant-baseline="middle">${ex.name}</text>
+  // Data fields: Name, Class, Roll
+  const fY=hY+66,fH=hdrH-70;
+  svg+=`<rect x="${hX+4}" y="${fY}" width="${hW-8}" height="${fH}" rx="4" fill="#fff" stroke="#cbd5e1" stroke-width="1"/>`;
+  // Three columns: Name (50%), Class (25%), Roll (25%)
+  const c1x=hX+4,c1w=(hW-8)*0.50;
+  const c2x=c1x+c1w,c2w=(hW-8)*0.25;
+  const c3x=c2x+c2w,c3w=(hW-8)*0.25;
+  // Dividers
+  svg+=`<line x1="${c2x}" y1="${fY}" x2="${c2x}" y2="${fY+fH}" stroke="#cbd5e1" stroke-width="1"/>`;
+  svg+=`<line x1="${c3x}" y1="${fY}" x2="${c3x}" y2="${fY+fH}" stroke="#cbd5e1" stroke-width="1"/>`;
+  // Labels
+  svg+=`<text x="${c1x+c1w/2}" y="${fY+16}" font-family="Cairo,Tajawal,sans-serif" font-size="11" font-weight="700" fill="#1e293b" text-anchor="middle">الاسم الكامل</text>`;
+  svg+=`<text x="${c2x+c2w/2}" y="${fY+16}" font-family="Cairo,Tajawal,sans-serif" font-size="11" font-weight="700" fill="#1e293b" text-anchor="middle">القسم</text>`;
+  svg+=`<text x="${c3x+c3w/2}" y="${fY+16}" font-family="Cairo,Tajawal,sans-serif" font-size="11" font-weight="700" fill="#1e293b" text-anchor="middle">ر.ت</text>`;
+  // Dotted lines
+  const dotY=fY+fH-6;
+  svg+=`<text x="${c1x+c1w/2}" y="${dotY}" font-family="Arial" font-size="4" fill="#94a3b8" text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .</text>`;
+  svg+=`<text x="${c2x+c2w/2}" y="${dotY}" font-family="Arial" font-size="4" fill="#94a3b8" text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . . . . . . . . . .</text>`;
+  svg+=`<text x="${c3x+c3w/2}" y="${dotY}" font-family="Arial" font-size="4" fill="#94a3b8" text-anchor="middle" letter-spacing="3">. . . . . . . . . . . . .</text>`;
 
-  <!-- المادة / المرحلة / الموسم — يسار -->
-  <text x="${p}" y="49"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="13" fill="#334155" text-anchor="start"
-    dominant-baseline="middle">${ex.subject||''} — ${ex.stage||''} — ${ex.year||''}</text>
+  // ── Instruction bar ──
+  svg+=`<rect x="${M+2}" y="${instrY}" width="${CW-4}" height="${instrH}" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>`;
+  svg+=`<text x="${W/2}" y="${instrY+instrH/2+1}" font-family="Cairo,Tajawal,sans-serif" font-size="12" font-weight="700" fill="#1d4ed8" text-anchor="middle" dominant-baseline="middle">لوّن الدائرة المناسبة — لا تضع أي علامة خارج الدوائر</text>`;
 
-  <!-- جدول البيانات RTL صريح:
-       في SVG (LTR): x صغير=يسار الشاشة، x كبير=يمين الشاشة
-       الجدول direction:rtl يعني: أيمن الشاشة = أول عمود مرئي
-       نسب الأعمدة:
-         ر.ت     = 25% = x من 75%..100% (أقصى يمين الشاشة)
-         القسم   = 25% = x من 50%..75%
-         الاسم   = 50% = x من  0%..50% (أقصى يسار الشاشة)
-  -->
-  <rect x="0" y="58" width="${svgW}" height="64" fill="white" stroke="#475569" stroke-width="1.5"/>
+  // ── Questions Grid ──
+  // Store bubble positions for extraction
+  window._bubPositions={};
 
-  <!-- فاصل القسم|الاسم عند x=50% -->
-  <line x1="${Math.round(svgW*0.50)}" y1="58" x2="${Math.round(svgW*0.50)}" y2="122" stroke="#475569" stroke-width="1.2"/>
-  <!-- فاصل ر.ت|القسم عند x=75% -->
-  <line x1="${Math.round(svgW*0.75)}" y1="58" x2="${Math.round(svgW*0.75)}" y2="122" stroke="#475569" stroke-width="1.2"/>
+  for(let col=0;col<nCols;col++){
+    const colX=M+col*(colW+gap);
+    const qStart=col*qPerCol+1;
+    const qEnd=Math.min(qStart+qPerCol-1,nQ);
 
-  <!-- تسمية ر.ت: مركز العمود 75%..100% = x=87.5% -->
-  <text x="${Math.round(svgW*0.875)}" y="73"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">ر.ت</text>
-  <!-- تسمية القسم: مركز العمود 50%..75% = x=62.5% -->
-  <text x="${Math.round(svgW*0.625)}" y="73"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">القسم</text>
-  <!-- تسمية الاسم الكامل: مركز العمود 0%..50% = x=25% -->
-  <text x="${Math.round(svgW*0.25)}" y="73"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">الاسم الكامل</text>
-
-  <!-- نقط الكتابة 5px بدلاً من الخطوط — مع فراغ مناسب تحت التسمية -->
-  <!-- نقط عمود الاسم الكامل: 0..50% -->
-  <!-- نقط الكتابة — font-size=5px كما طُلب — مع فراغ مناسب -->
-  <!-- نقط عمود الاسم الكامل -->
-  <text x="${Math.round(svgW*0.25)}" y="112"
-    font-family="Arial,sans-serif" font-size="5" fill="#64748b"
-    text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .</text>
-  <!-- نقط عمود القسم -->
-  <text x="${Math.round(svgW*0.625)}" y="112"
-    font-family="Arial,sans-serif" font-size="5" fill="#64748b"
-    text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . . . . . . . . .</text>
-  <!-- نقط عمود ر.ت -->
-  <text x="${Math.round(svgW*0.875)}" y="112"
-    font-family="Arial,sans-serif" font-size="5" fill="#64748b"
-    text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . .</text>
-
-  <!-- شريط التعليمات -->
-  <rect x="0" y="124" width="${svgW}" height="42" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
-  <text x="${Math.round(svgW/2)}" y="139"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1d4ed8" text-anchor="middle">لوّن الدائرة المناسبة لإجابتك</text>
-  <text x="${Math.round(svgW/2)}" y="158"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="12.5" fill="#475569" text-anchor="middle">لا تضع أي علامة خارج الدوائر</text>
-</svg>`;
-  // ---- شبكة الأسئلة — Q_GAP ديناميكي ----
-  const gridTop = OMR.HDR_H + 8;
-
-  for(let col=0; col<numCols; col++){
-    // colX: للعمود الواحد المتوسط، للعمودين: يسار ويمين
-    let colX;
-    if(numCols === 1){
-      colX = gridLeft;
-    } else {
-      // عمودان: col=0 يسار الورقة (LTR), col=1 يمين
-      colX = gridLeft + col * (colW + colGap);
-    }
-    for(let blkIdx=0;blkIdx<blocksPerCol;blkIdx++){
-      const blockNum=col*blocksPerCol+blkIdx,qStart=blockNum*BLK+1;
-      if(qStart>ex.qCount)break;
-      const qEnd=Math.min(qStart+BLK-1,ex.qCount);
-      const blkY=gridTop+blkIdx*(BLK*dynQ_GAP+28);
-      opts.forEach((o,oi)=>{
-        const hx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2-6;
-        const optFS = Math.round(dynBD * 0.55);
-        const optW  = Math.round(dynBD * 0.8);
-        html+=`<div style="position:absolute;left:${hx - Math.round(optW/2)}px;top:${blkY + 4}px;font-size:${optFS}px;font-weight:800;width:${optW}px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;line-height:1;">${o}</div>`;
-      });
-      for(let q=qStart;q<=qEnd;q++){
-        const qy=blkY+42+(q-qStart)*dynQ_GAP;
-        const qFS = Math.round(dynBD * 0.60);
-        html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:${qFS}px;font-weight:800;line-height:${dynBD}px;text-align:right;font-family:Arial;color:#1e293b;">${q}</div>`;
-        opts.forEach((o,oi)=>{
-          const cx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2;
-          const cy=qy+dynBD/2;
-          html+=`<div class="omr-bubble-mark" data-q="Q${q}" data-opt="${o}" data-cx="${cx}" data-cy="${cy}" style="position:absolute;left:${cx-dynBD/2}px;top:${qy}px;width:${dynBD}px;height:${dynBD}px;border:3px solid #1e293b;border-radius:50%;background:white;box-sizing:border-box;"></div>`;
-        });
-      }
-    }
-  }
-  html+=`<span id="dyn-bd" data-bd="${dynBD}" style="display:none;"></span>`;
-
-  // ════ شريط المعلومات السفلي — بأسلوب ZipGrade ════
-  // يُوضع بين المربعين السفليين، على نفس سطرهما
-  const footerY2 = OMR.H - OMR.CO - Math.round(OMR.CM/2) - 8; // وسط المربعات السفلية
-  const fL2 = OMR.CO + OMR.CM + 10;
-  const fR2 = OMR.W - OMR.CO - OMR.CM - 10;
-  const fW2 = fR2 - fL2;
-  const clsName2 = (AppState.classes.find(cl => cl.id === ex.classId) || {name:''}).name;
-  html += '<div style="position:absolute;left:' + fL2 + 'px;top:' + footerY2 + 'px;'
-        + 'width:' + fW2 + 'px;display:flex;align-items:center;justify-content:space-between;">'
-        + '<span style="font-family:Cairo,Tajawal,Arial,sans-serif;font-size:12px;font-weight:800;color:#1e293b;">المصحح</span>'
-        + '<span style="font-family:Arial,sans-serif;font-size:10px;color:#475569;">www.mysite.com</span>'
-        + '<span style="font-family:Cairo,Tajawal,Arial,sans-serif;font-size:10px;color:#64748b;">' + ex.name + (clsName2 ? ' — ' + clsName2 : '') + '</span>'
-        + '</div>';
-
-  document.getElementById('omr-sheet-inner').innerHTML=html;
-}
-
-function extractBubbleCoordinates(){
-  const bubbles=document.querySelectorAll('.omr-bubble-mark[data-cx]');
-  const dynBdEl=document.getElementById('dyn-bd');
-  const actualBD=dynBdEl?parseFloat(dynBdEl.getAttribute('data-bd')):OMR.BD;
-  const layout={_meta:{bubbleRadiusRatio:(actualBD/2)/OMR.W,sheetW:OMR.W,sheetH:OMR.H}};
-  bubbles.forEach(b=>{
-    const cx=parseFloat(b.getAttribute('data-cx')),cy=parseFloat(b.getAttribute('data-cy'));
-    const q=b.getAttribute('data-q'),o=b.getAttribute('data-opt');
-    if(!layout[q])layout[q]={};
-    layout[q][o]={x:cx/OMR.W,y:cy/OMR.H};
-  });
-  return layout;
-}
-
-async function printExam(id,type){const ex=AppState.exams.find(e=>e.id===id);buildPrintTemplate(ex);await new Promise(r=>setTimeout(r,400));const cvs=await html2canvas(document.querySelector('.omr-sheet'),{scale:2,useCORS:true});const img=cvs.toDataURL('image/png');if(type==='png'){const a=document.createElement('a');a.download=`${ex.name}.png`;a.href=img;a.click();}else{const pdf=new window.jspdf.jsPDF('p','mm','a4');pdf.addImage(img,'PNG',0,0,210,297);pdf.save(`${ex.name}.pdf`);}}
-
-// ================================================================
-// Results
-// ================================================================
-let isCompetencyMode=false;
-function toggleCompetencies(){isCompetencyMode=!isCompetencyMode;document.getElementById('toggleCompBtn').innerHTML=isCompetencyMode?'<i class="fas fa-exchange-alt"></i> إظهار النقط':'<i class="fas fa-exchange-alt"></i> إظهار الكفايات';renderResultsTable();}
-function getCompData(score,max){if(max===0)return{c:'D'};let p=(score/max)*100;return p>=90?{c:'A'}:p>=75?{c:'B'}:p>=45?{c:'C'}:{c:'D'};}
-function updateResultExams(){const year=document.getElementById('resultYearSelect').value,stage=document.getElementById('resultStageSelect').value,subject=document.getElementById('resultSubjectSelect').value,cid=document.getElementById('resultClassSelect').value;const sel=document.getElementById('resultExamSelect'),cur=sel.value;sel.innerHTML='<option value="">- اختر الامتحان -</option>';AppState.exams.filter(e=>(!year||e.year===year)&&(!stage||e.stage===stage)&&(!subject||e.subject===subject)&&(!cid||e.classId===cid)).forEach(e=>{sel.innerHTML+=`<option value="${e.id}">${e.name}</option>`;});if(AppState.exams.find(e=>e.id===cur))sel.value=cur;saveUIState();renderResultsTable();}
-function renderResultsTable(){saveUIState();const cid=document.getElementById('resultClassSelect').value,eid=document.getElementById('resultExamSelect').value;const sq=document.getElementById('searchStudent').value.toLowerCase();const head=document.getElementById('resultsTableHead'),body=document.getElementById('resultsTableBody');const infoDiv=document.getElementById('examInfoCard'),mainCard=infoDiv?.parentElement;head.innerHTML='';body.innerHTML='';if(!cid||!eid){if(mainCard)mainCard.style.display='none';return;}const ex=AppState.exams.find(e=>e.id===eid),cls=AppState.classes.find(c=>c.id===cid);if(ex&&cls&&mainCard){document.getElementById('infoExamTitle').innerHTML=`${ex.name} <span style="color:var(--gray);font-size:1rem;font-weight:normal;"> | ${ex.subject||''} | ${ex.stage||''} | ${cls.name}</span>`;document.getElementById('infoExamDetails').style.display='none';document.getElementById('infoExamStats').innerText=`الأسئلة: ${ex.qCount} | الخيارات: ${ex.options.length} | التلاميذ: ${cls.students.filter(s=>s.year===ex.year).length}`;mainCard.style.display='flex';infoDiv.style.display='block';}
-let students=cls.students;if(ex?.year)students=students.filter(s=>s.year===ex.year);if(sq)students=students.filter(s=>s.name.toLowerCase().includes(sq));
-let hHTML=`<th>الكاميرا</th><th>ر.ت</th><th style="text-align:right;">الاسم الكامل</th>`;for(let i=1;i<=ex.qCount;i++)hHTML+=`<th>س${i}</th>`;head.innerHTML=hHTML+`<th>النتيجة</th><th>إجراءات</th>`;
-let maxTotal=0,maxQ={};for(let i=1;i<=ex.qCount;i++){let qM=0;Object.values(ex.answerKey[`Q${i}`]||{}).forEach(p=>qM+=p);if(qM===0)qM=1;maxQ[`Q${i}`]=qM;maxTotal+=qM;}
-students.forEach(s=>{const res=AppState.results[eid]?.[s.id]||{scores:{},choices:{},total:0,id:`${eid}___${s.id}`,examId:eid,studentId:s.id};let bHTML=`<td><button class="btn btn-primary btn-sm" onclick="startScanner('${eid}','${s.id}','${s.name}')"><i class="fas fa-camera"></i> Scan</button></td>`;bHTML+=`<td>${s.roll||'-'}</td><td style="text-align:right;">${s.name}</td>`;let total=0;for(let i=1;i<=ex.qCount;i++){let sc=parseFloat(res.scores?.[`Q${i}`]||0);total+=sc;let disp=isCompetencyMode?`<span class="comp-${getCompData(sc,maxQ[`Q${i}`]).c}">${getCompData(sc,maxQ[`Q${i}`]).c}</span>`:sc;bHTML+=`<td>${disp}</td>`;}res.total=total;if(!AppState.results[eid])AppState.results[eid]={};AppState.results[eid][s.id]=res;let fDisp=isCompetencyMode?`<span class="comp-${getCompData(total,maxTotal).c}">${getCompData(total,maxTotal).c}</span>`:`<strong>${total}</strong>`;bHTML+=`<td>${fDisp}</td><td class="actions-cell"><button class="btn btn-success btn-icon" onclick="openPreview('${eid}','${s.id}')"><i class="fas fa-eye"></i></button><button class="btn btn-warning btn-icon" onclick="openEditScore('${eid}','${s.id}')"><i class="fas fa-edit"></i></button></td>`;body.innerHTML+=`<tr>${bHTML}</tr>`;});}
-let chartInst=null;
-function showStatistics(){const eid=document.getElementById('resultExamSelect').value,cid=document.getElementById('resultClassSelect').value;if(!eid||!cid)return alert('اختر القسم والامتحان');const ex=AppState.exams.find(e=>e.id===eid);let maxTotal=0;for(let q in ex.answerKey)Object.values(ex.answerKey[q]).forEach(p=>maxTotal+=p);if(maxTotal===0)maxTotal=ex.qCount;const counts={A:0,B:0,C:0,D:0};AppState.classes.find(c=>c.id===cid).students.forEach(s=>{let t=AppState.results[eid]?.[s.id]?.total||0;counts[getCompData(t,maxTotal).c]++;});document.getElementById('chartModal').style.display='flex';if(chartInst)chartInst.destroy();chartInst=new Chart(document.getElementById('statsChart').getContext('2d'),{type:'doughnut',data:{labels:['A (ممتاز)','B (جيد)','C (متوسط)','D (ضعيف)'],datasets:[{data:[counts.A,counts.B,counts.C,counts.D],backgroundColor:['#22c55e','#3b82f6','#f59e0b','#ef4444']}]}});}
-function openPreview(eid, sid, studentName){
-  // استرجاع الاسم من AppState إذا لم يُمرَّر
-  if(!studentName){
-    for(let cls of AppState.classes){
-      const st = cls.students.find(s => s.id === sid);
-      if(st){ studentName = st.name; break; }
-    }
-  }
-  const ex   = AppState.exams.find(e => e.id === eid);
-  const res  = AppState.results[eid][sid];
-  const cont = document.getElementById('previewContainer');
-  cont.innerHTML = '';
-
-  // تحديث عنوان النافذة باسم التلميذ
-  const titleEl = document.getElementById('previewModalTitle');
-  if(titleEl) titleEl.innerText = `إجابات التلميذ(ة): ${studentName || ''}`;
-
-  // إظهار زر الصورة الملتقطة إذا كانت موجودة
-  const imgBtn = document.getElementById('previewImageBtn');
-  if(imgBtn){
-    const hasImage = res && res.scannedImage;
-    imgBtn.style.display = hasImage ? 'inline-flex' : 'none';
-    if(hasImage) imgBtn.setAttribute('data-img', res.scannedImage);
-  }
-
-  for(let i = 1; i <= ex.qCount; i++){
-    let q   = `Q${i}`;
-    let sC  = (res.choices?.[q] || '').split(', ').filter(Boolean);
-    let cC  = Object.keys(ex.answerKey[q] || {});
-    // حساب النقطة المستحقة لهذا السؤال
-    const qScore    = res.scores?.[`Q${i}`] || 0;
-    const qMaxScore = Object.values(ex.answerKey[q] || {}).reduce((s,v)=>s+v, 0) || 1;
-    const isPerfect = Math.abs(qScore - qMaxScore) < 0.01;
-    const isPartial = qScore > 0 && !isPerfect;
-    const isWrong   = qScore === 0 && sC.length > 0;
-    const isEmpty   = sC.length === 0;
-
-    let icon;
-    if(isPerfect)     icon = '<i class="fas fa-check-circle" style="color:var(--success)"></i>';
-    else if(isPartial)icon = '<i class="fas fa-adjust"       style="color:var(--warning)"></i>';
-    else if(isWrong)  icon = '<i class="fas fa-times-circle" style="color:var(--danger)"></i>';
-    else              icon = '<i class="fas fa-minus"         style="color:var(--gray)"></i>';
-
-    let row = `<div class="prev-q-row">
-      <div style="width:22px;text-align:center;">${icon}</div>
-      <strong style="min-width:28px;">س${i}:</strong>`;
-
-    ex.options.forEach(o => {
-      let cls = ['prev-bubble'];
-      const ss = sC.includes(o), cc = cC.includes(o);
-      if(ss && cc)        cls.push('correct-choice');
-      else if(ss && !cc)  cls.push('wrong-choice');
-      else if(!ss && cc)  cls.push('missed-choice');
-      row += `<div class="${cls.join(' ')}">${o}</div>`;
+    // Column header (option letters)
+    const optHdrY=gridTop-2;
+    ex.options.forEach((o,oi)=>{
+      const cx=colX+numW+6+oi*optGap+optGap/2;
+      svg+=`<text x="${cx}" y="${optHdrY}" font-family="Cairo,Tajawal,sans-serif" font-size="${Math.round(bubDiam*0.55)}" font-weight="800" fill="#334155" text-anchor="middle">${o}</text>`
     });
 
-    // إضافة النقطة المحققة
-    const scoreColor = isPerfect ? 'var(--success)' : (isPartial ? 'var(--warning)' : 'var(--danger)');
-    row += '<span style="margin-right:auto;font-size:.8rem;font-weight:700;color:' + scoreColor + ';">' + qScore + '/' + qMaxScore + '</span>';
-    cont.innerHTML += row + '</div>';
-  }
-  document.getElementById('previewModal').style.display = 'flex';
-}
-
-// عرض صورة الورقة الملتقطة
-function showScannedImage(){
-  const btn = document.getElementById('previewImageBtn');
-  const img = document.getElementById('scannedImageView');
-  if(btn && img){
-    img.src = btn.getAttribute('data-img') || '';
-    document.getElementById('scannedImageModal').style.display = 'flex';
-  }
-}
-function openEditScore(eid,sid){const ex=AppState.exams.find(e=>e.id===eid),res=AppState.results[eid][sid];document.getElementById('editScoreSId').value=`${eid}___${sid}`;const g=document.getElementById('editScoreGrid');g.innerHTML='';for(let i=1;i<=ex.qCount;i++)g.innerHTML+=`<div><label>س${i}</label><input type="number" id="es_Q${i}" value="${res.scores?.[`Q${i}`]||0}" step="0.5"></div>`;document.getElementById('editScoreModal').style.display='flex';}
-async function saveManualScores(){const[eid,sid]=document.getElementById('editScoreSId').value.split('___');let res=AppState.results[eid][sid],ex=AppState.exams.find(e=>e.id===eid);for(let i=1;i<=ex.qCount;i++)res.scores[`Q${i}`]=parseFloat(document.getElementById(`es_Q${i}`).value)||0;await IDB.put('results',res);closeModal('editScoreModal');renderResultsTable();}
-
-// ================================================================
-// PERSPECTIVE TRANSFORM ENGINE
-// ================================================================
-function applyMatrix(M,x,y){const w=M[6]*x+M[7]*y+M[8];return{x:(M[0]*x+M[1]*y+M[2])/w,y:(M[3]*x+M[4]*y+M[5])/w};}
-function gaussSolve(A,b){const n=b.length;for(let col=0;col<n;col++){let mx=col;for(let row=col+1;row<n;row++)if(Math.abs(A[row][col])>Math.abs(A[mx][col]))mx=row;[A[col],A[mx]]=[A[mx],A[col]];[b[col],b[mx]]=[b[mx],b[col]];for(let row=col+1;row<n;row++){const f=A[row][col]/A[col][col];for(let k=col;k<n;k++)A[row][k]-=f*A[col][k];b[row]-=f*b[col];}}const x=new Array(n).fill(0);for(let i=n-1;i>=0;i--){x[i]=b[i];for(let j=i+1;j<n;j++)x[i]-=A[i][j]*x[j];x[i]/=A[i][i];}return x;}
-function computeHomography(src,dst){const A=[],b=[];for(let i=0;i<4;i++){const sx=src[i].x,sy=src[i].y,dx=dst[i].x,dy=dst[i].y;A.push([sx,sy,1,0,0,0,-dx*sx,-dx*sy]);b.push(dx);A.push([0,0,0,sx,sy,1,-dy*sx,-dy*sy]);b.push(dy);}const h=gaussSolve(A.map(r=>[...r]),b);return[h[0],h[1],h[2],h[3],h[4],h[5],h[6],h[7],1];}
-function perspectiveWarp(srcCtx,srcW,srcH,srcPts,outW,outH){
-  const dstPts=[{x:0,y:0},{x:outW-1,y:0},{x:outW-1,y:outH-1},{x:0,y:outH-1}];
-  const H=computeHomography(dstPts,srcPts);
-  const srcData=srcCtx.getImageData(0,0,srcW,srcH).data;
-  const out=new Uint8ClampedArray(outW*outH*4);
-  for(let dy=0;dy<outH;dy++){for(let dx=0;dx<outW;dx++){const{x:sx,y:sy}=applyMatrix(H,dx,dy);const xi=Math.round(sx),yi=Math.round(sy);if(xi<0||xi>=srcW||yi<0||yi>=srcH)continue;const si=(yi*srcW+xi)*4,di=(dy*outW+dx)*4;out[di]=srcData[si];out[di+1]=srcData[si+1];out[di+2]=srcData[si+2];out[di+3]=srcData[si+3];}}
-  const oc=document.createElement('canvas');oc.width=outW;oc.height=outH;oc.getContext('2d').putImageData(new ImageData(out,outW,outH),0,0);return oc;
-}
-
-// ================================================================
-// SCANNER
-// ================================================================
-const video=document.getElementById('video-feed');
-const previewCanvas=document.getElementById('preview-canvas');
-const previewCtx=previewCanvas.getContext('2d');
-const analysisCanvas=document.getElementById('analysis-canvas');
-const analysisCtx=analysisCanvas.getContext('2d');
-let scanRAF=null,isScanning=false,stabFrames=0,isAutoMode=true;
-
-function applyScanModeUI(){
-  const cam = document.getElementById('manualCaptureBtn');
-  const btn = document.getElementById('autoModeBtn');
-  const icon= document.getElementById('autoModeIcon');
-  const lbl = document.getElementById('autoModeLabel');
-  const instr = document.getElementById('scanner-instr');
-
-  if(isAutoMode){
-    btn.style.background  = 'rgba(34,197,94,.35)';
-    btn.style.borderColor = '#22c55e';
-    icon.className = 'fas fa-magic';
-    lbl.innerText  = 'تلقائي';
-    // الوضع التلقائي: زر الالتقاط مخفي (الالتقاط يتم تلقائياً)
-    cam.style.display = 'none';
-    if(instr) instr.innerText = 'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';
-  } else {
-    btn.style.background  = 'rgba(245,158,11,.4)';
-    btn.style.borderColor = '#f59e0b';
-    icon.className = 'fas fa-hand-pointer';
-    lbl.innerText  = 'يدوي';
-    // الوضع اليدوي: زر الالتقاط ظاهر دائماً
-    cam.style.display = 'inline-flex';
-    if(instr) instr.innerText = 'اضغط زر الالتقاط عندما تكون الورقة مرئية';
-  }
-}
-function toggleScanMode(){isAutoMode=!isAutoMode;applyScanModeUI();}
-
-function playShutterSound(){
-  try{
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
-    if(ac.state === 'suspended') ac.resume();
-    const t = ac.currentTime;
-
-    // ── 1. صوت رفع المرآة (Mirror Slap) ── ضجيج مرتفع قصير
-    const bufMirror = ac.createBuffer(1, ac.sampleRate * 0.04, ac.sampleRate);
-    const dmirror   = bufMirror.getChannelData(0);
-    for(let i=0; i<dmirror.length; i++) dmirror[i] = (Math.random()*2-1) * Math.exp(-i/(dmirror.length*0.15));
-    const srcMirror = ac.createBufferSource();
-    srcMirror.buffer = bufMirror;
-    const fMirror = ac.createBiquadFilter();
-    fMirror.type = 'bandpass'; fMirror.frequency.value = 2800; fMirror.Q.value = 0.8;
-    const gMirror = ac.createGain();
-    gMirror.gain.setValueAtTime(1.2, t);
-    gMirror.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-    srcMirror.connect(fMirror); fMirror.connect(gMirror); gMirror.connect(ac.destination);
-    srcMirror.start(t);
-
-    // ── 2. صوت المصراع (Shutter Curtain) ── ضجيج ميكانيكي مميز
-    const bufShutter = ac.createBuffer(1, ac.sampleRate * 0.08, ac.sampleRate);
-    const dshutter   = bufShutter.getChannelData(0);
-    for(let i=0; i<dshutter.length; i++){
-      const env = Math.exp(-i/(dshutter.length*0.2));
-      dshutter[i] = (Math.random()*2-1) * env * 0.9;
+    // Light column background for visual separation
+    if(nCols>1&&col<nCols-1){
+      svg+=`<rect x="${colX}" y="${gridTop}" width="${colW}" height="${gridH}" fill="${col%2?'#fafafa':'#fff'}" rx="3"/>`
     }
-    const srcShutter = ac.createBufferSource();
-    srcShutter.buffer = bufShutter;
-    const fShutter = ac.createBiquadFilter();
-    fShutter.type = 'bandpass'; fShutter.frequency.value = 1200; fShutter.Q.value = 0.5;
-    const gShutter = ac.createGain();
-    gShutter.gain.setValueAtTime(0.0, t + 0.012);
-    gShutter.gain.linearRampToValueAtTime(1.0, t + 0.025);
-    gShutter.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
-    srcShutter.connect(fShutter); fShutter.connect(gShutter); gShutter.connect(ac.destination);
-    srcShutter.start(t + 0.012);
 
-    // ── 3. صوت إغلاق المصراع (Curtain Close) ── دكة منخفضة
-    const bufClose = ac.createBuffer(1, ac.sampleRate * 0.05, ac.sampleRate);
-    const dclose   = bufClose.getChannelData(0);
-    for(let i=0; i<dclose.length; i++) dclose[i] = (Math.random()*2-1) * Math.exp(-i/(dclose.length*0.3)) * 0.7;
-    const srcClose = ac.createBufferSource();
-    srcClose.buffer = bufClose;
-    const fClose = ac.createBiquadFilter();
-    fClose.type = 'lowpass'; fClose.frequency.value = 600;
-    const gClose = ac.createGain();
-    gClose.gain.setValueAtTime(0.8, t + 0.09);
-    gClose.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
-    srcClose.connect(fClose); fClose.connect(gClose); gClose.connect(ac.destination);
-    srcClose.start(t + 0.09);
+    for(let q=qStart;q<=qEnd;q++){
+      const row=q-qStart;
+      const cy=gridTop+row*qGap+qGap/2;
 
-  } catch(e){}
+      // Question number
+      svg+=`<text x="${colX+numW}" y="${cy+1}" font-family="Arial,sans-serif" font-size="${Math.round(Math.min(13,qGap*0.42))}" font-weight="800" fill="#1e293b" text-anchor="end" dominant-baseline="middle">${q}</text>`;
+
+      // Bubbles
+      ex.options.forEach((o,oi)=>{
+        const cx=colX+numW+6+oi*optGap+optGap/2;
+        const r=bubDiam/2;
+        svg+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1e293b" stroke-width="2"/>`;
+        // Store position (normalized 0-1)
+        window._bubPositions[`Q${q}_${o}`]={x:cx/W,y:cy/H,r:r/W};
+      });
+    }
+  }
+
+  // ── Footer ──
+  const ftrY=H-M-ftrH;
+  svg+=`<text x="${M+8}" y="${ftrY+ftrH/2+1}" font-family="Cairo,Tajawal,sans-serif" font-size="9" fill="#94a3b8" dominant-baseline="middle">المصحح — مصحح امتحانات ذكي</text>`;
+  const clsName=(S.classes.find(c=>c.id===ex.classId)||{name:''}).name;
+  svg+=`<text x="${W-M-8}" y="${ftrY+ftrH/2+1}" font-family="Cairo,Tajawal,sans-serif" font-size="9" fill="#94a3b8" text-anchor="end" dominant-baseline="middle">${escSvg(ex.name)}${clsName?' — '+escSvg(clsName):''}</text>`;
+
+  svg+=`</svg>`;
+
+  document.getElementById('print-target').innerHTML=svg;
+}
+function escSvg(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function extractLayout(){
+  const layout={_meta:{sheetW:SHEET_W,sheetH:SHEET_H}};
+  const bp=window._bubPositions||{};
+  for(let k in bp){
+    const[q,o]=k.split(/_(.+)/);
+    if(!layout[q])layout[q]={};
+    layout[q][o]=bp[k]
+  }
+  return layout
 }
 
-async function startScanner(eid,sid,sName){
-  const ex=AppState.exams.find(e=>e.id===eid);
-  if(!ex.layout)return alert('مخطط ورقة الإجابة غير موجود. يرجى تعديل الامتحان وحفظه من جديد.');
-  if(!ex.layout._meta)return alert('⚠️ هذا الامتحان محفوظ بنظام قديم.\nالرجاء تعديله وحفظه من جديد.');
-  AppState.activeScan={exam:ex,studentId:sid,extChoices:{}};
-  document.getElementById('scannerTitle').innerText=`تصحيح: ${sName}`;
-  document.getElementById('scannerModal').style.display='flex';
-  resetScannerUI();
+async function printEx(type){
+  const eid=document.getElementById('rEx').value;if(!eid)return alert('اختر امتحاناً');
+  const ex=S.exams.find(e=>e.id===eid);buildSheet(ex);
+  await new Promise(r=>setTimeout(r,500));
+  const el=document.getElementById('print-target');
+  const cvs=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#fff'});
+  const img=cvs.toDataURL('image/png');
+  if(type==='png'){const a=document.createElement('a');a.download=`${ex.name}.png`;a.href=img;a.click()}
+  else{const p=new jspdf.jsPDF('p','mm','a4');p.addImage(img,'PNG',0,0,210,297);p.save(`${ex.name}.pdf`)}
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESULTS
+   ═══════════════════════════════════════════════════════════════ */
+let compMode=false;
+function togComp(){compMode=!compMode;document.getElementById('compBtn').innerHTML=compMode?'<i class="fas fa-exchange-alt"></i> إظهار النقط':'<i class="fas fa-exchange-alt"></i> إظهار الكفايات';renderRes()}
+function getComp(sc,mx){if(!mx)return'D';let p=sc/mx*100;return p>=90?'A':p>=75?'B':p>=45?'C':'D'}
+function updExams(){
+  const yr=document.getElementById('rYr').value,stg=document.getElementById('rStg').value,sub=document.getElementById('rSub').value,cid=document.getElementById('rCls').value;
+  const sel=document.getElementById('rEx'),cur=sel.value;sel.innerHTML='<option value="">- اختر الامتحان -</option>';
+  S.exams.filter(e=>(!yr||e.year===yr)&&(!stg||e.stage===stg)&&(!sub||e.subject===sub)&&(!cid||e.classId===cid)).forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name}</option>`);
+  if(S.exams.find(e=>e.id===cur))sel.value=cur;renderRes()
+}
+function renderRes(){
+  const cid=document.getElementById('rCls').value,eid=document.getElementById('rEx').value,sq=document.getElementById('rSearch').value.toLowerCase();
+  const head=document.getElementById('resHead'),body=document.getElementById('resBody'),info=document.getElementById('exInfo');
+  head.innerHTML='';body.innerHTML='';if(!cid||!eid){info.style.display='none';return}
+  const ex=S.exams.find(e=>e.id===eid),cls=S.classes.find(c=>c.id===cid);
+  if(ex&&cls){
+    document.getElementById('infoTitle').innerHTML=`${ex.name} <span style="color:var(--gray);font-size:.95rem;font-weight:normal">| ${ex.subject||''} | ${ex.stage||''} | ${cls.name}</span>`;
+    let maxT=0;for(let i=1;i<=ex.qCount;i++){let qm=0;Object.values(ex.answerKey[`Q${i}`]||{}).forEach(p=>qm+=p);if(!qm)qm=1;maxT+=qm}
+    document.getElementById('infoStats').innerText=`الأسئلة: ${ex.qCount} | الخيارات: ${ex.options.length} | التلاميذ: ${cls.students.filter(s=>s.year===ex.year).length} | المجموع الأقصى: ${maxT}`;
+    info.style.display='block'
+  }
+  let stus=cls.students;if(ex?.year)stus=stus.filter(s=>s.year===ex.year);if(sq)stus=stus.filter(s=>s.name.toLowerCase().includes(sq));
+  let hh='<th>الكاميرا</th><th>ر.ت</th><th style="text-align:right">الاسم الكامل</th>';
+  for(let i=1;i<=ex.qCount;i++)hh+=`<th>س${i}</th>`;
+  head.innerHTML=hh+'<th>النتيجة</th><th>إجراءات</th>';
+  let maxT=0,maxQ={};for(let i=1;i<=ex.qCount;i++){let qm=0;Object.values(ex.answerKey[`Q${i}`]||{}).forEach(p=>qm+=p);if(!qm)qm=1;maxQ[`Q${i}`]=qm;maxT+=qm}
+  stus.forEach(s=>{
+    const res=S.results[eid]?.[s.id]||{scores:{},choices:{},total:0,id:`${eid}___${s.id}`,examId:eid,studentId:s.id};
+    let bh=`<td><button class="btn btn-p btn-sm" onclick="startScan('${eid}','${s.id}','${esc(s.name)}')"><i class="fas fa-camera"></i></button></td><td>${s.roll||'-'}</td><td style="text-align:right">${esc(s.name)}</td>`;
+    let tot=0;for(let i=1;i<=ex.qCount;i++){let sc=parseFloat(res.scores?.[`Q${i}`]||0);tot+=sc;bh+=compMode?`<td><span class="comp-${getComp(sc,maxQ[`Q${i}`])}">${getComp(sc,maxQ[`Q${i}`])}</span></td>`:`<td>${sc}</td>`}
+    res.total=tot;if(!S.results[eid])S.results[eid]={};S.results[eid][s.id]=res;
+    let fd=compMode?`<span class="comp-${getComp(tot,maxT)}">${getComp(tot,maxT)}</span>`:`<strong>${tot}</strong>`;
+    bh+=`<td>${fd}</td><td class="acts"><button class="btn btn-s btn-sm" onclick="openPrev('${eid}','${s.id}')"><i class="fas fa-eye"></i></button><button class="btn btn-w btn-sm" onclick="openEditSc('${eid}','${s.id}')"><i class="fas fa-edit"></i></button></td>`;
+    body.innerHTML+=`<tr>${bh}</tr>`
+  })
+}
+function esc(s){return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+let chartI=null;
+function showStats(){
+  const eid=document.getElementById('rEx').value,cid=document.getElementById('rCls').value;if(!eid||!cid)return alert('اختر القسم والامتحان');
+  const ex=S.exams.find(e=>e.id===eid);let mx=0;for(let q in ex.answerKey)Object.values(ex.answerKey[q]).forEach(p=>mx+=p);if(!mx)mx=ex.qCount;
+  const ct={A:0,B:0,C:0,D:0};S.classes.find(c=>c.id===cid).students.forEach(s=>{let t=S.results[eid]?.[s.id]?.total||0;ct[getComp(t,mx)]++});
+  openModal('chartModal');if(chartI)chartI.destroy();
+  chartI=new Chart(document.getElementById('statsCvs'),{type:'doughnut',data:{labels:['A (ممتاز)','B (جيد)','C (متوسط)','D (ضعيف)'],datasets:[{data:[ct.A,ct.B,ct.C,ct.D],backgroundColor:['#22c55e','#3b82f6','#f59e0b','#ef4444']}]}})
+}
+
+function openPrev(eid,sid){
+  let sName='';for(let c of S.classes){const st=c.students.find(s=>s.id===sid);if(st){sName=st.name;break}}
+  const ex=S.exams.find(e=>e.id===eid),res=S.results[eid][sid],cont=document.getElementById('prevCont');cont.innerHTML='';
+  document.getElementById('prevTitle').innerText=`إجابات: ${sName}`;
+  const imgBtn=document.getElementById('prevImgBtn');
+  if(imgBtn){imgBtn.style.display=res?.scannedImage?'inline-flex':'none';if(res?.scannedImage)imgBtn.setAttribute('data-img',res.scannedImage)}
+  for(let i=1;i<=ex.qCount;i++){
+    let q=`Q${i}`,sC=(res.choices?.[q]||'').split(', ').filter(Boolean),cC=Object.keys(ex.answerKey[q]||{});
+    const qs=res.scores?.[q]||0,qm=Object.values(ex.answerKey[q]||{}).reduce((s,v)=>s+v,0)||1;
+    const perf=Math.abs(qs-qm)<0.01,part=qs>0&&!perf,wrong=qs===0&&sC.length>0;
+    let ico=perf?'<i class="fas fa-check-circle" style="color:var(--ok)"></i>':part?'<i class="fas fa-adjust" style="color:var(--warn)"></i>':wrong?'<i class="fas fa-times-circle" style="color:var(--no)"></i>':'<i class="fas fa-minus" style="color:var(--gray)"></i>';
+    let row=`<div class="prev-row"><div style="width:20px;text-align:center">${ico}</div><strong style="min-width:26px">س${i}:</strong>`;
+    ex.options.forEach(o=>{
+      let cls=['prev-bub'];const ss=sC.includes(o),cc=cC.includes(o);
+      if(ss&&cc)cls.push('ok');else if(ss&&!cc)cls.push('no');else if(!ss&&cc)cls.push('miss');
+      row+=`<div class="${cls.join(' ')}">${o}</div>`
+    });
+    const sc=perf?'var(--ok)':part?'var(--warn)':'var(--no)';
+    row+=`<span style="margin-right:auto;font-size:.78rem;font-weight:800;color:${sc}">${qs}/${qm}</span></div>`;
+    cont.innerHTML+=row
+  }
+  openModal('prevModal')
+}
+function showScanImg(){const b=document.getElementById('prevImgBtn'),i=document.getElementById('scanImgView');if(b&&i){i.src=b.getAttribute('data-img')||'';openModal('scanImgModal')}}
+function openEditSc(eid,sid){
+  const ex=S.exams.find(e=>e.id===eid),res=S.results[eid][sid];document.getElementById('editScoreSId')?0:0;
+  // Reuse a simple prompt-based edit
+  let scores={};for(let i=1;i<=ex.qCount;i++){let v=prompt(`س${i} (الحالية: ${res.scores?.[`Q${i}`]||0}):`,res.scores?.[`Q${i}`]||0);if(v===null)return;scores[`Q${i}`]=parseFloat(v)||0}
+  res.scores=scores;res.total=Object.values(scores).reduce((a,b)=>a+b,0);
+  IDB.put('results',res);renderRes()
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PERSPECTIVE TRANSFORM
+   ═══════════════════════════════════════════════════════════════ */
+function applyH(M,x,y){const w=M[6]*x+M[7]*y+M[8];return{x:(M[0]*x+M[1]*y+M[2])/w,y:(M[3]*x+M[4]*y+M[5])/w}}
+function gaussSolve(A,b){
+  const n=b.length;
+  for(let c=0;c<n;c++){let mx=c;for(let r=c+1;r<n;r++)if(Math.abs(A[r][c])>Math.abs(A[mx][c]))mx=r;[A[c],A[mx]]=[A[mx],A[c]];[b[c],b[mx]]=[b[mx],b[c]];for(let r=c+1;r<n;r++){const f=A[r][c]/A[c][c];for(let k=c;k<n;k++)A[r][k]-=f*A[c][k];b[r]-=f*b[c]}}
+  const x=new Array(n).fill(0);for(let i=n-1;i>=0;i--){x[i]=b[i];for(let j=i+1;j<n;j++)x[i]-=A[i][j]*x[j];x[i]/=A[i][i]}return x
+}
+function compHomog(src,dst){
+  const A=[],b=[];
+  for(let i=0;i<4;i++){A.push([src[i].x,src[i].y,1,0,0,0,-dst[i].x*src[i].x,-dst[i].x*src[i].y]);b.push(dst[i].x);A.push([0,0,0,src[i].x,src[i].y,1,-dst[i].y*src[i].x,-dst[i].y*src[i].y]);b.push(dst[i].y)}
+  const h=gaussSolve(A.map(r=>[...r]),b);return[h[0],h[1],h[2],h[3],h[4],h[5],h[6],h[7],1]
+}
+function warpImg(ctx,sw,sh,srcPts,ow,oh){
+  const dstPts=[{x:0,y:0},{x:ow-1,y:0},{x:ow-1,y:oh-1},{x:0,y:oh-1}];
+  const H=compHomog(dstPts,srcPts);
+  const sd=ctx.getImageData(0,0,sw,sh).data;
+  const out=new Uint8ClampedArray(ow*oh*4);
+  for(let dy=0;dy<oh;dy++){for(let dx=0;dx<ow;dx++){const{x:sx,y:sy}=applyH(H,dx,dy);const xi=Math.round(sx),yi=Math.round(sy);if(xi<0||xi>=sw||yi<0||yi>=sh)continue;const si=(yi*sw+xi)*4,di=(dy*ow+dx)*4;out[di]=sd[si];out[di+1]=sd[si+1];out[di+2]=sd[si+2];out[di+3]=sd[si+3]}}
+  const oc=document.createElement('canvas');oc.width=ow;oc.height=oh;oc.getContext('2d').putImageData(new ImageData(out,ow,oh),0,0);return oc
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCANNER ENGINE
+   ═══════════════════════════════════════════════════════════════ */
+const vid=document.getElementById('vid');
+const prevC=document.getElementById('prev-canvas');
+const prevCtx=prevC.getContext('2d');
+const anC=document.getElementById('an-canvas');
+const anCtx=anC.getContext('2d');
+let scanRAF=null,scanning=false,stabF=0,autoMode=true;
+
+function applyModeUI(){
+  const cb=document.getElementById('capBtn'),ab=document.getElementById('autoBtn'),ai=document.getElementById('autoIco'),al=document.getElementById('autoLbl'),ins=document.getElementById('instr');
+  if(autoMode){ab.style.background='rgba(16,185,129,.3)';ab.style.borderColor='var(--ok)';ai.className='fas fa-magic';al.innerText='تلقائي';cb.style.display='none';if(ins)ins.innerText='وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر'}
+  else{ab.style.background='rgba(245,158,11,.4)';ab.style.borderColor='var(--warn)';ai.className='fas fa-hand-pointer';al.innerText='يدوي';cb.style.display='inline-flex';if(ins)ins.innerText='اضغط زر التقاط عندما تكون الورقة مرئية'}
+}
+function togMode(){autoMode=!autoMode;applyModeUI()}
+
+function shutterSound(){
+  try{const ac=new(AudioContext||webkitAudioContext)();if(ac.state==='suspended')ac.resume();const t=ac.currentTime;
+  // Mirror slap
+  const b1=ac.createBuffer(1,ac.sampleRate*.04,ac.sampleRate),d1=b1.getChannelData(0);for(let i=0;i<d1.length;i++)d1[i]=(Math.random()*2-1)*Math.exp(-i/(d1.length*.15));
+  const s1=ac.createBufferSource();s1.buffer=b1;const f1=ac.createBiquadFilter();f1.type='bandpass';f1.frequency.value=2800;const g1=ac.createGain();g1.gain.setValueAtTime(1.2,t);g1.gain.exponentialRampToValueAtTime(.001,t+.04);s1.connect(f1);f1.connect(g1);g1.connect(ac.destination);s1.start(t);
+  // Shutter
+  const b2=ac.createBuffer(1,ac.sampleRate*.08,ac.sampleRate),d2=b2.getChannelData(0);for(let i=0;i<d2.length;i++)d2[i]=(Math.random()*2-1)*Math.exp(-i/(d2.length*.2))*.9;
+  const s2=ac.createBufferSource();s2.buffer=b2;const f2=ac.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1200;const g2=ac.createGain();g2.gain.setValueAtTime(0,t+.012);g2.gain.linearRampToValueAtTime(1,t+.025);g2.gain.exponentialRampToValueAtTime(.001,t+.1);s2.connect(f2);f2.connect(g2);g2.connect(ac.destination);s2.start(t+.012);
+  // Close
+  const b3=ac.createBuffer(1,ac.sampleRate*.05,ac.sampleRate),d3=b3.getChannelData(0);for(let i=0;i<d3.length;i++)d3[i]=(Math.random()*2-1)*Math.exp(-i/(d3.length*.3))*.7;
+  const s3=ac.createBufferSource();s3.buffer=b3;const f3=ac.createBiquadFilter();f3.type='lowpass';f3.frequency.value=600;const g3=ac.createGain();g3.gain.setValueAtTime(.8,t+.09);g3.gain.exponentialRampToValueAtTime(.001,t+.14);s3.connect(f3);f3.connect(g3);g3.connect(ac.destination);s3.start(t+.09)
+  }catch(e){}
+}
+
+async function startScan(eid,sid,sName){
+  const ex=S.exams.find(e=>e.id===eid);
+  if(!ex.layout||!ex.layout._meta)return alert('مخطط ورقة الإجابة غير موجود.\nيرجى تعديل الامتحان وحفظه من جديد.');
+  S.activeScan={exam:ex,studentId:sid,extChoices:{}};
+  document.getElementById('scanTitle').innerText=`تصحيح: ${sName}`;
+  openModal('scanModal');resetUI();
   try{
-    AppState.videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
-    video.srcObject=AppState.videoStream;
-    video.onloadedmetadata=()=>{
-      const mc=document.querySelector('#scannerModal .modal-content');
-      const cw=mc?mc.offsetWidth:window.innerWidth;
-      const ch=mc?mc.offsetHeight:window.innerHeight;
-      const ratio=OMR.H/OMR.W;
-      let gw,gh;
-      if(ch/cw>ratio){gw=cw*.84;gh=gw*ratio;}else{gh=ch*.76;gw=gh/ratio;}
-      const gr=document.getElementById('guide-rect');
-      gr.style.width=gw+'px';gr.style.height=gh+'px';
-      gr.style.top=((ch-gh)/2)+'px';gr.style.left=((cw-gw)/2)+'px';
-      setTimeout(()=>{isScanning=true;scanLoop();},500);
-    };
-  }catch(e){alert('تعذر فتح الكاميرا.');stopScanner();}
+    S.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
+    vid.srcObject=S.stream;
+    vid.onloadedmetadata=()=>{
+      const mc=document.querySelector('#scanModal .modal-c');
+      const cw=mc?mc.offsetWidth:innerWidth,ch=mc?mc.offsetHeight:innerHeight;
+      const ratio=SHEET_H/SHEET_W;let gw,gh;
+      if(ch/cw>ratio){gw=cw*.82;gh=gw*ratio}else{gh=ch*.72;gw=gh/ratio}
+      const gr=document.getElementById('guide');gr.style.width=gw+'px';gr.style.height=gh+'px';gr.style.top=((ch-gh)/2)+'px';gr.style.left=((cw-gw)/2)+'px';
+      setTimeout(()=>{scanning=true;scanLoop()},500)
+    }
+  }catch(e){alert('تعذر فتح الكاميرا: '+e.message);stopScan()}
 }
-
-function resetScannerUI(){
-  previewCanvas.style.display = 'none';
-  video.style.display         = 'block';
-  const gr = document.getElementById('guide-rect');
-  if(gr) gr.style.display = 'block';
-  // إخفاء result-overlay بشكل صريح
-  const ro = document.getElementById('result-overlay');
-  if(ro){ ro.style.display = 'none'; ro.style.flexDirection = 'column'; }
-  // إظهار الشريط السفلي
-  const sb = document.getElementById('scanner-bottom');
-  if(sb) sb.style.display = 'block';
-  // خط المسح
-  const sl = document.getElementById('scan-line');
-  if(sl) sl.style.display = 'block';
-  // شريط الاستقرار
-  const stb = document.getElementById('stab-bar');
-  if(stb) stb.style.width = '0%';
-  stabFrames = 0;
-  ['cm-tl','cm-tr','cm-bl','cm-br'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.classList.remove('ok');
-  });
-  // تطبيق وضع الكاميرا الصحيح (يُظهر/يُخفي زر اليدوي)
-  applyScanModeUI();
+function resetUI(){
+  prevC.style.display='none';vid.style.display='block';document.getElementById('guide').style.display='block';
+  document.getElementById('res-ov').style.display='none';document.getElementById('scan-bot').style.display='block';
+  document.getElementById('scanln').style.display='block';document.getElementById('stab').style.width='0%';stabF=0;
+  ['cm-tl','cm-tr','cm-bl','cm-br'].forEach(id=>document.getElementById(id)?.classList.remove('ok'));
+  applyModeUI()
 }
+function nativeCoords(sx,sy,rv,vw,vh){const sc=Math.max(vw/rv.width,vh/rv.height),rW=vw*sc,rH=vh*sc,oX=(rW-rv.width)/2,oY=(rH-rv.height)/2;return{x:(sx+oX)/sc,y:(sy+oY)/sc}}
 
-function getNativeCoords(screenX,screenY,rv,vw,vh){const scale=Math.max(rv.width/vw,rv.height/vh);const rW=vw*scale,rH=vh*scale;const offX=(rW-rv.width)/2,offY=(rH-rv.height)/2;return{x:(screenX+offX)/scale,y:(screenY+offY)/scale};}
-
-// measureDarkness: يقيس نسبة الظلام داخل دائرة في الصورة
-function measureDarkness(ctx,cx,cy,rad,thresh=128){
+function measureDark(ctx,cx,cy,rad,thresh=128){
   cx=Math.round(cx);cy=Math.round(cy);rad=Math.round(rad);
-  if(cx-rad<0||cy-rad<0||cx+rad>ctx.canvas.width||cy+rad>ctx.canvas.height)return 0;
+  const cw=ctx.canvas.width,ch=ctx.canvas.height;
+  if(cx-rad<0||cy-rad<0||cx+rad>cw||cy+rad>ch)return 0;
   const img=ctx.getImageData(cx-rad,cy-rad,rad*2,rad*2).data;
-  const rSq=rad*rad;
-  let tR=0,tG=0,tB=0,bgC=0,dC=0,t=0;
-  // لون الخلفية من الحلقة المحيطة
-  for(let i=0;i<img.length;i+=4){const px=(i/4)%(rad*2)-rad,py=Math.floor((i/4)/(rad*2))-rad;const d2=px*px+py*py;if(d2>rSq&&d2<=(rad*2.0)*(rad*2.0)){tR+=img[i];tG+=img[i+1];tB+=img[i+2];bgC++;}}
-  const bgLum=bgC>0?(0.299*(tR/bgC)+0.587*(tG/bgC)+0.114*(tB/bgC)):220;
-  const adaptT=Math.min(bgLum*0.65,thresh);
-  // قراءة 80% من نصف القطر لتجنب حواف الإطار
-  const innerSq=(rad*0.80)*(rad*0.80);
-  for(let i=0;i<img.length;i+=4){const px=(i/4)%(rad*2)-rad,py=Math.floor((i/4)/(rad*2))-rad;if(px*px+py*py<=innerSq){t++;if(0.299*img[i]+0.587*img[i+1]+0.114*img[i+2]<adaptT)dC++;}}
-  return t===0?0:dC/t;
+  const rSq=rad*rad;let tR=0,tG=0,tB=0,bgC=0,dC=0,tot=0;
+  // Background from ring outside circle
+  for(let i=0;i<img.length;i+=4){const px=(i/4)%(rad*2)-rad,py=Math.floor((i/4)/(rad*2))-rad;const d2=px*px+py*py;if(d2>rSq&&d2<=(rad*2)*(rad*2)){tR+=img[i];tG+=img[i+1];tB+=img[i+2];bgC++}}
+  const bgL=bgC>0?(.299*(tR/bgC)+.587*(tG/bgC)+.114*(tB/bgC)):220;
+  const aT=Math.min(bgL*.62,thresh);
+  const innerSq=(rad*.78)*(rad*.78);
+  for(let i=0;i<img.length;i+=4){const px=(i/4)%(rad*2)-rad,py=Math.floor((i/4)/(rad*2))-rad;if(px*px+py*py<=innerSq){tot++;if(.299*img[i]+.587*img[i+1]+.114*img[i+2]<aT)dC++}}
+  return tot?dC/tot:0
 }
 
-// scanLoop: اكتشاف المربعات السوداء وقياس الاستقرار
 function scanLoop(){
-  if(!isScanning)return;
-  analysisCanvas.width=video.videoWidth;analysisCanvas.height=video.videoHeight;
-  analysisCtx.drawImage(video,0,0);
-  const rv=video.getBoundingClientRect(),gr=document.getElementById('guide-rect').getBoundingClientRect();
-  const vw=video.videoWidth,vh=video.videoHeight;
-  // الزوايا الأربعة للـ guide-rect في بكسل الفيديو
-  const corners=[
-    getNativeCoords(gr.left-rv.left,gr.top-rv.top,rv,vw,vh),
-    getNativeCoords(gr.right-rv.left,gr.top-rv.top,rv,vw,vh),
-    getNativeCoords(gr.right-rv.left,gr.bottom-rv.top,rv,vw,vh),
-    getNativeCoords(gr.left-rv.left,gr.bottom-rv.top,rv,vw,vh)
-  ];
-  const checkR=Math.min(vw,vh)*0.02;
+  if(!scanning)return;
+  anC.width=vid.videoWidth;anC.height=vid.videoHeight;anCtx.drawImage(vid,0,0);
+  const rv=vid.getBoundingClientRect(),gr=document.getElementById('guide').getBoundingClientRect();
+  const vw=vid.videoWidth,vh=vid.videoHeight;
+  const corners=[nativeCoords(gr.left-rv.left,gr.top-rv.top,rv,vw,vh),nativeCoords(gr.right-rv.left,gr.top-rv.top,rv,vw,vh),nativeCoords(gr.right-rv.left,gr.bottom-rv.top,rv,vw,vh),nativeCoords(gr.left-rv.left,gr.bottom-rv.top,rv,vw,vh)];
+  const ckR=Math.min(vw,vh)*.018;
   const insets=[{x:1,y:1},{x:-1,y:1},{x:-1,y:-1},{x:1,y:-1}];
   const cmIds=['cm-tl','cm-tr','cm-br','cm-bl'];
   let aligned=0;
   cmIds.forEach((id,i)=>{
-    const el=document.getElementById(id);
-    const cx=corners[i].x+insets[i].x*checkR*1.1,cy=corners[i].y+insets[i].y*checkR*1.1;
-    let darkPts=0;
-    const off=[-checkR*.4,0,checkR*.4];
-    for(let dx of off)for(let dy of off)if(measureDarkness(analysisCtx,cx+dx,cy+dy,checkR*.48,140)>0.25)darkPts++;
-    const inx=corners[i].x+insets[i].x*checkR*3.5,iny=corners[i].y+insets[i].y*checkR*3.5;
-    const innerLight=measureDarkness(analysisCtx,inx,iny,checkR,140)<0.25;
-    if(darkPts>=2&&innerLight){el.classList.add('ok');aligned++;}else el.classList.remove('ok');
+    const el=document.getElementById(id);if(!el)return;
+    const cx=corners[i].x+insets[i].x*ckR*1.1,cy=corners[i].y+insets[i].y*ckR*1.1;
+    let dp=0;const off=[-ckR*.4,0,ckR*.4];
+    for(let dx of off)for(let dy of off)if(measureDark(anCtx,cx+dx,cy+dy,ckR*.45,140)>.25)dp++;
+    const ix=corners[i].x+insets[i].x*ckR*3.5,iy=corners[i].y+insets[i].y*ckR*3.5;
+    const il=measureDark(anCtx,ix,iy,ckR,140)<.25;
+    if(dp>=2&&il){el.classList.add('ok');aligned++}else el.classList.remove('ok')
   });
-  const sb=document.getElementById('stab-bar');
-  if(!isAutoMode){stabFrames=0;sb.style.width='0%';scanRAF=requestAnimationFrame(scanLoop);return;}
-  const STAB=18; // ~0.6 ثانية عند 30fps
-  if(aligned>=4){stabFrames++;sb.style.width=(stabFrames/STAB*100)+'%';if(stabFrames>=STAB){isScanning=false;playShutterSound();sb.style.width='0%';setTimeout(()=>captureAndProcess(),50);return;}}
-  else{stabFrames=0;sb.style.width='0%';}
-  scanRAF=requestAnimationFrame(scanLoop);
+  const sb=document.getElementById('stab');
+  if(!autoMode){stabF=0;sb.style.width='0%';scanRAF=requestAnimationFrame(scanLoop);return}
+  const STAB=18;
+  if(aligned>=4){stabF++;sb.style.width=(stabF/STAB*100)+'%';if(stabF>=STAB){scanning=false;shutterSound();sb.style.width='0%';setTimeout(capture,50);return}}
+  else{stabF=0;sb.style.width='0%'}
+  scanRAF=requestAnimationFrame(scanLoop)
 }
+function forceCap(){if(!scanning)return;scanning=false;shutterSound();document.getElementById('stab').style.width='0%';capture()}
 
-function forceCapture(){if(!isScanning)return;isScanning=false;playShutterSound();document.getElementById('stab-bar').style.width='0%';captureAndProcess();}
+function capture(){
+  const rv=vid.getBoundingClientRect(),gr=document.getElementById('guide').getBoundingClientRect();
+  const vw=vid.videoWidth,vh=vid.videoHeight;
+  const srcPts=[nativeCoords(gr.left-rv.left,gr.top-rv.top,rv,vw,vh),nativeCoords(gr.right-rv.left,gr.top-rv.top,rv,vw,vh),nativeCoords(gr.right-rv.left,gr.bottom-rv.top,rv,vw,vh),nativeCoords(gr.left-rv.left,gr.bottom-rv.top,rv,vw,vh)];
+  const outH=1000,outW=Math.round(outH*(SHEET_W/SHEET_H));
+  const fc=document.createElement('canvas');fc.width=vw;fc.height=vh;fc.getContext('2d').drawImage(vid,0,0);
+  const warped=warpImg(fc.getContext('2d'),vw,vh,srcPts,outW,outH);
+  const cc=document.createElement('canvas');cc.width=outW;cc.height=outH;cc.getContext('2d').drawImage(warped,0,0);
+  const cCtx=cc.getContext('2d');
+  prevC.width=outW;prevC.height=outH;prevCtx.drawImage(warped,0,0);
+  vid.style.display='none';document.getElementById('guide').style.display='none';prevC.style.display='block';
 
-// captureAndProcess: الدالة الرئيسية للالتقاط والتصحيح
-function captureAndProcess(){
-  const rv=video.getBoundingClientRect(),gr=document.getElementById('guide-rect').getBoundingClientRect();
-  const vw=video.videoWidth,vh=video.videoHeight;
-  // الزوايا الأربعة في بكسل الفيديو (TL,TR,BR,BL)
-  const srcPts=[
-    getNativeCoords(gr.left-rv.left,gr.top-rv.top,rv,vw,vh),
-    getNativeCoords(gr.right-rv.left,gr.top-rv.top,rv,vw,vh),
-    getNativeCoords(gr.right-rv.left,gr.bottom-rv.top,rv,vw,vh),
-    getNativeCoords(gr.left-rv.left,gr.bottom-rv.top,rv,vw,vh)
-  ];
-  // أبعاد الصورة الناتجة بنسبة الورقة A4
-  const outH=900,outW=Math.round(outH*(OMR.W/OMR.H));
-  // رسم الفيديو على canvas مؤقت
-  const fullC=document.createElement('canvas');fullC.width=vw;fullC.height=vh;
-  fullC.getContext('2d').drawImage(video,0,0);
-  // Perspective Warp
-  const warpedC=perspectiveWarp(fullC.getContext('2d'),vw,vh,srcPts,outW,outH);
-  // نسخة نظيفة للتحليل
-  const cleanC=document.createElement('canvas');cleanC.width=outW;cleanC.height=outH;
-  cleanC.getContext('2d').drawImage(warpedC,0,0);
-  const cleanCtx=cleanC.getContext('2d');
-  // ✅ ضبط أبعاد previewCanvas
-  previewCanvas.width=outW;
-  previewCanvas.height=outH;
-  // ✅ رسم الصورة الملتقطة
-  previewCtx.drawImage(warpedC,0,0);
-  // ✅ إخفاء الفيديو وعرض الصورة
-  video.style.display='none';
-  document.getElementById('guide-rect').style.display='none';
-  previewCanvas.style.display='block';
-  const lay=AppState.activeScan.exam.layout,key=AppState.activeScan.exam.answerKey;
+  const lay=S.activeScan.exam.layout,key=S.activeScan.exam.answerKey;
   const meta=lay._meta||{};
-  const ratio=(meta.bubbleRadiusRatio&&meta.bubbleRadiusRatio>0)?meta.bubbleRadiusRatio:(OMR.BD/2/OMR.W);
-  const bubbleR=Math.max(Math.round(ratio*outW),6);
-  // دوائر صفراء على الإجابات الصحيحة
-  for(let q in lay){if(q.startsWith('_'))continue;const cOpts=Object.keys(key[q]||{});for(let o in lay[q]){if(!cOpts.includes(o))continue;const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);previewCtx.beginPath();previewCtx.arc(px,py,bubbleR,0,2*Math.PI);previewCtx.strokeStyle='#f59e0b';previewCtx.lineWidth=2.5;previewCtx.stroke();}}
-  // قراءة إجابات التلميذ
-  let fc={};
-  for(let q in lay){if(q.startsWith('_'))continue;let filled=[];for(let o in lay[q]){const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);if(measureDarkness(cleanCtx,px,py,bubbleR,135)>0.13)filled.push({opt:o,px,py});}
-    if(filled.length>0){fc[q]=filled.map(f=>f.opt).join(', ');const cOpts=Object.keys(key[q]||{});filled.forEach(f=>{const ok=cOpts.includes(f.opt);previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR,0,2*Math.PI);previewCtx.strokeStyle=ok?'#22c55e':'#ef4444';previewCtx.lineWidth=4;previewCtx.stroke();if(ok){previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR-3,0,2*Math.PI);previewCtx.fillStyle='rgba(34,197,94,.28)';previewCtx.fill();}});}}
-  // النتيجة
-  const tot=calculateScore(fc,key);
-  AppState.activeScan.extChoices=fc;AppState.activeScan.tot=tot;
-  document.getElementById('scanner-bottom').style.display='none';
-  document.getElementById('result-score').innerText='✅  النتيجة: '+tot+' نقطة';
-  // اسم التلميذ
-  const _nameEl=document.getElementById('result-student-name');
-  if(_nameEl){
-    let _sName='';
-    for(let _cls of AppState.classes){const _st=_cls.students.find(s=>s.id===AppState.activeScan.studentId);if(_st){_sName=_st.name;break;}}
-    _nameEl.innerText=_sName?'👤 '+_sName:'';
+  const bubR=Math.max(Math.round((meta.sheetW?((lay[`Q1`]?.[Object.keys(lay[`Q1`]||{})[0]]?.r||.018)*outW):14)),6);
+
+  // Draw correct answer highlights (yellow)
+  for(let q in lay){if(q.startsWith('_'))continue;const cOpts=Object.keys(key[q]||{});for(let o in lay[q]){if(!cOpts.includes(o))continue;const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH),r=Math.round(lay[q][o].r*outW);prevCtx.beginPath();prevCtx.arc(px,py,r,0,2*Math.PI);prevCtx.strokeStyle='#f59e0b';prevCtx.lineWidth=2.5;prevCtx.stroke()}}
+
+  // Read student answers
+  let fc_={};
+  for(let q in lay){if(q.startsWith('_'))continue;let filled=[];
+    for(let o in lay[q]){const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH),r=Math.round(lay[q][o].r*outW);
+      if(measureDark(cCtx,px,py,r,130)>.12)filled.push({opt:o,px,py,r})}
+    if(filled.length){fc_[q]=filled.map(f=>f.opt).join(', ');
+      const cOpts=Object.keys(key[q]||{});
+      filled.forEach(f=>{const ok=cOpts.includes(f.opt);prevCtx.beginPath();prevCtx.arc(f.px,f.py,f.r,0,2*Math.PI);prevCtx.strokeStyle=ok?'#22c55e':'#ef4444';prevCtx.lineWidth=4;prevCtx.stroke();if(ok){prevCtx.beginPath();prevCtx.arc(f.px,f.py,f.r-3,0,2*Math.PI);prevCtx.fillStyle='rgba(34,197,94,.25)';prevCtx.fill()}})
+    }
   }
-  document.getElementById('result-overlay').style.display='flex';
+  const tot=calcScore(fc_,key);
+  S.activeScan.extChoices=fc_;S.activeScan.tot=tot;
+  document.getElementById('scan-bot').style.display='none';
+  document.getElementById('res-score').innerText='✅ النتيجة: '+tot+' نقطة';
+  const ne=document.getElementById('res-name');if(ne){let sn='';for(let c of S.classes){const st=c.students.find(s=>s.id===S.activeScan.studentId);if(st){sn=st.name;break}}ne.innerText=sn?'👤 '+sn:''}
+  document.getElementById('res-ov').style.display='flex'
 }
 
-function calculateScore(choices, answerKey){
-  let total = 0;
+function calcScore(choices,answerKey){
+  let total=0;
   for(let q in answerKey){
-    if(q.startsWith('_')) continue;
-
-    const cOpts  = Object.keys(answerKey[q]);   // الخيارات الصحيحة
-    const cCount = cOpts.length;
-    const sOpts  = (choices[q] || '').split(', ').filter(Boolean); // اختيارات التلميذ
-
-    if(sOpts.length === 0) continue;
-
-    if(cCount === 1){
-      // ══ سؤال بخيار واحد ══
-      // النقطة الكاملة: الخيار الصحيح وحده تماماً
-      if(sOpts.length === 1 && sOpts[0] === cOpts[0]){
-        total += answerKey[q][cOpts[0]];
-      }
-      // أي حالة أخرى = 0 (ظلّل خطأ، أو ظلّل صح+خطأ)
-
-    } else {
-      // ══ سؤال بخيارات متعددة ══
-      const fullPts     = cOpts.reduce((s, o) => s + (answerKey[q][o] || 0), 0);
-      const ptPerChoice = fullPts / cCount;  // نصيب كل خيار
-
-      const correctPicked = sOpts.filter(o => cOpts.includes(o));
-      const wrongPicked   = sOpts.filter(o => !cOpts.includes(o));
-
-      // النقطة المكتسبة: مجموع نقط الخيارات الصحيحة المظلّلة
-      const earned = correctPicked.reduce((s, o) => s + (answerKey[q][o] || 0), 0);
-
-      // الخصم: يُطبَّق فقط على الزيادة عن العدد المطلوب
-      // مثال: سؤال بخيارين → ظلّل 2 (1صح+1خطأ) → لا خصم (لم يتجاوز الحد)
-      //                       ظلّل 3 (2صح+1خطأ) → خصم 1 خيار زائد فقط
-      const extraWrong  = Math.max(0, sOpts.length - cCount);
-      const deduction   = extraWrong * ptPerChoice;
-      const score       = Math.max(0, Math.round((earned - deduction) * 100) / 100);
-      total += score;
+    if(q.startsWith('_'))continue;
+    const cOpts=Object.keys(answerKey[q]),cCount=cOpts.length;
+    const sOpts=(choices[q]||'').split(', ').filter(Boolean);
+    if(!sOpts.length)continue;
+    if(cCount===1){
+      // Single-answer question: full marks only if exactly correct
+      if(sOpts.length===1&&sOpts[0]===cOpts[0])total+=answerKey[q][cOpts[0]]
+    }else{
+      // Multi-answer question
+      const fullPts=cOpts.reduce((s,o)=>s+(answerKey[q][o]||0),0);
+      const ptPer=fullPts/cCount;
+      const correct=sOpts.filter(o=>cOpts.includes(o));
+      const extra=Math.max(0,sOpts.length-cCount);
+      const earned=correct.reduce((s,o)=>s+(answerKey[q][o]||0),0);
+      total+=Math.max(0,Math.round((earned-extra*ptPer)*100)/100)
     }
   }
-  return Math.round(total * 10) / 10;
-}
-function stopScanner(){
-  isScanning=false;
-  if(scanRAF) cancelAnimationFrame(scanRAF);
-  if(AppState.videoStream) AppState.videoStream.getTracks().forEach(t=>t.stop());
-  document.getElementById('scannerModal').style.display='none';
+  return Math.round(total*10)/10
 }
 
-function retakePhoto(){
-  isScanning=true;
-  resetScannerUI();
-  scanLoop();
-}
-
-async function confirmSaveScanned(){
-  const{exam,studentId,extChoices}=AppState.activeScan,eid=exam.id;
-  let res=AppState.results[eid]?.[studentId]||{id:`${eid}___${studentId}`,examId:eid,studentId};
+function stopScan(){scanning=false;if(scanRAF)cancelAnimationFrame(scanRAF);if(S.stream)S.stream.getTracks().forEach(t=>t.stop());closeM('scanModal')}
+function retake(){scanning=true;resetUI();scanLoop()}
+async function confirmSave(){
+  const{exam,studentId,extChoices}=S.activeScan,eid=exam.id;
+  let res=S.results[eid]?.[studentId]||{id:`${eid}___${studentId}`,examId:eid,studentId};
   res.choices=extChoices;res.scores={};
-  for(let i=1;i<=exam.qCount;i++){const q='Q'+i;res.scores[q]=calculateScore({[q]:extChoices[q]||''},{[q]:exam.answerKey[q]||{}});}
+  for(let i=1;i<=exam.qCount;i++){const q='Q'+i;res.scores[q]=calcScore({[q]:extChoices[q]||''},{[q]:exam.answerKey[q]||{}})}
   res.total=Math.round(Object.values(res.scores).reduce((a,b)=>a+b,0)*10)/10;
-  // حفظ صورة الورقة الملتقطة (base64 مضغوط)
-  try{
-    const pc=document.getElementById('preview-canvas');
-    if(pc && pc.width>0){
-      // تقليص الصورة للحفظ (جودة 60% لتوفير المساحة)
-      const tmpC=document.createElement('canvas');
-      const sf=Math.min(1, 600/pc.width);
-      tmpC.width=Math.round(pc.width*sf); tmpC.height=Math.round(pc.height*sf);
-      tmpC.getContext('2d').drawImage(pc,0,0,tmpC.width,tmpC.height);
-      res.scannedImage=tmpC.toDataURL('image/jpeg',0.6);
-    }
-  }catch(e){}
-  if(!AppState.results[eid])AppState.results[eid]={};AppState.results[eid][studentId]=res;
-  await IDB.put('results',res);stopScanner();renderResultsTable();
+  try{const pc=document.getElementById('prev-canvas');if(pc&&pc.width>0){const tc=document.createElement('canvas');const sf=Math.min(1,500/pc.width);tc.width=Math.round(pc.width*sf);tc.height=Math.round(pc.height*sf);tc.getContext('2d').drawImage(pc,0,0,tc.width,tc.height);res.scannedImage=tc.toDataURL('image/jpeg',.55)}}catch(e){}
+  if(!S.results[eid])S.results[eid]={};S.results[eid][studentId]=res;
+  await IDB.put('results',res);stopScan();renderRes()
 }
 
-// ================================================================
-// Backup, Dropdown, Broadcast, DragDrop
-// ================================================================
-function openBackupModal(){document.getElementById('backupModal').style.display='flex';}
-function exportData(){const data={classes:AppState.classes,exams:AppState.exams,results:[]};for(let e in AppState.results)for(let s in AppState.results[e])data.results.push(AppState.results[e][s]);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));a.download=`OMR_Backup_${new Date().toISOString().split('T')[0]}.json`;a.click();}
-function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=async ev=>{try{const data=JSON.parse(ev.target.result);await IDB.clear('classes');await IDB.clear('exams');await IDB.clear('results');for(let i of(data.classes||[]))await IDB.put('classes',i);for(let i of(data.exams||[]))await IDB.put('exams',i);for(let i of(data.results||[]))await IDB.put('results',i);alert('تم الاستيراد بنجاح!');window.location.reload();}catch(err){alert('خطأ في الملف.');}};r.readAsText(file);}
-function toggleDropdown(){document.getElementById('myDropdown').classList.toggle('show');}
-window.onclick=function(e){if(!e.target.matches('.btn'))document.querySelectorAll('.dropdown-content.show').forEach(d=>d.classList.remove('show'));};
-function editCurrentExam(){const eid=document.getElementById('resultExamSelect').value;if(eid)editExamSetup(eid);}
-async function deleteCurrentExam(){const eid=document.getElementById('resultExamSelect').value;if(eid&&confirm('حذف هذا الامتحان وكل نتائجه؟')){await deleteExam(eid);updateResultExams();}}
-function printCurrentExam(type){const eid=document.getElementById('resultExamSelect').value;if(eid)printExam(eid,type);else alert('يرجى اختيار امتحان أولاً!');}
-function openBroadcastModal(){const eid=document.getElementById('resultExamSelect').value;if(!eid)return alert('اختر امتحاناً أولاً!');const ex=AppState.exams.find(e=>e.id===eid);let lvl=AppState.settings?.levels?.find(l=>l.classes.some(c=>c.id===ex.classId));if(!lvl)return alert('المستوى غير موجود.');const list=document.getElementById('broadcastClassesList'),btn=document.getElementById('confirmBroadcastBtn');list.innerHTML='';let found=0;lvl.classes.forEach(c=>{if(c.id===ex.classId||!c.checked)return;const exists=AppState.exams.some(e=>e.classId===c.id&&e.name===ex.name&&e.year===ex.year&&e.subject===ex.subject&&e.stage===ex.stage);if(!exists){list.innerHTML+=`<label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;background:var(--light);border:1px solid var(--border);border-radius:5px;"><input type="checkbox" class="broadcast-checkbox" value="${c.id}" style="width:auto;margin:0;"> <strong>${c.name}</strong></label>`;found++;}});if(!found){list.innerHTML='<p style="color:var(--danger);text-align:center;font-weight:700;">جميع الأقسام تمتلك هذا الامتحان!</p>';btn.style.display='none';}else btn.style.display='block';document.getElementById('broadcastModal').style.display='flex';}
-async function confirmBroadcastExam(){const eid=document.getElementById('resultExamSelect').value,ex=AppState.exams.find(e=>e.id===eid),cbs=document.querySelectorAll('.broadcast-checkbox:checked');if(!cbs.length)return alert('حدد قسماً واحداً على الأقل.');for(let cb of cbs){const ne=JSON.parse(JSON.stringify(ex));ne.id=generateId();ne.classId=cb.value;AppState.exams.push(ne);await IDB.put('exams',ne);}alert(`تم التعميم على (${cbs.length}) قسم!`);closeModal('broadcastModal');updateResultExams();}
-let draggedId=null;
-function dragStart(e,id){draggedId=id;e.target.classList.add('dragging');setTimeout(()=>e.target.style.display='none',0);}
-function dragOver(e){e.preventDefault();}
-function dragEnter(e){e.preventDefault();e.target.closest('tr')?.classList.add('drag-over');}
-function dragLeave(e){e.target.closest('tr')?.classList.remove('drag-over');}
-async function drop(e,cid,year,tid){e.preventDefault();document.querySelectorAll('.draggable-row').forEach(r=>{r.classList.remove('dragging','drag-over');r.style.display='';});if(!draggedId||draggedId===tid)return;const cls=AppState.classes.find(c=>c.id===cid);let ys=cls.students.filter(s=>s.year===year).sort((a,b)=>(a.roll||0)-(b.roll||0));const di=ys.findIndex(s=>s.id===draggedId),ti=ys.findIndex(s=>s.id===tid);if(di===-1||ti===-1)return;const[di_]=ys.splice(di,1);ys.splice(ti,0,di_);ys.forEach((s,i)=>s.roll=i+1);cls.students=[...cls.students.filter(s=>s.year!==year),...ys];await IDB.put('classes',cls);renderStudents();draggedId=null;}
+/* ═══════════════════════════════════════════════════════════════
+   BACKUP, BROADCAST, DROPDOWN
+   ═══════════════════════════════════════════════════════════════ */
+function exportJSON(){const d={classes:S.classes,exams:S.exams,results:[],settings:S.settings};for(let e in S.results)for(let s in S.results[e])d.results.push(S.results[e][s]);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));a.download=`OMR_${new Date().toISOString().split('T')[0]}.json`;a.click()}
+function importJSON(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=async e=>{try{const d=JSON.parse(e.target.result);await IDB.clr('classes');await IDB.clr('exams');await IDB.clr('results');for(let i of(d.classes||[]))await IDB.put('classes',i);for(let i of(d.exams||[]))await IDB.put('exams',i);for(let i of(d.results||[]))await IDB.put('results',i);if(d.settings)await IDB.put('settings',d.settings);alert('تم الاستيراد!');location.reload()}catch(er){alert('خطأ في الملف')}};r.readAsText(f)}
+function togDD(){document.getElementById('ddMenu').classList.toggle('on')}
+document.addEventListener('click',e=>{if(!e.target.closest('.dd'))document.querySelectorAll('.dd-c.on').forEach(d=>d.classList.remove('on'))});
+function editEx(){const eid=document.getElementById('rEx').value;if(eid)editExSetup(eid)}
+async function delEx(){const eid=document.getElementById('rEx').value;if(eid&&confirm('حذف الامتحان وجميع نتائجه؟')){await delExam(eid);updExams()}}
+function openBcast(){
+  const eid=document.getElementById('rEx').value;if(!eid)return alert('اختر امتحاناً');const ex=S.exams.find(e=>e.id===eid);
+  let lvl=S.settings?.levels?.find(l=>l.classes.some(c=>c.id===ex.classId));if(!lvl)return alert('المستوى غير موجود');
+  const list=document.getElementById('bcastList');list.innerHTML='';let found=0;
+  lvl.classes.forEach(c=>{if(c.id===ex.classId||!c.checked)return;const exists=S.exams.some(e=>e.classId===c.id&&e.name===ex.name&&e.year===ex.year&&e.subject===ex.subject);if(!exists){list.innerHTML+=`<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:5px"><input type="checkbox" class="bchk" value="${c.id}" style="width:auto;margin:0"><strong>${c.name}</strong></label>`;found++}});
+  if(!found){list.innerHTML='<p style="color:var(--no);text-align:center;font-weight:700">جميع الأقسام تمتلك هذا الامتحان!</p>'}
+  openModal('bcastModal')
+}
+async function doBcast(){
+  const eid=document.getElementById('rEx').value,ex=S.exams.find(e=>e.id===eid),cbs=document.querySelectorAll('.bchk:checked');
+  if(!cbs.length)return alert('حدد قسماً واحداً على الأقل');
+  for(let cb of cbs){const ne=JSON.parse(JSON.stringify(ex));ne.id=uid();ne.classId=cb.value;S.exams.push(ne);await IDB.put('exams',ne)}
+  alert(`تم التعميم على (${cbs.length}) قسم!`);closeM('bcastModal');updExams()
+}
 
-window.onload=initApp;
-
+/* ═══════════════════════════════════════════════════════════════
+   BOOT
+   ═══════════════════════════════════════════════════════════════ */
+window.onload=init;
 </script>
 </body>
 </html>
