@@ -254,7 +254,7 @@ th{background:var(--light);white-space:nowrap;}
     <div><label>المرحلة</label><select id="examStageSelect"></select></div>
     <div><label>القسم</label><select id="examClassSelect"></select></div>
     <div><label>اسم الامتحان</label><input type="text" id="examName" placeholder="مثال: الفرض الأول"></div>
-    <div><label>عدد الأسئلة</label><input type="number" id="examQCount" value="10" min="1" max="40" onchange="updateOptionCount()"></div>
+    <div><label>عدد الأسئلة</label><input type="number" id="examQCount" value="10" min="1" max="60" onchange="updateOptionCount()"></div>
     <div><label>عدد الخيارات</label>
       <select id="examOptionCount">
         <option value="4">4 خيارات (أ ب ج د)</option>
@@ -536,7 +536,10 @@ function updateOptionCount(){
   const curVal = parseInt(sel.value) || 4;
 
   // تحديد الحد الأقصى للخيارات
-  const maxOpts = qCount <= 20 ? 9 : 6;
+  // حساب الحد الأقصى للخيارات بناءً على عدد الأسئلة
+  // عمود واحد (≤20): innerW=704 → blockW=28+8+nOpt*OPT_GAP ≤ 704 → max ~9
+  // عمودان (>20): colW=336 → blockW ≤ 336 → max ~5-6 حسب الحجم
+  const maxOpts = qCount <= 20 ? 9 : (qCount <= 40 ? 6 : 5);
 
   // إعادة بناء القائمة
   const labels = ['','','','4 خيارات (أ ب ج د)','5 خيارات (أ ب ج د هـ)',
@@ -623,201 +626,150 @@ async function deleteExam(id){AppState.exams=AppState.exams.filter(e=>e.id!==id)
 // buildPrintTemplate — ورقة إجابة بـ SVG للعربية الصحيحة
 // ================================================================
 function buildPrintTemplate(ex){
-  const opts=ex.options, nOpt=opts.length;
-  const {CM,CO,W,H,PAD} = OMR;
+  const opts = ex.options, nOpt = opts.length;
+  const {CM, CO, W, H} = OMR;
+  const PAD    = 35;                        // هامش أفقي
+  const NUM_W  = 28;                        // عرض عمود رقم السؤال
+  const NUM_G  = 8;                         // فجوة بين الرقم والدائرة الأولى
+  const HDR_SVG_H = 168;                    // ارتفاع ترويسة SVG
+  const SVG_TOP   = CO + CM + 10;          // y بداية الترويسة = 42px
+  const GRID_TOP  = SVG_TOP + HDR_SVG_H + 10;  // y بداية الشبكة = 220px
+  const GRID_BOT  = H - CO - CM - 30;      // y نهاية الشبكة = 1049px
+  const availH    = GRID_BOT - GRID_TOP;   // المساحة الرأسية للشبكة
+  const innerW    = W - CO*2 - PAD*2;      // العرض الداخلي = 704px
 
-  // ════ نظام العمود الذكي ════
-  // ≤20 سؤال: عمود واحد يتوسط الورقة — نتيح حتى 9 خيارات
-  // >20 سؤال: عمودان متوازيان — نتيح حتى 6 خيارات
-  const numCols = ex.qCount <= 20 ? 1 : 2;
-  const BLK     = 10; // أسئلة في كل كتلة
+  // ════ تحديد عدد الأعمدة ════
+  // ≤20: عمود واحد مُتوسَّط | >20: عمودان
+  const numCols    = ex.qCount <= 20 ? 1 : 2;
+  const colGap     = numCols === 2 ? 32 : 0;
+  const colW       = numCols === 1 ? innerW : Math.floor((innerW - colGap) / 2);
 
-  // ── أبعاد المنطقة الداخلية ──
-  const innerW = W - CO*2 - PAD*2;  // ~704px
+  // ════ حجم الدوائر الديناميكي ════
+  // كل عمود يحتوي rowsPerCol صف + blkCount رأس كتلة
+  const rowsPerCol  = Math.ceil(ex.qCount / numCols);
+  const BLK         = 10;
+  const blkCount    = Math.ceil(rowsPerCol / BLK);
+  const HDR_ROW_H   = 24; // ارتفاع صف حروف الخيارات
 
-  // ── حساب حجم الدوائر والفجوات بناءً على عدد الأسئلة وعدد الأعمدة ──
-  const availH   = H - OMR.HDR_H - 8 - CO - CM - 50;
-  const rowsPerCol = Math.ceil(ex.qCount / numCols);
-  const blkCount   = Math.ceil(rowsPerCol / BLK);
+  // Q_GAP: ارتفاع كل صف (مركز إلى مركز)
+  const Q_GAP_f = (availH - blkCount * HDR_ROW_H) / (rowsPerCol);
+  const Q_GAP   = Math.max(26, Math.min(76, Math.floor(Q_GAP_f)));
 
-  // Q_GAP: المسافة بين مراكز الصفوف (تصغر مع كثرة الأسئلة)
-  const dynQ_GAP = numCols === 1
-    ? Math.min(80, Math.max(48, Math.floor((availH - blkCount*32) / Math.max(rowsPerCol,1))))
-    : Math.min(60, Math.max(40, Math.floor((availH - blkCount*28) / Math.max(rowsPerCol,1))));
+  // BD: قطر الدائرة = Q_GAP - 8 (يتسع مع الفراغ)
+  const maxBD  = numCols === 1 ? 50 : 36;
+  const BD     = Math.max(18, Math.min(maxBD, Q_GAP - 8));
 
-  // Bubble diameter
-  const dynBD = numCols === 1
-    ? Math.min(54, Math.max(38, dynQ_GAP - 4))
-    : Math.min(42, Math.max(28, dynQ_GAP - 6));
+  // OPT_GAP: المسافة بين مراكز الدوائر الأفقية
+  // يجب أن تسع nOpt دوائر في colW
+  const maxOPT = Math.floor((colW - NUM_W - NUM_G) / nOpt);
+  const OPT_GAP = Math.max(BD + 6, Math.min(BD + 14, maxOPT));
 
-  // OPT_GAP: المسافة بين مراكز الدوائر الأفقية (≥ dynBD + 8)
-  const dynOPT_GAP = Math.max(dynBD + 10, numCols === 1 ? 52 : 40);
+  // عرض كتلة الأسئلة الفعلي
+  const blockW = NUM_W + NUM_G + nOpt * OPT_GAP;
 
-  // عرض كتلة سؤال واحد = رقم + فجوة + دوائر
-  const blockW = OMR.NUM_W + OMR.NUM_GAP + nOpt * dynOPT_GAP;
+  // موضع x للعمود الواحد: يتوسط الورقة
+  const col0X = numCols === 1
+    ? CO + PAD + Math.max(0, Math.floor((innerW - blockW) / 2))
+    : CO + PAD;
+  const col1X = col0X + colW + colGap;
 
-  // توزيع الأعمدة
-  let colW, gridLeft;
-  if(numCols === 1){
-    // عمود واحد يتوسط الورقة
-    gridLeft = CO + PAD + Math.max(0, Math.floor((innerW - blockW) / 2));
-    colW     = innerW; // غير مستخدم فعلياً لكن نحفظه
-  } else {
-    // عمودان: فجوة 30px بين العمودين
-    const gap  = 30;
-    colW       = Math.floor((innerW - gap) / 2);
-    gridLeft   = CO + PAD;
-  }
-
-  const colGap  = numCols === 1 ? 0 : Math.floor((innerW - 2*colW) / 1);
-  const blocksPerCol = Math.ceil(Math.ceil(ex.qCount/numCols) / BLK);
-  // CM,CO,W,H,PAD already destructured above
-  const midY=Math.round(H/2)-14;
-  // ---- مربعات الزوايا ----
-  let html=`
+  // ════ مربعات الزوايا والوسط ════
+  const midY = Math.round(H/2) - 14;
+  let html = `
 <div class="omr-marker" style="width:${CM}px;height:${CM}px;top:${CO}px;left:${CO}px;"></div>
 <div class="omr-marker" style="width:${CM}px;height:${CM}px;top:${CO}px;right:${CO}px;"></div>
 <div class="omr-marker" style="width:${CM}px;height:${CM}px;bottom:${CO}px;left:${CO}px;"></div>
 <div class="omr-marker" style="width:${CM}px;height:${CM}px;bottom:${CO}px;right:${CO}px;"></div>
 <div class="omr-mid-marker" style="width:14px;height:28px;top:${midY}px;left:${CO}px;"></div>
 <div class="omr-mid-marker" style="width:14px;height:28px;top:${midY}px;right:${CO}px;"></div>`;
-  // ---- الترويسة بـ SVG (تحل مشكلة العربية المفككة) ----
-  const hL=OMR.RL+OMR.PAD,hR=OMR.RR-OMR.PAD,hT=OMR.CO+OMR.CM+12;
-  // SVG الترويسة بعرض كامل الورقة
-  const svgL = OMR.CO + 2;           // 12px من حافة الورقة
-  const svgW = OMR.W - svgL * 2;     // عرض كامل: ~770px
-  const p    = Math.round(svgW*0.025); // padding داخلي 2.5%
-  html+=`
-<svg xmlns="http://www.w3.org/2000/svg"
-     style="position:absolute;left:${svgL}px;top:${hT}px;"
-     width="${svgW}" height="168">
 
-  <!-- شريط العنوان الداكن -->
+  // ════ ترويسة SVG ════
+  const svgL = CO + 2;
+  const svgW = W - svgL * 2;
+  const p    = Math.round(svgW * 0.025);
+  html += `
+<svg xmlns="http://www.w3.org/2000/svg"
+     style="position:absolute;left:${svgL}px;top:${SVG_TOP}px;"
+     width="${svgW}" height="${HDR_SVG_H}">
   <rect x="0" y="0" width="${svgW}" height="58" rx="7" fill="#d1d9e0"/>
   <rect x="0" y="14" width="${svgW}" height="44" fill="#e2e8ed"/>
-
-  <!-- خط فاصل سفلي للشريط -->
   <line x1="0" y1="57" x2="${svgW}" y2="57" stroke="#94a3b8" stroke-width="1"/>
-
-  <!-- اسم الامتحان — يمين — كبير وعريض -->
-  <text x="${svgW - p}" y="31"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="22" font-weight="800" fill="#0f172a" text-anchor="end"
-    dominant-baseline="middle">${ex.name}</text>
-
-  <!-- المادة / المرحلة / الموسم — يسار -->
-  <text x="${p}" y="49"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="13" fill="#334155" text-anchor="start"
-    dominant-baseline="middle">${ex.subject||''} — ${ex.stage||''} — ${ex.year||''}</text>
-
-  <!-- جدول البيانات RTL صريح:
-       في SVG (LTR): x صغير=يسار الشاشة، x كبير=يمين الشاشة
-       الجدول direction:rtl يعني: أيمن الشاشة = أول عمود مرئي
-       نسب الأعمدة:
-         ر.ت     = 25% = x من 75%..100% (أقصى يمين الشاشة)
-         القسم   = 25% = x من 50%..75%
-         الاسم   = 50% = x من  0%..50% (أقصى يسار الشاشة)
-  -->
+  <text x="${svgW-p}" y="31" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="22" font-weight="800" fill="#0f172a" text-anchor="end" dominant-baseline="middle">${ex.name}</text>
+  <text x="${p}" y="49" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="13" fill="#334155" text-anchor="start" dominant-baseline="middle">${ex.subject||''} — ${ex.stage||''} — ${ex.year||''}</text>
   <rect x="0" y="58" width="${svgW}" height="64" fill="white" stroke="#475569" stroke-width="1.5"/>
-
-  <!-- فاصل القسم|الاسم عند x=50% -->
   <line x1="${Math.round(svgW*0.50)}" y1="58" x2="${Math.round(svgW*0.50)}" y2="122" stroke="#475569" stroke-width="1.2"/>
-  <!-- فاصل ر.ت|القسم عند x=75% -->
   <line x1="${Math.round(svgW*0.75)}" y1="58" x2="${Math.round(svgW*0.75)}" y2="122" stroke="#475569" stroke-width="1.2"/>
-
-  <!-- تسمية ر.ت: مركز العمود 75%..100% = x=87.5% -->
-  <text x="${Math.round(svgW*0.875)}" y="73"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">ر.ت</text>
-  <!-- تسمية القسم: مركز العمود 50%..75% = x=62.5% -->
-  <text x="${Math.round(svgW*0.625)}" y="73"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">القسم</text>
-  <!-- تسمية الاسم الكامل: مركز العمود 0%..50% = x=25% -->
-  <text x="${Math.round(svgW*0.25)}" y="73"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">الاسم الكامل</text>
-
-  <!-- نقط الكتابة 5px بدلاً من الخطوط — مع فراغ مناسب تحت التسمية -->
-  <!-- نقط عمود الاسم الكامل: 0..50% -->
-  <!-- نقط الكتابة — font-size=5px كما طُلب — مع فراغ مناسب -->
-  <!-- نقط عمود الاسم الكامل -->
-  <text x="${Math.round(svgW*0.25)}" y="112"
-    font-family="Arial,sans-serif" font-size="5" fill="#64748b"
-    text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .</text>
-  <!-- نقط عمود القسم -->
-  <text x="${Math.round(svgW*0.625)}" y="112"
-    font-family="Arial,sans-serif" font-size="5" fill="#64748b"
-    text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . . . . . . . . .</text>
-  <!-- نقط عمود ر.ت -->
-  <text x="${Math.round(svgW*0.875)}" y="112"
-    font-family="Arial,sans-serif" font-size="5" fill="#64748b"
-    text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . .</text>
-
-  <!-- شريط التعليمات -->
+  <text x="${Math.round(svgW*0.875)}" y="73" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">ر.ت</text>
+  <text x="${Math.round(svgW*0.625)}" y="73" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">القسم</text>
+  <text x="${Math.round(svgW*0.25)}" y="73" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">الاسم الكامل</text>
+  <text x="${Math.round(svgW*0.25)}" y="112" font-family="Arial,sans-serif" font-size="5" fill="#64748b" text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .</text>
+  <text x="${Math.round(svgW*0.625)}" y="112" font-family="Arial,sans-serif" font-size="5" fill="#64748b" text-anchor="middle" letter-spacing="4">. . . . . . . . . . . . . . . . . . .</text>
+  <text x="${Math.round(svgW*0.875)}" y="112" font-family="Arial,sans-serif" font-size="5" fill="#64748b" text-anchor="middle" letter-spacing="4">. . . . . . . . . . .</text>
   <rect x="0" y="124" width="${svgW}" height="42" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.2"/>
-  <text x="${Math.round(svgW/2)}" y="139"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="14" font-weight="700" fill="#1d4ed8" text-anchor="middle">لوّن الدائرة المناسبة لإجابتك</text>
-  <text x="${Math.round(svgW/2)}" y="158"
-    font-family="Cairo,Tajawal,Arial,sans-serif"
-    font-size="12.5" fill="#475569" text-anchor="middle">لا تضع أي علامة خارج الدوائر</text>
+  <text x="${Math.round(svgW/2)}" y="139" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="14" font-weight="700" fill="#1d4ed8" text-anchor="middle">لوّن الدائرة المناسبة لإجابتك</text>
+  <text x="${Math.round(svgW/2)}" y="158" font-family="Cairo,Tajawal,Arial,sans-serif" font-size="12.5" fill="#475569" text-anchor="middle">لا تضع أي علامة خارج الدوائر</text>
 </svg>`;
-  // ---- شبكة الأسئلة — Q_GAP ديناميكي ----
-  const gridTop = OMR.HDR_H + 8;
 
-  for(let col=0; col<numCols; col++){
-    // colX: للعمود الواحد المتوسط، للعمودين: يسار ويمين
-    let colX;
-    if(numCols === 1){
-      colX = gridLeft;
-    } else {
-      // عمودان: col=0 يسار الورقة (LTR), col=1 يمين
-      colX = gridLeft + col * (colW + colGap);
-    }
-    for(let blkIdx=0;blkIdx<blocksPerCol;blkIdx++){
-      const blockNum=col*blocksPerCol+blkIdx,qStart=blockNum*BLK+1;
-      if(qStart>ex.qCount)break;
-      const qEnd=Math.min(qStart+BLK-1,ex.qCount);
-      const blkY=gridTop+blkIdx*(BLK*dynQ_GAP+28);
-      opts.forEach((o,oi)=>{
-        const hx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2-6;
-        const optFS = Math.round(dynBD * 0.55);
-        const optW  = Math.round(dynBD * 0.8);
-        html+=`<div style="position:absolute;left:${hx - Math.round(optW/2)}px;top:${blkY + 4}px;font-size:${optFS}px;font-weight:800;width:${optW}px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;line-height:1;">${o}</div>`;
-      });
-      for(let q=qStart;q<=qEnd;q++){
-        const qy=blkY+42+(q-qStart)*dynQ_GAP;
-        const qFS = Math.round(dynBD * 0.60);
-        html+=`<div style="position:absolute;left:${colX}px;top:${qy}px;width:${OMR.NUM_W}px;font-size:${qFS}px;font-weight:800;line-height:${dynBD}px;text-align:right;font-family:Arial;color:#1e293b;">${q}</div>`;
-        opts.forEach((o,oi)=>{
-          const cx=colX+OMR.NUM_W+OMR.NUM_GAP+oi*dynOPT_GAP+dynBD/2;
-          const cy=qy+dynBD/2;
-          html+=`<div class="omr-bubble-mark" data-q="Q${q}" data-opt="${o}" data-cx="${cx}" data-cy="${cy}" style="position:absolute;left:${cx-dynBD/2}px;top:${qy}px;width:${dynBD}px;height:${dynBD}px;border:3px solid #1e293b;border-radius:50%;background:white;box-sizing:border-box;"></div>`;
+  // ════ شبكة الأسئلة ════
+  const optFS = Math.max(10, Math.round(BD * 0.52));
+  const optW  = Math.round(BD * 0.85);
+  const qFS   = Math.max(10, Math.round(BD * 0.58));
+  // المسافة بين صف الحروف وأول دائرة
+  const HDR_OFFSET = HDR_ROW_H + 4;
+
+  for(let col = 0; col < numCols; col++){
+    const colX     = col === 0 ? col0X : col1X;
+    const colStart = col * Math.ceil(ex.qCount / numCols) + 1;
+    const colEnd   = Math.min(colStart + Math.ceil(ex.qCount / numCols) - 1, ex.qCount);
+
+    let rowInBlock = 0;
+    let blkIdx     = 0;
+
+    for(let q = colStart; q <= colEnd; q++){
+      // بداية كتلة جديدة: ارسم رأس الحروف
+      if(rowInBlock === 0){
+        const blkY = GRID_TOP + blkIdx * (BLK * Q_GAP + HDR_ROW_H);
+        // رأس الحروف
+        opts.forEach((o, oi) => {
+          const hx = colX + NUM_W + NUM_G + oi * OPT_GAP + Math.round(BD/2);
+          html += `<div style="position:absolute;left:${hx - Math.round(optW/2)}px;top:${blkY}px;font-size:${optFS}px;font-weight:800;width:${optW}px;text-align:center;font-family:'Cairo','Tajawal',sans-serif;color:#1e293b;line-height:${HDR_ROW_H}px;">${o}</div>`;
         });
       }
+
+      const blkY = GRID_TOP + blkIdx * (BLK * Q_GAP + HDR_ROW_H);
+      const qy   = blkY + HDR_OFFSET + rowInBlock * Q_GAP;
+
+      // رقم السؤال
+      html += `<div style="position:absolute;left:${colX}px;top:${qy}px;width:${NUM_W}px;font-size:${qFS}px;font-weight:800;line-height:${BD}px;text-align:right;font-family:Arial;color:#1e293b;">${q}</div>`;
+
+      // الدوائر
+      opts.forEach((o, oi) => {
+        const cx = colX + NUM_W + NUM_G + oi * OPT_GAP + Math.round(BD/2);
+        const cy = qy + Math.round(BD/2);
+        html += `<div class="omr-bubble-mark" data-q="Q${q}" data-opt="${o}" data-cx="${cx}" data-cy="${cy}" style="position:absolute;left:${cx - Math.round(BD/2)}px;top:${qy}px;width:${BD}px;height:${BD}px;border:2.5px solid #1e293b;border-radius:50%;background:white;box-sizing:border-box;"></div>`;
+      });
+
+      rowInBlock++;
+      if(rowInBlock >= BLK){ rowInBlock = 0; blkIdx++; }
     }
   }
-  html+=`<span id="dyn-bd" data-bd="${dynBD}" style="display:none;"></span>`;
 
-  // ════ شريط المعلومات السفلي — بأسلوب ZipGrade ════
-  // يُوضع بين المربعين السفليين، على نفس سطرهما
-  const footerY2 = OMR.H - OMR.CO - Math.round(OMR.CM/2) - 8; // وسط المربعات السفلية
-  const fL2 = OMR.CO + OMR.CM + 10;
-  const fR2 = OMR.W - OMR.CO - OMR.CM - 10;
-  const fW2 = fR2 - fL2;
-  const clsName2 = (AppState.classes.find(cl => cl.id === ex.classId) || {name:''}).name;
-  html += '<div style="position:absolute;left:' + fL2 + 'px;top:' + footerY2 + 'px;'
-        + 'width:' + fW2 + 'px;display:flex;align-items:center;justify-content:space-between;">'
-        + '<span style="font-family:Cairo,Tajawal,Arial,sans-serif;font-size:12px;font-weight:800;color:#1e293b;">المصحح</span>'
-        + '<span style="font-family:Arial,sans-serif;font-size:10px;color:#475569;">www.mysite.com</span>'
-        + '<span style="font-family:Cairo,Tajawal,Arial,sans-serif;font-size:10px;color:#64748b;">' + ex.name + (clsName2 ? ' — ' + clsName2 : '') + '</span>'
-        + '</div>';
+  // حفظ BD في span مخفي
+  html += `<span id="dyn-bd" data-bd="${BD}" style="display:none;"></span>`;
 
-  document.getElementById('omr-sheet-inner').innerHTML=html;
+  // ════ شريط المعلومات السفلي ════
+  const footerY = H - CO - Math.round(CM/2) - 8;
+  const fL = CO + CM + 10, fR = W - CO - CM - 10;
+  const fW = fR - fL;
+  const clsName = (AppState.classes.find(cl => cl.id === ex.classId) || {name:''}).name;
+  html += '<div style="position:absolute;left:' + fL + 'px;top:' + footerY + 'px;width:' + fW + 'px;display:flex;align-items:center;justify-content:space-between;">'
+    + '<span style="font-family:Cairo,Tajawal,Arial,sans-serif;font-size:12px;font-weight:800;color:#1e293b;">المصحح</span>'
+    + '<span style="font-family:Arial,sans-serif;font-size:10px;color:#475569;">www.mysite.com</span>'
+    + '<span style="font-family:Cairo,Tajawal,Arial,sans-serif;font-size:10px;color:#64748b;">' + ex.name + (clsName ? ' — ' + clsName : '') + '</span>'
+    + '</div>';
+
+  document.getElementById('omr-sheet-inner').innerHTML = html;
 }
-
 function extractBubbleCoordinates(){
   const bubbles=document.querySelectorAll('.omr-bubble-mark[data-cx]');
   const dynBdEl=document.getElementById('dyn-bd');
@@ -1173,13 +1125,18 @@ function captureAndProcess(){
   previewCanvas.style.display='block';
   const lay=AppState.activeScan.exam.layout,key=AppState.activeScan.exam.answerKey;
   const meta=lay._meta||{};
-  const ratio=(meta.bubbleRadiusRatio&&meta.bubbleRadiusRatio>0)?meta.bubbleRadiusRatio:(OMR.BD/2/OMR.W);
-  const bubbleR=Math.max(Math.round(ratio*outW),6);
+  // نصف قطر الدائرة المحسوب من النسبة المخزنة
+  const ratio = (meta.bubbleRadiusRatio && meta.bubbleRadiusRatio > 0)
+    ? meta.bubbleRadiusRatio : (OMR.BD/2/OMR.W);
+  // bubbleR للعرض (دوائر الألوان الظاهرة)
+  const bubbleR     = Math.max(Math.round(ratio * outW), 6);
+  // bubbleR للكشف أصغر (70%) لتجنب قراءة حافة الدائرة المطبوعة
+  const detectR     = Math.max(Math.round(bubbleR * 0.70), 4);
   // دوائر صفراء على الإجابات الصحيحة
   for(let q in lay){if(q.startsWith('_'))continue;const cOpts=Object.keys(key[q]||{});for(let o in lay[q]){if(!cOpts.includes(o))continue;const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);previewCtx.beginPath();previewCtx.arc(px,py,bubbleR,0,2*Math.PI);previewCtx.strokeStyle='#f59e0b';previewCtx.lineWidth=2.5;previewCtx.stroke();}}
   // قراءة إجابات التلميذ
   let fc={};
-  for(let q in lay){if(q.startsWith('_'))continue;let filled=[];for(let o in lay[q]){const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);if(measureDarkness(cleanCtx,px,py,bubbleR,135)>0.13)filled.push({opt:o,px,py});}
+  for(let q in lay){if(q.startsWith('_'))continue;let filled=[];for(let o in lay[q]){const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);if(measureDarkness(cleanCtx,px,py,detectR,135)>0.18)filled.push({opt:o,px,py});}
     if(filled.length>0){fc[q]=filled.map(f=>f.opt).join(', ');const cOpts=Object.keys(key[q]||{});filled.forEach(f=>{const ok=cOpts.includes(f.opt);previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR,0,2*Math.PI);previewCtx.strokeStyle=ok?'#22c55e':'#ef4444';previewCtx.lineWidth=4;previewCtx.stroke();if(ok){previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR-3,0,2*Math.PI);previewCtx.fillStyle='rgba(34,197,94,.28)';previewCtx.fill();}});}}
   // النتيجة
   const tot=calculateScore(fc,key);
