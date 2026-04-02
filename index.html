@@ -899,7 +899,11 @@ const previewCanvas=document.getElementById('preview-canvas');
 const previewCtx=previewCanvas.getContext('2d');
 const analysisCanvas=document.getElementById('analysis-canvas');
 const analysisCtx=analysisCanvas.getContext('2d');
-let scanRAF=null,isScanning=false,stabFrames=0,isAutoMode=true;
+let scanRAF=null, isScanning=false, stabFrames=0, isAutoMode=true;
+// نظام استقرار احترافي
+let prevCornerPositions = null;  // مواضع الزوايا في الإطار السابق
+const STAB_NEEDED  = 35;         // إطارات الاستقرار المطلوبة (~1.2ث @ 30fps)
+const MOTION_THR   = 2.0;        // حد الحركة بالبكسل — إذا تحركت الزاوية أكثر → إعادة العدّ
 
 function applyScanModeUI(){
   const cam = document.getElementById('manualCaptureBtn');
@@ -1027,11 +1031,13 @@ function resetScannerUI(){
   const stb = document.getElementById('stab-bar');
   if(stb) stb.style.width = '0%';
   stabFrames = 0;
+  prevCornerPositions = null; // إعادة ضبط مراقب الحركة
   ['cm-tl','cm-tr','cm-bl','cm-br'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.classList.remove('ok');
   });
-  // تطبيق وضع الكاميرا الصحيح (يُظهر/يُخفي زر اليدوي)
+  const instr = document.getElementById('scanner-instr');
+  if(instr) instr.innerText = 'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';
   applyScanModeUI();
 }
 
@@ -1095,55 +1101,129 @@ function measureDarkness(ctx, cx, cy, rad, thresh=128){
 
 // scanLoop: اكتشاف المربعات السوداء وقياس الاستقرار
 function scanLoop(){
-  if(!isScanning)return;
-  analysisCanvas.width=video.videoWidth;analysisCanvas.height=video.videoHeight;
-  analysisCtx.drawImage(video,0,0);
-  const rv=video.getBoundingClientRect(),gr=document.getElementById('guide-rect').getBoundingClientRect();
-  const vw=video.videoWidth,vh=video.videoHeight;
-  // الزوايا الأربعة للـ guide-rect في بكسل الفيديو
-  const corners=[
-    getNativeCoords(gr.left-rv.left,gr.top-rv.top,rv,vw,vh),
-    getNativeCoords(gr.right-rv.left,gr.top-rv.top,rv,vw,vh),
-    getNativeCoords(gr.right-rv.left,gr.bottom-rv.top,rv,vw,vh),
-    getNativeCoords(gr.left-rv.left,gr.bottom-rv.top,rv,vw,vh)
+  if(!isScanning) return;
+
+  // رسم الإطار الحالي على canvas التحليل
+  if(analysisCanvas.width  !== video.videoWidth)  analysisCanvas.width  = video.videoWidth;
+  if(analysisCanvas.height !== video.videoHeight) analysisCanvas.height = video.videoHeight;
+  analysisCtx.drawImage(video, 0, 0);
+
+  const rv  = video.getBoundingClientRect();
+  const gr  = document.getElementById('guide-rect').getBoundingClientRect();
+  const vw  = video.videoWidth, vh = video.videoHeight;
+
+  // ── حساب مواضع الزوايا الأربعة في بكسل الفيديو ──
+  const corners = [
+    getNativeCoords(gr.left  - rv.left, gr.top    - rv.top, rv, vw, vh), // TL
+    getNativeCoords(gr.right - rv.left, gr.top    - rv.top, rv, vw, vh), // TR
+    getNativeCoords(gr.right - rv.left, gr.bottom - rv.top, rv, vw, vh), // BR
+    getNativeCoords(gr.left  - rv.left, gr.bottom - rv.top, rv, vw, vh)  // BL
   ];
-  const checkR=Math.min(vw,vh)*0.02;
-  const insets=[{x:1,y:1},{x:-1,y:1},{x:-1,y:-1},{x:1,y:-1}];
-  const cmIds=['cm-tl','cm-tr','cm-br','cm-bl'];
-  let aligned=0;
-  cmIds.forEach((id,i)=>{
-    const el=document.getElementById(id);
-    const cx=corners[i].x+insets[i].x*checkR*1.1,cy=corners[i].y+insets[i].y*checkR*1.1;
-    let darkPts=0;
-    const off=[-checkR*.4,0,checkR*.4];
-    // نستخدم مقياس خفيف للزوايا (أسرع من measureDarkness الكاملة)
-    for(let dx of off)for(let dy of off){
-      const r=Math.round(checkR*.48), px=Math.round(cx+dx), py=Math.round(cy+dy);
-      if(px-r<0||py-r<0||px+r>analysisCanvas.width||py+r>analysisCanvas.height) continue;
-      const d=analysisCtx.getImageData(px-r,py-r,r*2,r*2).data;
-      let dk=0,tot=0;
-      for(let j=0;j<d.length;j+=4){const l=0.299*d[j]+0.587*d[j+1]+0.114*d[j+2];tot++;if(l<100)dk++;}
-      if(tot>0&&dk/tot>0.30)darkPts++;
+
+  const checkR  = Math.min(vw, vh) * 0.022;
+  const insets  = [{x:1,y:1},{x:-1,y:1},{x:-1,y:-1},{x:1,y:-1}];
+  const cmIds   = ['cm-tl','cm-tr','cm-br','cm-bl'];
+  let   aligned = 0;
+  const curPositions = [];
+
+  cmIds.forEach((id, i) => {
+    const el  = document.getElementById(id);
+    // نقطة الكشف داخل المربع الأسود
+    const cx  = corners[i].x + insets[i].x * checkR * 1.0;
+    const cy  = corners[i].y + insets[i].y * checkR * 1.0;
+    curPositions.push({x: cx, y: cy});
+
+    // ── كشف المربع الأسود: قراءة سريعة وموثوقة ──
+    let darkScore = 0, samples = 0;
+    const step = Math.max(1, Math.round(checkR * 0.25));
+    for(let dy = -checkR*0.7; dy <= checkR*0.7; dy += step){
+      for(let dx = -checkR*0.7; dx <= checkR*0.7; dx += step){
+        const sx = Math.round(cx+dx), sy = Math.round(cy+dy);
+        if(sx<0||sy<0||sx>=vw||sy>=vh) continue;
+        const d = analysisCtx.getImageData(sx, sy, 1, 1).data;
+        const lum = 0.299*d[0] + 0.587*d[1] + 0.114*d[2];
+        samples++;
+        if(lum < 80) darkScore++; // بكسل داكن جداً = إطار المربع
+      }
     }
-    const inx=corners[i].x+insets[i].x*checkR*3.5,iny=corners[i].y+insets[i].y*checkR*3.5;
-    // فحص الداخل: يجب أن يكون فاتحاً
-    const ir=Math.round(checkR*.6);
-    const inPx=Math.round(inx),inPy=Math.round(iny);
-    let innerLight=true;
-    if(inPx-ir>=0&&inPy-ir>=0&&inPx+ir<analysisCanvas.width&&inPy+ir<analysisCanvas.height){
-      const d2=analysisCtx.getImageData(inPx-ir,inPy-ir,ir*2,ir*2).data;
-      let lSum=0,lCnt=0;
-      for(let j=0;j<d2.length;j+=4){lSum+=0.299*d2[j]+0.587*d2[j+1]+0.114*d2[j+2];lCnt++;}
-      innerLight=lCnt>0&&(lSum/lCnt)>160;
+    const isDark = samples > 0 && (darkScore/samples) > 0.20;
+
+    // ── فحص الداخل: يجب أن يكون فاتحاً (الورقة) ──
+    const inx = corners[i].x + insets[i].x * checkR * 3.5;
+    const iny = corners[i].y + insets[i].y * checkR * 3.5;
+    const ir  = Math.round(checkR * 0.8);
+    let   lightSum = 0, lightCnt = 0;
+    for(let dy=-ir; dy<=ir; dy+=step){
+      for(let dx=-ir; dx<=ir; dx+=step){
+        const sx=Math.round(inx+dx), sy=Math.round(iny+dy);
+        if(sx<0||sy<0||sx>=vw||sy>=vh) continue;
+        const d=analysisCtx.getImageData(sx,sy,1,1).data;
+        lightSum+=0.299*d[0]+0.587*d[1]+0.114*d[2];
+        lightCnt++;
+      }
     }
-    if(darkPts>=2&&innerLight){el.classList.add('ok');aligned++;}else el.classList.remove('ok');
+    const isLight = lightCnt > 0 && (lightSum/lightCnt) > 150;
+
+    if(isDark && isLight){ el.classList.add('ok'); aligned++; }
+    else el.classList.remove('ok');
   });
-  const sb=document.getElementById('stab-bar');
-  if(!isAutoMode){stabFrames=0;sb.style.width='0%';scanRAF=requestAnimationFrame(scanLoop);return;}
-  const STAB=18; // ~0.6 ثانية عند 30fps
-  if(aligned>=4){stabFrames++;sb.style.width=(stabFrames/STAB*100)+'%';if(stabFrames>=STAB){isScanning=false;playShutterSound();sb.style.width='0%';setTimeout(()=>captureAndProcess(),50);return;}}
-  else{stabFrames=0;sb.style.width='0%';}
-  scanRAF=requestAnimationFrame(scanLoop);
+
+  const sb = document.getElementById('stab-bar');
+
+  if(!isAutoMode){
+    stabFrames=0; sb.style.width='0%';
+    prevCornerPositions=null;
+    scanRAF=requestAnimationFrame(scanLoop);
+    return;
+  }
+
+  if(aligned >= 4){
+    // ── فحص الحركة: هل تحركت الزوايا منذ الإطار السابق؟ ──
+    let maxMotion = 0;
+    if(prevCornerPositions){
+      for(let i=0; i<4; i++){
+        const dx = curPositions[i].x - prevCornerPositions[i].x;
+        const dy = curPositions[i].y - prevCornerPositions[i].y;
+        maxMotion = Math.max(maxMotion, Math.sqrt(dx*dx + dy*dy));
+      }
+    }
+
+    if(maxMotion > MOTION_THR){
+      // الورقة تتحرك → أعد العد من الصفر
+      stabFrames = 0;
+      sb.style.width = '0%';
+      const instr = document.getElementById('scanner-instr');
+      if(instr) instr.innerText = 'ثبّت الورقة...';
+    } else {
+      // الورقة ثابتة → تقدّم في العد
+      stabFrames++;
+      sb.style.width = (stabFrames / STAB_NEEDED * 100) + '%';
+      const pct = Math.round(stabFrames / STAB_NEEDED * 100);
+      const instr = document.getElementById('scanner-instr');
+      if(instr) instr.innerText = pct < 100 ? 'جارٍ التحقق... ' + pct + '%' : 'جاهز!';
+
+      if(stabFrames >= STAB_NEEDED){
+        // الالتقاط
+        isScanning = false;
+        playShutterSound();
+        sb.style.width = '0%';
+        prevCornerPositions = null;
+        setTimeout(() => captureAndProcess(), 60);
+        return;
+      }
+    }
+
+    prevCornerPositions = curPositions;
+  } else {
+    // الزوايا غير مكتشفة → إعادة الضبط
+    stabFrames = 0;
+    sb.style.width = '0%';
+    prevCornerPositions = null;
+    const instr = document.getElementById('scanner-instr');
+    if(instr) instr.innerText = 'وجّه الكاميرا نحو الورقة حتى تتحول الزوايا للون الأخضر';
+  }
+
+  scanRAF = requestAnimationFrame(scanLoop);
 }
 
 function forceCapture(){if(!isScanning)return;isScanning=false;playShutterSound();document.getElementById('stab-bar').style.width='0%';captureAndProcess();}
@@ -1161,15 +1241,23 @@ function captureAndProcess(){
   ];
   // أبعاد الصورة الناتجة بنسبة الورقة A4
   const outH=900,outW=Math.round(outH*(OMR.W/OMR.H));
-  // رسم الفيديو على canvas مؤقت
-  const fullC=document.createElement('canvas');fullC.width=vw;fullC.height=vh;
-  fullC.getContext('2d').drawImage(video,0,0);
+  // رسم الفيديو على canvas مؤقت بدقة عالية
+  const fullC = document.createElement('canvas');
+  fullC.width  = vw; fullC.height = vh;
+  const fullCtx = fullC.getContext('2d');
+  // تحسين جودة الصورة: تباين +10%
+  fullCtx.filter = 'contrast(1.15) brightness(1.05)';
+  fullCtx.drawImage(video, 0, 0);
+  fullCtx.filter = 'none';
+
   // Perspective Warp
-  const warpedC=perspectiveWarp(fullC.getContext('2d'),vw,vh,srcPts,outW,outH);
-  // نسخة نظيفة للتحليل
-  const cleanC=document.createElement('canvas');cleanC.width=outW;cleanC.height=outH;
-  cleanC.getContext('2d').drawImage(warpedC,0,0);
-  const cleanCtx=cleanC.getContext('2d');
+  const warpedC = perspectiveWarp(fullCtx, vw, vh, srcPts, outW, outH);
+
+  // نسخة نظيفة للتحليل (بدون رسم فوقها)
+  const cleanC = document.createElement('canvas');
+  cleanC.width  = outW; cleanC.height = outH;
+  const cleanCtx = cleanC.getContext('2d');
+  cleanCtx.drawImage(warpedC, 0, 0);
   // ✅ ضبط أبعاد previewCanvas
   previewCanvas.width=outW;
   previewCanvas.height=outH;
