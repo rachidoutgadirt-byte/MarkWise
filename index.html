@@ -921,8 +921,8 @@ const analysisCtx=analysisCanvas.getContext('2d');
 let scanRAF=null, isScanning=false, stabFrames=0, isAutoMode=true;
 // نظام استقرار احترافي
 let prevCornerPositions = null;  // مواضع الزوايا في الإطار السابق
-const STAB_NEEDED  = 35;         // إطارات الاستقرار المطلوبة (~1.2ث @ 30fps)
-const MOTION_THR   = 2.0;        // حد الحركة بالبكسل — إذا تحركت الزاوية أكثر → إعادة العدّ
+const STAB_NEEDED  = 45;         // إطارات الاستقرار (~1.5ث @ 30fps) — وقت كافٍ للثبات
+const MOTION_THR   = 1.5;        // حد الحركة بالبكسل — أكثر صرامة للدقة القصوى
 
 function applyScanModeUI(){
   const cam = document.getElementById('manualCaptureBtn');
@@ -1070,7 +1070,7 @@ function measureDarkness(ctx, cx, cy, rad, thresh=128){
   cx=Math.round(cx); cy=Math.round(cy); rad=Math.round(rad);
   if(rad < 2) return 0;
   // نقرأ منطقة أكبر من الدائرة لحساب الخلفية
-  const area = Math.min(rad*3, Math.floor(Math.min(ctx.canvas.width, ctx.canvas.height)*0.15));
+  const area = rad * 3; // منطقة كافية لحساب الخلفية المحيطة
   const ax   = Math.max(0, cx-area), ay = Math.max(0, cy-area);
   const aw   = Math.min(ctx.canvas.width-ax, area*2);
   const ah   = Math.min(ctx.canvas.height-ay, area*2);
@@ -1227,7 +1227,8 @@ function scanLoop(){
         playShutterSound();
         sb.style.width = '0%';
         prevCornerPositions = null;
-        setTimeout(() => captureAndProcess(), 60);
+        // التقاط فوري بدون تأخير - الصورة تُجمَّد داخل captureAndProcess
+        captureAndProcess();
         return;
       }
     }
@@ -1249,42 +1250,55 @@ function forceCapture(){if(!isScanning)return;isScanning=false;playShutterSound(
 
 // captureAndProcess: الدالة الرئيسية للالتقاط والتصحيح
 function captureAndProcess(){
-  const rv=video.getBoundingClientRect(),gr=document.getElementById('guide-rect').getBoundingClientRect();
-  const vw=video.videoWidth,vh=video.videoHeight;
-  // الزوايا الأربعة في بكسل الفيديو (TL,TR,BR,BL)
-  const srcPts=[
-    getNativeCoords(gr.left-rv.left,gr.top-rv.top,rv,vw,vh),
-    getNativeCoords(gr.right-rv.left,gr.top-rv.top,rv,vw,vh),
-    getNativeCoords(gr.right-rv.left,gr.bottom-rv.top,rv,vw,vh),
-    getNativeCoords(gr.left-rv.left,gr.bottom-rv.top,rv,vw,vh)
+  // ══════════════════════════════════════════════════════
+  // STEP 1: تجميد الصورة فوراً (قبل أي معالجة)
+  // هذا يضمن أن الصورة المحللة هي نفس الصورة المعروضة
+  // ══════════════════════════════════════════════════════
+  const rv = video.getBoundingClientRect();
+  const gr = document.getElementById('guide-rect').getBoundingClientRect();
+  const vw = video.videoWidth, vh = video.videoHeight;
+
+  // تجميد الفيديو فوراً في canvas
+  const frozenC = document.createElement('canvas');
+  frozenC.width = vw; frozenC.height = vh;
+  frozenC.getContext('2d').drawImage(video, 0, 0);
+
+  // إخفاء الفيديو وإظهار حالة المعالجة فوراً
+  video.style.display = 'none';
+  document.getElementById('guide-rect').style.display = 'none';
+  document.getElementById('scanner-bottom').style.display = 'none';
+
+  // ══════════════════════════════════════════════════════
+  // STEP 2: حساب srcPts من الـ guide-rect الحالي
+  // ══════════════════════════════════════════════════════
+  const srcPts = [
+    getNativeCoords(gr.left  - rv.left, gr.top    - rv.top, rv, vw, vh),
+    getNativeCoords(gr.right - rv.left, gr.top    - rv.top, rv, vw, vh),
+    getNativeCoords(gr.right - rv.left, gr.bottom - rv.top, rv, vw, vh),
+    getNativeCoords(gr.left  - rv.left, gr.bottom - rv.top, rv, vw, vh)
   ];
-  // أبعاد الصورة الناتجة بنسبة الورقة A4
-  // الأبعاد مطابقة للورقة الأصلية → إحداثيات الدوائر مطابقة 100%
-  const outW = OMR.W;  // 794px
-  const outH = OMR.H;  // 1123px
-  // رسم الفيديو على canvas مؤقت بدقة عالية
-  const fullC = document.createElement('canvas');
-  fullC.width  = vw; fullC.height = vh;
-  const fullCtx = fullC.getContext('2d');
-  fullCtx.drawImage(video, 0, 0);
 
-  // Perspective Warp
-  const warpedC = perspectiveWarp(fullCtx, vw, vh, srcPts, outW, outH);
+  // ══════════════════════════════════════════════════════
+  // STEP 3: Perspective Warp بأبعاد الورقة الحقيقية
+  // outW=794, outH=1123 → إحداثيات الدوائر مطابقة 100%
+  // ══════════════════════════════════════════════════════
+  const outW = OMR.W;   // 794
+  const outH = OMR.H;   // 1123
+  const frozenCtx = frozenC.getContext('2d');
 
-  // نسخة نظيفة للتحليل (بدون رسم فوقها)
-  const cleanC = document.createElement('canvas');
-  cleanC.width  = outW; cleanC.height = outH;
+  const warpedC  = perspectiveWarp(frozenCtx, vw, vh, srcPts, outW, outH);
+
+  // نسخة نظيفة للتحليل
+  const cleanC   = document.createElement('canvas');
+  cleanC.width   = outW; cleanC.height = outH;
   const cleanCtx = cleanC.getContext('2d');
   cleanCtx.drawImage(warpedC, 0, 0);
-  // ✅ ضبط أبعاد previewCanvas
-  previewCanvas.width=outW;
-  previewCanvas.height=outH;
-  // ✅ رسم الصورة الملتقطة
-  previewCtx.drawImage(warpedC,0,0);
-  // ✅ إخفاء الفيديو وعرض الصورة
-  video.style.display='none';
-  document.getElementById('guide-rect').style.display='none';
-  previewCanvas.style.display='block';
+
+  // ضبط وعرض previewCanvas
+  previewCanvas.width  = outW;
+  previewCanvas.height = outH;
+  previewCtx.drawImage(warpedC, 0, 0);
+  previewCanvas.style.display = 'block';
   const lay=AppState.activeScan.exam.layout,key=AppState.activeScan.exam.answerKey;
   const meta=lay._meta||{};
   // bubbleR: نصف قطر الدائرة الحقيقي من الـ BD المخزون في الامتحان
@@ -1303,7 +1317,6 @@ function captureAndProcess(){
   // النتيجة
   const tot=calculateScore(fc,key);
   AppState.activeScan.extChoices=fc;AppState.activeScan.tot=tot;
-  document.getElementById('scanner-bottom').style.display='none';
   document.getElementById('result-score').innerText='✅  النتيجة: '+tot+' نقطة';
   // اسم التلميذ
   const _nameEl=document.getElementById('result-student-name');
