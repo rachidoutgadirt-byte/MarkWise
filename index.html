@@ -887,8 +887,27 @@ function perspectiveWarp(srcCtx,srcW,srcH,srcPts,outW,outH){
   const H=computeHomography(dstPts,srcPts);
   const srcData=srcCtx.getImageData(0,0,srcW,srcH).data;
   const out=new Uint8ClampedArray(outW*outH*4);
-  for(let dy=0;dy<outH;dy++){for(let dx=0;dx<outW;dx++){const{x:sx,y:sy}=applyMatrix(H,dx,dy);const xi=Math.round(sx),yi=Math.round(sy);if(xi<0||xi>=srcW||yi<0||yi>=srcH)continue;const si=(yi*srcW+xi)*4,di=(dy*outW+dx)*4;out[di]=srcData[si];out[di+1]=srcData[si+1];out[di+2]=srcData[si+2];out[di+3]=srcData[si+3];}}
-  const oc=document.createElement('canvas');oc.width=outW;oc.height=outH;oc.getContext('2d').putImageData(new ImageData(out,outW,outH),0,0);return oc;
+  for(let dy=0;dy<outH;dy++){
+    for(let dx=0;dx<outW;dx++){
+      const{x:sx,y:sy}=applyMatrix(H,dx,dy);
+      // Bilinear interpolation للدقة القصوى
+      const x0=Math.floor(sx),y0=Math.floor(sy);
+      const x1=x0+1,y1=y0+1;
+      if(x0<0||y0<0||x1>=srcW||y1>=srcH){continue;}
+      const fx=sx-x0,fy=sy-y0;
+      const di=(dy*outW+dx)*4;
+      for(let ch=0;ch<3;ch++){
+        const s00=srcData[(y0*srcW+x0)*4+ch];
+        const s10=srcData[(y0*srcW+x1)*4+ch];
+        const s01=srcData[(y1*srcW+x0)*4+ch];
+        const s11=srcData[(y1*srcW+x1)*4+ch];
+        out[di+ch]=Math.round(s00*(1-fx)*(1-fy)+s10*fx*(1-fy)+s01*(1-fx)*fy+s11*fx*fy);
+      }
+      out[di+3]=255;
+    }
+  }
+  const oc=document.createElement('canvas');oc.width=outW;oc.height=outH;
+  oc.getContext('2d').putImageData(new ImageData(out,outW,outH),0,0);return oc;
 }
 
 // ================================================================
@@ -1240,15 +1259,14 @@ function captureAndProcess(){
     getNativeCoords(gr.left-rv.left,gr.bottom-rv.top,rv,vw,vh)
   ];
   // أبعاد الصورة الناتجة بنسبة الورقة A4
-  const outH=900,outW=Math.round(outH*(OMR.W/OMR.H));
+  // الأبعاد مطابقة للورقة الأصلية → إحداثيات الدوائر مطابقة 100%
+  const outW = OMR.W;  // 794px
+  const outH = OMR.H;  // 1123px
   // رسم الفيديو على canvas مؤقت بدقة عالية
   const fullC = document.createElement('canvas');
   fullC.width  = vw; fullC.height = vh;
   const fullCtx = fullC.getContext('2d');
-  // تحسين جودة الصورة: تباين +10%
-  fullCtx.filter = 'contrast(1.15) brightness(1.05)';
   fullCtx.drawImage(video, 0, 0);
-  fullCtx.filter = 'none';
 
   // Perspective Warp
   const warpedC = perspectiveWarp(fullCtx, vw, vh, srcPts, outW, outH);
@@ -1269,13 +1287,12 @@ function captureAndProcess(){
   previewCanvas.style.display='block';
   const lay=AppState.activeScan.exam.layout,key=AppState.activeScan.exam.answerKey;
   const meta=lay._meta||{};
-  // نصف قطر الدائرة المحسوب من النسبة المخزنة
-  const ratio = (meta.bubbleRadiusRatio && meta.bubbleRadiusRatio > 0)
-    ? meta.bubbleRadiusRatio : (OMR.BD/2/OMR.W);
-  // bubbleR: نصف قطر الدائرة بالبكسل في الصورة الملتقطة
-  const bubbleR = Math.max(Math.round(ratio * outW), 6);
-  // detectR: نصف القطر المستخدم في الكشف = 60% (innerR في measureDarkness)
-  // لا حاجة لتحويله هنا — measureDarkness تحسب innerR=rad*0.60 داخلياً
+  // bubbleR: نصف قطر الدائرة الحقيقي من الـ BD المخزون في الامتحان
+  // outW=OMR.W → لا حاجة لأي تحويل نسبي
+  const storedBD = meta.bubbleRadiusRatio
+    ? Math.round(meta.bubbleRadiusRatio * OMR.W * 2)  // BD = ratio*W*2
+    : (OMR.BD || 30);
+  const bubbleR = Math.max(Math.round(storedBD / 2), 6);
   const detectR = bubbleR;
   // دوائر صفراء على الإجابات الصحيحة
   for(let q in lay){if(q.startsWith('_'))continue;const cOpts=Object.keys(key[q]||{});for(let o in lay[q]){if(!cOpts.includes(o))continue;const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);previewCtx.beginPath();previewCtx.arc(px,py,bubbleR,0,2*Math.PI);previewCtx.strokeStyle='#f59e0b';previewCtx.lineWidth=2.5;previewCtx.stroke();}}
