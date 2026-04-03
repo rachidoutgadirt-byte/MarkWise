@@ -1249,6 +1249,77 @@ function scanLoop(){
 function forceCapture(){if(!isScanning)return;isScanning=false;playShutterSound();document.getElementById('stab-bar').style.width='0%';captureAndProcess();}
 
 // captureAndProcess: الدالة الرئيسية للالتقاط والتصحيح
+// ══════════════════════════════════════════════════════════
+// refineWithMarkers: تصحيح الإحداثيات بناءً على المربعات الفعلية
+// تبحث عن المربعات الأربعة في الصورة الناتجة وتحسب الإزاحة
+// ══════════════════════════════════════════════════════════
+function refineWithMarkers(ctx, W, H){
+  const CO = OMR.CO, CM = OMR.CM;
+  // المواضع المتوقعة لمراكز المربعات في الورقة الافتراضية
+  const expected = [
+    {x: CO + CM/2,     y: CO + CM/2    },  // TL
+    {x: W - CO - CM/2, y: CO + CM/2    },  // TR
+    {x: W - CO - CM/2, y: H - CO - CM/2},  // BR
+    {x: CO + CM/2,     y: H - CO - CM/2},  // BL
+  ];
+
+  // نبحث عن المربع الأسود في منطقة ±search حول الموضع المتوقع
+  const search = Math.round(Math.min(W, H) * 0.06); // 6% من الحجم
+  const found  = [];
+
+  expected.forEach(ep => {
+    const x0 = Math.max(0, Math.round(ep.x) - search);
+    const y0 = Math.max(0, Math.round(ep.y) - search);
+    const x1 = Math.min(W, Math.round(ep.x) + search);
+    const y1 = Math.min(H, Math.round(ep.y) + search);
+    const sw = x1 - x0, sh = y1 - y0;
+    if(sw < 4 || sh < 4){ found.push(ep); return; }
+
+    const data = ctx.getImageData(x0, y0, sw, sh).data;
+
+    // نجد مركز ثقل البكسلات الداكنة جداً
+    let sumX=0, sumY=0, cnt=0;
+    for(let dy=0; dy<sh; dy++){
+      for(let dx=0; dx<sw; dx++){
+        const i=(dy*sw+dx)*4;
+        const lum=0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];
+        if(lum < 60){ // بكسل داكن جداً = مربع أسود
+          sumX += x0+dx; sumY += y0+dy; cnt++;
+        }
+      }
+    }
+    if(cnt > 20){
+      found.push({x: sumX/cnt, y: sumY/cnt});
+    } else {
+      found.push(ep); // لم يُعثر على مربع → استخدم المتوقع
+    }
+  });
+
+  // حساب التحويل الخطي (أفضل من الانتظار)
+  // نحسب متوسط الإزاحة وعامل الحجم
+  let dx=0, dy=0;
+  for(let i=0; i<4; i++){
+    dx += found[i].x - expected[i].x;
+    dy += found[i].y - expected[i].y;
+  }
+  dx /= 4; dy /= 4;
+
+  // نحسب نسبة الحجم
+  const expSpanX = expected[1].x - expected[0].x; // TR.x - TL.x
+  const fndSpanX = found[1].x    - found[0].x;
+  const expSpanY = expected[3].y - expected[0].y; // BL.y - TL.y
+  const fndSpanY = found[3].y    - found[0].y;
+
+  const scaleX = (Math.abs(expSpanX) > 10) ? fndSpanX / expSpanX : 1;
+  const scaleY = (Math.abs(expSpanY) > 10) ? fndSpanY / expSpanY : 1;
+
+  // الإزاحة الأساس: موضع TL الفعلي
+  const originX = found[0].x - expected[0].x * scaleX;
+  const originY = found[0].y - expected[0].y * scaleY;
+
+  return {scaleX, scaleY, originX, originY, found, expected};
+}
+
 function captureAndProcess(){
   // ══════════════════════════════════════════════════════
   // STEP 1: تجميد الصورة فوراً (قبل أي معالجة)
@@ -1294,6 +1365,10 @@ function captureAndProcess(){
   const cleanCtx = cleanC.getContext('2d');
   cleanCtx.drawImage(warpedC, 0, 0);
 
+  // ══ تصحيح الإحداثيات بناءً على المربعات الفعلية في الصورة ══
+  // نبحث عن المربعات الأربعة في الصورة الناتجة ونحسب التحويل الدقيق
+  const corrected = refineWithMarkers(cleanCtx, outW, outH);
+
   // ضبط وعرض previewCanvas
   previewCanvas.width  = outW;
   previewCanvas.height = outH;
@@ -1308,12 +1383,50 @@ function captureAndProcess(){
     : (OMR.BD || 30);
   const bubbleR = Math.max(Math.round(storedBD / 2), 6);
   const detectR = bubbleR;
+  // دالة تحويل الإحداثيات مع التصحيح
+  function toImgCoords(xRel, yRel){
+    const rawX = xRel * outW;
+    const rawY = yRel * outH;
+    // تطبيق تصحيح المربعات
+    return {
+      x: Math.round(corrected.originX + rawX * corrected.scaleX),
+      y: Math.round(corrected.originY + rawY * corrected.scaleY)
+    };
+  }
+
   // دوائر صفراء على الإجابات الصحيحة
-  for(let q in lay){if(q.startsWith('_'))continue;const cOpts=Object.keys(key[q]||{});for(let o in lay[q]){if(!cOpts.includes(o))continue;const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);previewCtx.beginPath();previewCtx.arc(px,py,bubbleR,0,2*Math.PI);previewCtx.strokeStyle='#f59e0b';previewCtx.lineWidth=2.5;previewCtx.stroke();}}
+  for(let q in lay){
+    if(q.startsWith('_')) continue;
+    const cOpts=Object.keys(key[q]||{});
+    for(let o in lay[q]){
+      if(!cOpts.includes(o)) continue;
+      const {x:px,y:py}=toImgCoords(lay[q][o].x, lay[q][o].y);
+      previewCtx.beginPath();previewCtx.arc(px,py,bubbleR,0,2*Math.PI);
+      previewCtx.strokeStyle='#f59e0b';previewCtx.lineWidth=2.5;previewCtx.stroke();
+    }
+  }
+
   // قراءة إجابات التلميذ
   let fc={};
-  for(let q in lay){if(q.startsWith('_'))continue;let filled=[];for(let o in lay[q]){const px=Math.round(lay[q][o].x*outW),py=Math.round(lay[q][o].y*outH);if(measureDarkness(cleanCtx,px,py,detectR,135)>0.10)filled.push({opt:o,px,py});}
-    if(filled.length>0){fc[q]=filled.map(f=>f.opt).join(', ');const cOpts=Object.keys(key[q]||{});filled.forEach(f=>{const ok=cOpts.includes(f.opt);previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR,0,2*Math.PI);previewCtx.strokeStyle=ok?'#22c55e':'#ef4444';previewCtx.lineWidth=4;previewCtx.stroke();if(ok){previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR-3,0,2*Math.PI);previewCtx.fillStyle='rgba(34,197,94,.28)';previewCtx.fill();}});}}
+  for(let q in lay){
+    if(q.startsWith('_')) continue;
+    let filled=[];
+    for(let o in lay[q]){
+      const {x:px,y:py}=toImgCoords(lay[q][o].x, lay[q][o].y);
+      if(measureDarkness(cleanCtx,px,py,detectR,135)>0.10)
+        filled.push({opt:o,px,py});
+    }
+    if(filled.length>0){
+      fc[q]=filled.map(f=>f.opt).join(', ');
+      const cOpts=Object.keys(key[q]||{});
+      filled.forEach(f=>{
+        const ok=cOpts.includes(f.opt);
+        previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR,0,2*Math.PI);
+        previewCtx.strokeStyle=ok?'#22c55e':'#ef4444';previewCtx.lineWidth=4;previewCtx.stroke();
+        if(ok){previewCtx.beginPath();previewCtx.arc(f.px,f.py,bubbleR-3,0,2*Math.PI);previewCtx.fillStyle='rgba(34,197,94,.28)';previewCtx.fill();}
+      });
+    }
+  }
   // النتيجة
   const tot=calculateScore(fc,key);
   AppState.activeScan.extChoices=fc;AppState.activeScan.tot=tot;
